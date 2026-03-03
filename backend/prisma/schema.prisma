@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client"
   output   = "../generated/prisma"
@@ -12,6 +6,133 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+model Utilisateur {
+  id            String         @id @default(uuid())
+  email         String         @unique
+  motDePasse    String
+  nom           String
+  prenom        String
+  telephone     String?
+  role          Role
+  actif         Boolean        @default(true)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  createdById   String?
+  agence        AgenceVoyage?
+  guide         Guide?
+  pelerin       Pelerin?
+  refreshTokens RefreshToken[]
+}
+
+model RefreshToken {
+  id            String      @id @default(uuid())
+  token         String      @unique
+  utilisateurId String
+  expiresAt     DateTime
+  createdAt     DateTime    @default(now())
+  utilisateur   Utilisateur @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
+}
+
+model AgenceVoyage {
+  id            String      @id @default(uuid())
+  utilisateurId String      @unique
+  nomAgence     String
+  adresse       String?
+  siteWeb       String?
+  logo          String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  utilisateur   Utilisateur @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
+  groupes       Groupe[]
+  guides        Guide[]
+  pelerins      Pelerin[]
+}
+
+model Guide {
+  id            String       @id @default(uuid())
+  utilisateurId String       @unique
+  agenceId      String
+  specialite    String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  groupes       Groupe[]
+  agence        AgenceVoyage @relation(fields: [agenceId], references: [id])
+  utilisateur   Utilisateur  @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
+}
+
+model Groupe {
+  id          String              @id @default(uuid())
+  nom         String
+  description String?
+  annee       Int
+  typeVoyage  TypeVoyage          @default(HAJJ)
+  agenceId    String
+  guideId     String?
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  agence      AgenceVoyage        @relation(fields: [agenceId], references: [id])
+  guide       Guide?              @relation(fields: [guideId], references: [id])
+  pelerins    Pelerin[]
+  plannings   PlanningQuotidien[]
+}
+
+model Pelerin {
+  id              String         @id @default(uuid())
+  utilisateurId   String         @unique
+  codeUnique      String?        @unique
+  agenceId        String
+  groupeId        String?
+  dateNaissance   DateTime?
+  nationalite     String?
+  numeroPasseport String?
+  photoUrl        String?
+  etapeActuelle   EtapeHajj?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  etapesValidees  EtapeValidee[]
+  agence          AgenceVoyage   @relation(fields: [agenceId], references: [id])
+  groupe          Groupe?        @relation(fields: [groupeId], references: [id])
+  utilisateur     Utilisateur    @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
+}
+
+model EtapeValidee {
+  id        String    @id @default(uuid())
+  pelerinId String
+  etape     EtapeHajj
+  valideeAt DateTime  @default(now())
+  note      String?
+  pelerin   Pelerin   @relation(fields: [pelerinId], references: [id], onDelete: Cascade)
+
+  @@unique([pelerinId, etape])
+}
+
+model PlanningQuotidien {
+  id         String              @id @default(uuid())
+  groupeId   String
+  date       DateTime
+  titre      String?
+  createdAt  DateTime            @default(now())
+  updatedAt  DateTime            @updatedAt
+  evenements EvenementPlanning[]
+  groupe     Groupe              @relation(fields: [groupeId], references: [id], onDelete: Cascade)
+
+  @@unique([groupeId, date])
+}
+
+model EvenementPlanning {
+  id                  String            @id @default(uuid())
+  planningQuotidienId String
+  type                TypeEvenement
+  titre               String
+  description         String?
+  heureDebut          DateTime
+  heureFin            DateTime?
+  lieu                String?
+  createdAt           DateTime          @default(now())
+  planningQuotidien   PlanningQuotidien @relation(fields: [planningQuotidienId], references: [id], onDelete: Cascade)
+}
+
 enum Role {
   PELERIN
   GUIDE
@@ -19,12 +140,12 @@ enum Role {
   FAMILLE
   SUPER_ADMIN
 }
+
 enum TypeVoyage {
   HAJJ
   UMRAH
 }
 
-// US06 - Les 9 étapes religieuses du Hajj
 enum EtapeHajj {
   IHRAM
   ARRIVEE_MECQUE
@@ -37,7 +158,6 @@ enum EtapeHajj {
   TAWAF_IFADA
 }
 
-// US07 - Types d'événements dans le planning quotidien
 enum TypeEvenement {
   PRIERE
   TRANSPORT
@@ -45,201 +165,4 @@ enum TypeEvenement {
   RITE
   REPOS
   AUTRE
-}
-
-// ============================================================
-// UTILISATEUR (US01, US02, US03)
-// Base commune à tous les rôles
-// ============================================================
-
-model Utilisateur {
-  id           String    @id @default(uuid())
-  email        String    @unique
-  motDePasse   String
-  nom          String
-  prenom       String
-  telephone    String?
-  role         Role
-  actif        Boolean   @default(true)
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  createdById String?
-  // Relations selon le rôle
-  pelerin       Pelerin?
-  guide         Guide?
-  agence        AgenceVoyage?
-  refreshTokens RefreshToken[]
-}
-
-// ============================================================
-// TOKEN DE RAFRAÎCHISSEMENT (US01, US02, US03)
-// Gestion des sessions JWT
-// ============================================================
-
-model RefreshToken {
-  id            String      @id @default(uuid())
-  token         String      @unique
-  utilisateurId String
-  utilisateur   Utilisateur @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
-  expiresAt     DateTime
-  createdAt     DateTime    @default(now())
-}
-
-// ============================================================
-// AGENCE DE VOYAGE (US03, US04, US05)
-// ============================================================
-
-model AgenceVoyage {
-  id            String      @id @default(uuid())
-  utilisateurId String      @unique
-  utilisateur   Utilisateur @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
-
-  nomAgence     String
-  adresse       String?
-  siteWeb       String?
-  logo          String?     // URL du logo
-
-  // Relations
-  pelerins      Pelerin[]   // US04 - pèlerins créés par l'agence
-  groupes       Groupe[]    // US05 - groupes créés par l'agence
-  guides        Guide[]     // guides rattachés à l'agence
-
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
-}
-
-// ============================================================
-// GUIDE (US02, US05)
-// ============================================================
-
-model Guide {
-  id            String       @id @default(uuid())
-  utilisateurId String       @unique
-  utilisateur   Utilisateur  @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
-
-  agenceId      String
-  agence        AgenceVoyage @relation(fields: [agenceId], references: [id])
-
-  specialite    String?      // ex: "Hajj", "Umrah", "Bilingue"
-
-  // Relations
-  groupes       Groupe[]     // US05 - groupes assignés à ce guide
-
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
-}
-
-// ============================================================
-// GROUPE DE PÈLERINS (US05)
-// Agence crée un groupe et lui assigne un guide
-// ============================================================
-
-model Groupe {
-  id            String       @id @default(uuid())
-  nom           String
-  description   String?
-  annee         Int          // ex: 2025
-  typeVoyage    TypeVoyage @default(HAJJ)
-
-  agenceId      String
-  agence        AgenceVoyage @relation(fields: [agenceId], references: [id])
-
-  guideId       String?
-  guide         Guide?       @relation(fields: [guideId], references: [id])
-
-  // Relations
-  pelerins      Pelerin[]
-  plannings     PlanningQuotidien[] // US07
-
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
-}
-
-// ============================================================
-// PÈLERIN (US01, US04, US06, US07)
-// ============================================================
-
-model Pelerin {
-  id              String       @id @default(uuid())
-  utilisateurId   String       @unique
-  utilisateur     Utilisateur  @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
-  codeUnique   String?   @unique // code pour liaison famille-pèlerin (Sprint 2)
-  // US04 - Données créées par l'agence
-  agenceId        String
-  agence          AgenceVoyage @relation(fields: [agenceId], references: [id])
-
-  // US05 - Groupe auquel appartient le pèlerin
-  groupeId        String?
-  groupe          Groupe?      @relation(fields: [groupeId], references: [id])
-
-  // Informations personnelles
-  dateNaissance   DateTime?
-  nationalite     String?
-  numeroPasseport String?
-  photoUrl        String?
-
-  // US06 - Progression du parcours Hajj
-  etapeActuelle   EtapeHajj?
-  etapesValidees  EtapeValidee[]
-
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
-}
-
-// ============================================================
-// ÉTAPE VALIDÉE (US06)
-// Suivi de la progression du pèlerin sur les 9 étapes
-// ============================================================
-
-model EtapeValidee {
-  id          String     @id @default(uuid())
-  pelerinId   String
-  pelerin     Pelerin    @relation(fields: [pelerinId], references: [id], onDelete: Cascade)
-
-  etape       EtapeHajj
-  valideeAt   DateTime   @default(now())
-  note        String?    // observation optionnelle
-
-  @@unique([pelerinId, etape]) // chaque étape ne peut être validée qu'une fois
-}
-
-// ============================================================
-// PLANNING QUOTIDIEN (US07)
-// Horaires des prières, transport, repas pour le groupe
-// ============================================================
-
-model PlanningQuotidien {
-  id          String    @id @default(uuid())
-  groupeId    String
-  groupe      Groupe    @relation(fields: [groupeId], references: [id], onDelete: Cascade)
-
-  date        DateTime  // jour du planning
-  titre       String?   // ex: "Jour 3 - Arafat"
-
-  evenements  EvenementPlanning[]
-
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-
-  @@unique([groupeId, date])
-}
-
-// ============================================================
-// ÉVÉNEMENT DU PLANNING (US07)
-// Détail d'un événement dans la journée
-// ============================================================
-
-model EvenementPlanning {
-  id                  String            @id @default(uuid())
-  planningQuotidienId String
-  planningQuotidien   PlanningQuotidien @relation(fields: [planningQuotidienId], references: [id], onDelete: Cascade)
-
-  type                TypeEvenement     // PRIERE | TRANSPORT | REPAS | RITE | REPOS | AUTRE
-  titre               String            // ex: "Prière Fajr", "Départ vers Mina"
-  description         String?
-  heureDebut          DateTime
-  heureFin            DateTime?
-  lieu                String?           // ex: "Mosquée Al-Haram", "Bus N°3"
-
-  createdAt           DateTime          @default(now())
 }
