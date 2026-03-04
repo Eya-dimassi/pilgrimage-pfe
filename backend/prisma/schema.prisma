@@ -1,6 +1,6 @@
 generator client {
   provider = "prisma-client"
-  output   = "../generated/prisma"
+  output   = "../../generated/prisma"
 }
 
 datasource db {
@@ -79,7 +79,7 @@ model Groupe {
 
 model Pelerin {
   id              String         @id @default(uuid())
-  utilisateurId   String         @unique
+  sutilisateurId   String         @unique
   codeUnique      String?        @unique
   agenceId        String
   groupeId        String?
@@ -166,3 +166,4 @@ enum TypeEvenement {
   REPOS
   AUTRE
 }
+
