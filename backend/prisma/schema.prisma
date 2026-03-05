@@ -1,10 +1,11 @@
 generator client {
   provider = "prisma-client"
-  output   = "../../generated/prisma"
+  output   = "../generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
+  
 }
 
 model Utilisateur {
@@ -79,7 +80,7 @@ model Groupe {
 
 model Pelerin {
   id              String         @id @default(uuid())
-  sutilisateurId   String         @unique
+  utilisateurId   String         @unique
   codeUnique      String?        @unique
   agenceId        String
   groupeId        String?
