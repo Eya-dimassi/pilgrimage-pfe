@@ -57,13 +57,17 @@
     </button>
   </div>
 </div>
+<p v-if="errorMessage" class="text-red-400 text-sm text-center">
+          {{ errorMessage }}
+        </p>
         <!-- Button -->
         <button
-          type="submit"
-          class="w-full py-3 rounded-xl bg-yellow-600 hover:bg-yellow-400 text-black font-bold transition transform hover:-translate-y-1"
-        >
-          Se connecter
-        </button>
+  type="submit"
+  :disabled="loading"
+  class="w-full py-3 rounded-xl bg-yellow-600 hover:bg-yellow-400 text-black font-bold transition transform hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed"
+>
+  {{ loading ? 'Connexion...' : 'Se connecter' }}
+</button>
 
         <router-link
           to="/forgot-password"
@@ -81,13 +85,44 @@
 
 <script setup>
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { login } from '@/services/auth.service'
 
+const router = useRouter()
 const email = ref('')
 const password = ref('')
 const showPassword = ref(false)
+const errorMessage = ref('')
+const loading = ref(false)
 
-const handleLogin = () => {
-  console.log("Email:", email.value)
-  console.log("Password:", password.value)
+const handleLogin = async () => {
+  try {
+    loading.value = true
+    errorMessage.value = ''
+
+    const data = await login(email.value, password.value)
+
+    // save tokens
+    localStorage.setItem('accessToken', data.accessToken)
+    localStorage.setItem('refreshToken', data.refreshToken)
+    localStorage.setItem('user', JSON.stringify(data.utilisateur))
+
+    // redirect based on role
+    const role = data.utilisateur.role
+
+    if (role === 'AGENCE') {
+      router.push('/dashboard')
+    } else if (role === 'SUPER_ADMIN') {
+      router.push('/admin')
+    } else {
+      // guides and pilgrims use the mobile app
+      errorMessage.value = 'Ce portail est réservé aux agences et administrateurs'
+    }
+
+  } catch (error) {
+    errorMessage.value = 'Email ou mot de passe incorrect'
+  } finally {
+    loading.value = false
+  }
 }
 </script>
