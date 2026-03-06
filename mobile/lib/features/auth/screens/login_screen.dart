@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -35,26 +36,42 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        final accessToken = data["accessToken"];
-        final refreshToken = data["refreshToken"];
+        final accessToken = data["accessToken"] as String;
+        final refreshToken = data["refreshToken"] as String;
         final user = data["utilisateur"];
+        final role = user["role"] as String;
 
-        print("Login réussi !");
-        print("Token : $accessToken");
-        print("Utilisateur : $user");
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('accessToken', accessToken);
+        await prefs.setString('refreshToken', refreshToken);
+        await prefs.setString('role', role);
+        await prefs.setString('user', jsonEncode(user));
+        if (!mounted) return;
 
-        // TODO: Stocker le token et naviguer vers l'écran principal
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Connexion réussie !")),
-        );
+        if (role == 'PELERIN') {
+          Navigator.pushReplacementNamed(context, '/home');
+        } else if (role == 'GUIDE') {
+          Navigator.pushReplacementNamed(context, '/guide-home');
+        } else if (role == 'FAMILLE') {
+          Navigator.pushReplacementNamed(context, '/famille-home');
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                "Ce portail mobile est réservé aux pèlerins, guides et familles",
+              ),
+            ),
+          );
+        }
       } else {
         final data = jsonDecode(response.body);
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(data["message"] ?? "Login échoué")),
         );
       }
     } catch (e) {
-      print("Erreur : $e");
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Erreur de connexion au serveur")),
       );
@@ -76,6 +93,7 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Column(
               children: [
                 const SizedBox(height: 60),
+
                 /// Logo
                 Container(
                   width: 100,
@@ -90,16 +108,23 @@ class _LoginScreenState extends State<LoginScreen> {
                         color: const Color(0xFFD4AF37),
                         blurRadius: 25,
                         spreadRadius: 3,
-                      )
+                      ),
                     ],
                   ),
-                  child: const Icon(Icons.mosque, size: 55, color: Colors.black),
+                  child: const Icon(
+                    Icons.mosque,
+                    size: 55,
+                    color: Colors.black,
+                  ),
                 ),
                 const SizedBox(height: 30),
                 const Text(
                   "Hajj & Umrah",
                   style: TextStyle(
-                      fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
                 ),
                 const SizedBox(height: 10),
                 const Text(
@@ -119,7 +144,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         color: Colors.black,
                         blurRadius: 25,
                         offset: const Offset(0, 15),
-                      )
+                      ),
                     ],
                   ),
                   child: Column(
@@ -131,7 +156,10 @@ class _LoginScreenState extends State<LoginScreen> {
                         decoration: InputDecoration(
                           labelText: "Email",
                           labelStyle: const TextStyle(color: Colors.white70),
-                          prefixIcon: const Icon(Icons.email, color: Colors.white70),
+                          prefixIcon: const Icon(
+                            Icons.email,
+                            color: Colors.white70,
+                          ),
                           filled: true,
                           fillColor: const Color(0xFF252A3F),
                           border: OutlineInputBorder(
@@ -150,10 +178,15 @@ class _LoginScreenState extends State<LoginScreen> {
                         decoration: InputDecoration(
                           labelText: "Mot de passe",
                           labelStyle: const TextStyle(color: Colors.white70),
-                          prefixIcon: const Icon(Icons.lock, color: Colors.white70),
+                          prefixIcon: const Icon(
+                            Icons.lock,
+                            color: Colors.white70,
+                          ),
                           suffixIcon: IconButton(
                             icon: Icon(
-                              obscurePassword ? Icons.visibility_off : Icons.visibility,
+                              obscurePassword
+                                  ? Icons.visibility_off
+                                  : Icons.visibility,
                               color: Colors.white70,
                             ),
                             onPressed: () {
@@ -186,13 +219,16 @@ class _LoginScreenState extends State<LoginScreen> {
                             elevation: 10,
                           ),
                           child: isLoading
-                              ? const CircularProgressIndicator(color: Colors.black)
+                              ? const CircularProgressIndicator(
+                                  color: Colors.black,
+                                )
                               : const Text(
                                   "Se connecter",
                                   style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.black),
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black,
+                                  ),
                                 ),
                         ),
                       ),
