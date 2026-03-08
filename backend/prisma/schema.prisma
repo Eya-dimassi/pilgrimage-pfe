@@ -11,19 +11,21 @@ datasource db {
 model Utilisateur {
   id            String         @id @default(uuid())
   email         String         @unique
-  motDePasse    String
+  motDePasse    String?
   nom           String
   prenom        String
   telephone     String?
   role          Role
-  actif         Boolean        @default(true)
+  actif         Boolean        @default(false)
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   createdById   String?
   agence        AgenceVoyage?
   guide         Guide?
   pelerin       Pelerin?
+  famille        Famille?
   refreshTokens RefreshToken[]
+  passwordTokens PasswordToken[]
 }
 
 model RefreshToken {
@@ -34,6 +36,16 @@ model RefreshToken {
   createdAt     DateTime    @default(now())
   utilisateur   Utilisateur @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
 }
+model PasswordToken {
+  id            String            @id @default(uuid())
+  utilisateurId String
+  tokenHash     String            @unique // store hash, never plain token
+  type          PasswordTokenType
+  expiresAt     DateTime
+  usedAt        DateTime?         // null = still valid
+  createdAt     DateTime          @default(now())
+  utilisateur   Utilisateur       @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
+}
 
 model AgenceVoyage {
   id            String      @id @default(uuid())
@@ -42,12 +54,17 @@ model AgenceVoyage {
   adresse       String?
   siteWeb       String?
   logo          String?
+  status        StatutAgence @default(PENDING)
+  approvedAt      DateTime?
+  rejectedAt      DateTime?
+  rejectionReason String?
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
   utilisateur   Utilisateur @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
   groupes       Groupe[]
   guides        Guide[]
   pelerins      Pelerin[]
+  familles        Famille[]
 }
 
 model Guide {
@@ -78,6 +95,7 @@ model Groupe {
   plannings   PlanningQuotidien[]
 }
 
+
 model Pelerin {
   id              String         @id @default(uuid())
   utilisateurId   String         @unique
@@ -95,6 +113,29 @@ model Pelerin {
   agence          AgenceVoyage   @relation(fields: [agenceId], references: [id])
   groupe          Groupe?        @relation(fields: [groupeId], references: [id])
   utilisateur     Utilisateur    @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
+  familles        FamillePelerin[]
+}
+model Famille {
+  id            String           @id @default(uuid())
+  utilisateurId String           @unique
+  agenceId      String
+  lienParente   String?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  utilisateur   Utilisateur      @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
+  agence        AgenceVoyage     @relation(fields: [agenceId], references: [id])
+  associations  FamillePelerin[]
+}
+model FamillePelerin {
+  id        String   @id @default(uuid())
+  familleId String
+  pelerinId String
+  actif     Boolean  @default(true)
+  createdAt DateTime @default(now())
+  famille   Famille  @relation(fields: [familleId], references: [id], onDelete: Cascade)
+  pelerin   Pelerin  @relation(fields: [pelerinId], references: [id], onDelete: Cascade)
+
+  @@unique([familleId, pelerinId])
 }
 
 model EtapeValidee {
@@ -168,3 +209,14 @@ enum TypeEvenement {
   AUTRE
 }
 
+enum StatutAgence {
+  PENDING
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+enum PasswordTokenType {
+  SET_PASSWORD
+  RESET_PASSWORD
+}

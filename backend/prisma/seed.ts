@@ -1,6 +1,6 @@
 import dotenv from 'dotenv';
 dotenv.config();
-import { PrismaClient } from '../generated/prisma';
+import { PrismaClient } from '../generated/prisma/client';
 import { PrismaPg } from "@prisma/adapter-pg";
 import bcrypt from "bcrypt";
 
@@ -12,6 +12,19 @@ const prisma = new PrismaClient({ adapter });
 async function main() {
   const hash = await bcrypt.hash("password123", 10);
 
+  //administarateur
+   await prisma.utilisateur.create({
+    data: {
+      email: "admin@test.com",
+      motDePasse: hash,
+      nom: "Admin",
+      prenom: "Super",
+      role: "SUPER_ADMIN",
+      actif: true,
+    },
+  });
+  
+
   // step 1 — create agency user + agency profile in one go
   const agenceUser = await prisma.utilisateur.create({
     data: {
@@ -20,10 +33,13 @@ async function main() {
       nom: "Benali",
       prenom: "Karim",
       role: "AGENCE",
+      actif: true, 
       agence: {
         create: {
           nomAgence: "Agence Hajj Alger",
           adresse: "Alger, Algérie",
+          status: 'APPROVED',
+          approvedAt: new Date(),
         },
       },
     },
@@ -41,6 +57,7 @@ async function main() {
       nom: "Ziani",
       prenom: "Omar",
       role: "GUIDE",
+      actif: true,
       guide: {
         create: {
           agenceId,
@@ -60,6 +77,7 @@ async function main() {
       nom: "Mansouri",
       prenom: "Youssef",
       role: "PELERIN",
+      actif: true,
       pelerin: {
         create: {
           agenceId,
