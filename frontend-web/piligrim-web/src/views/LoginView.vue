@@ -120,6 +120,7 @@ const handleLogin = async () => {
     }
 
   } catch (error) {
+   
     errorMessage.value = 'Email ou mot de passe incorrect'
   } finally {
     loading.value = false
