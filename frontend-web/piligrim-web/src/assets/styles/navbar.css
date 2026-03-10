@@ -1,0 +1,189 @@
+.nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 200;
+  background: var(--nav-bg);
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  border-bottom: 1px solid var(--border);
+  transition: background 0.3s, border-color 0.3s;
+}
+
+.nav-inner {
+  width: 100%;
+  padding: 0 3.5rem;
+  display: flex;
+  align-items: center;
+  height: 64px;
+  /* ✅ prevent children from overflowing off-screen */
+  overflow: hidden;
+}
+
+.nav-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  text-decoration: none;
+  flex-shrink: 0;
+  margin-right: 2rem;
+}
+
+.nav-logo-mark {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1.5px solid var(--text);
+  background: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--bg);
+  flex-shrink: 0;
+  transition: all 0.2s;
+}
+
+.nav-logo:hover .nav-logo-mark {
+  background: var(--gold);
+  border-color: var(--gold);
+}
+
+.nav-logo-name {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+
+/* ✅ nav-links takes only as much space as it needs — no flex: 1 */
+.nav-links {
+  display: flex;
+  gap: 0;
+  align-items: center;
+  flex-shrink: 1;
+  min-width: 0;
+}
+
+.nav-links a {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  text-decoration: none;
+  padding: 0.45rem 1rem;
+  border-radius: 8px;
+  transition: all 0.18s;
+  white-space: nowrap;
+}
+
+.nav-links a:hover {
+  color: var(--text);
+  background: var(--off2);
+}
+
+/* ✅ spacer is the ONLY flex-grow element — pushes nav-right to the far end */
+.nav-spacer {
+  flex: 1;
+  min-width: 1rem;
+}
+
+/* ✅ nav-right never shrinks or clips */
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-shrink: 0;
+}
+
+.nav-login {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  padding: 0.45rem 1rem;
+  border-radius: 8px;
+  border: none;           /* ✅ remove default browser button border */
+  background: none;       /* ✅ remove default browser button background */
+  cursor: pointer;
+  transition: color 0.18s;
+  white-space: nowrap;
+}
+
+.nav-login:hover {
+  color: var(--text);
+}
+
+.nav-cta {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 0.55rem 1.35rem;
+  border-radius: 100px;
+  border: none;
+  cursor: pointer;
+  background: var(--text);
+  color: var(--bg);
+  transition: all 0.22s;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+  white-space: nowrap;  /* ✅ never wraps onto two lines */
+  flex-shrink: 0;       /* ✅ never gets squeezed */
+}
+
+.nav-cta:hover {
+  opacity: 0.85;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.theme-toggle {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  border: 1px solid var(--border);
+  background: var(--off);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.theme-toggle:hover {
+  background: var(--off2);
+  color: var(--text);
+}
+
+@media (max-width: 1024px) {
+  .nav-inner {
+    padding: 0 2rem;
+  }
+
+  /* Hide some nav links before they push the CTA off screen */
+  .nav-links a:nth-child(n+3) {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .nav-links {
+    display: none;
+  }
+
+  .nav-inner {
+    padding: 0 1.5rem;
+  }
+}
+
+/* ✅ Fix: Tailwind preflight resets background-color: transparent on all buttons.
+   We need higher specificity to override it. */
+nav .nav-cta,
+button.nav-cta {
+  background-color: var(--text) !important;
+  color: var(--bg) !important;
+}
+
+nav .nav-login,
+button.nav-login {
+  background-color: transparent;
+  border: none;
+}

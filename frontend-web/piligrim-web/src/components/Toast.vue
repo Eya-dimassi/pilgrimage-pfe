@@ -1,16 +1,19 @@
-﻿<template>
+﻿
+Toast · VUE
+Copy
 
-<div
-v-if="show"
-class="fixed bottom-8 right-8 bg-green-500 text-white px-6 py-4 rounded-xl"
->
-Demande envoyée !
-</div>
-
+<template>
+  <Teleport to="body">
+    <div class="toast" :class="{ show }">
+      <div class="t-ico">✓</div>
+      <div>
+        <div class="t-title">Demande envoyée !</div>
+        <div class="t-sub">Notre équipe vous contactera sous 24h</div>
+      </div>
+    </div>
+  </Teleport>
 </template>
 
-<script>
-export default{
-props:["show"]
-}
+<script setup>
+defineProps(['show'])
 </script>

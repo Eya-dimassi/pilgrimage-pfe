@@ -6,5 +6,14 @@ export default {
   theme: {
     extend: {},
   },
-  plugins: [],
+  plugins: [
+
+  ],
+  corePlugins: {
+    // ✅ Disable Tailwind's preflight reset on buttons.
+    // It was setting background-color: transparent on ALL buttons,
+    // overriding our custom .nav-cta, .btn-send, .btn-form-submit styles.
+    preflight: false,
+  },
+
 }

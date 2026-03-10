@@ -1,11 +1,52 @@
 import api from './api'
 
-export const login = async (email, motDePasse) => {
-  const response = await api.post('/auth/login', { email, motDePasse })
-  return response.data
+export async function register(payload) {
+  const { data } = await api.post('/auth/signup', payload)
+  return data
 }
 
-export const getMe = async () => {
-  const response = await api.get('/auth/me')
-  return response.data
+export async function login(email, password) {
+  const { data } = await api.post('/auth/login', {
+    email,
+    motDePasse: password,
+  })
+  return data
+}
+
+export async function logout() {
+  const refreshToken = localStorage.getItem('refreshToken')
+  try {
+    await api.post('/auth/logout', { refreshToken })
+  } finally {
+    clearSession()
+  }
+}
+
+export async function refresh() {
+  const refreshToken = localStorage.getItem('refreshToken')
+  if (!refreshToken) throw new Error('No refresh token found')
+
+  const { data } = await api.post('/auth/refresh', { refreshToken })
+
+  localStorage.setItem('accessToken', data.accessToken)
+  localStorage.setItem('refreshToken', data.refreshToken)
+
+  return data
+}
+
+export async function getMe() {
+  const { data } = await api.get('/auth/me')
+  return data
+}
+
+export function saveSession(data) {
+  localStorage.setItem('accessToken', data.accessToken)
+  localStorage.setItem('refreshToken', data.refreshToken)
+  localStorage.setItem('user', JSON.stringify(data.utilisateur))
+}
+
+export function clearSession() {
+  localStorage.removeItem('accessToken')
+  localStorage.removeItem('refreshToken')
+  localStorage.removeItem('user')
 }

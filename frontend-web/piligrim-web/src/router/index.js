@@ -1,10 +1,12 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import LoginView from '@/views/LoginView.vue'
 import HomePageView from '@/views/HomePageView.vue'
 
 const routes = [
-  { path: '/login', component: LoginView },
+  // login is now a modal on the homepage — redirect /login to /
+  { path: '/login', redirect: '/' },
+
   { path: '/', component: HomePageView },
+
   {
     path: '/dashboard',
     component: () => import('@/views/DashboardView.vue'),
@@ -15,15 +17,13 @@ const routes = [
     component: () => import('@/views/AdminView.vue'),
     meta: { requiresAuth: true, role: 'SUPER_ADMIN' }
   },
-
-
-
 ]
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
-  routes: routes,
+  routes,
 })
+
 router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('accessToken')
   const user = JSON.parse(localStorage.getItem('user') || '{}')

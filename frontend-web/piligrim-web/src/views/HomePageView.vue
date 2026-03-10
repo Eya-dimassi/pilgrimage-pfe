@@ -1,66 +1,52 @@
 <template>
+  <div>
+    <Navbar
+      :is-dark="isDark"
+      @open-modal="openSignup"
+      @open-login="openLogin"
+      @toggle-dark="toggleDark"
+    />
+    <Hero @open-modal="openSignup" />
+    <Features />
+    <CTA />
+    <Footer />
 
-<Navbar @openModal="openModal"/>
-
-<Hero @openModal="openModal"/>
-
-<Features/>
-
-<CTA @openModal="openModal"/>
-
-<Footer/>
-
-<Modal
-:show="modal"
-@close="modal=false"
-@success="showToast"
-/>
-
-<Toast :show="toast"/>
-
+    <Modal
+      :show="showSignup"
+      @close="closeSignup"
+      @submit="handleSignupSuccess"
+    />
+    <LoginModal
+      :show="showLogin"
+      @close="closeLogin"
+      @switch-to-signup="closeLogin(); openSignup()"
+      @forgot="closeLogin"
+    />
+    <Toast :show="showToast" />
+  </div>
 </template>
 
-<script>
+<script setup>
+import Navbar     from '../components/Navbar.vue'
+import Hero       from '../components/Hero.vue'
+import Features   from '../components/Features.vue'
+import CTA        from '../components/CTA.vue'
+import Footer     from '../components/Footer.vue'
+import Modal      from '../components/Modal.vue'
+import LoginModal from '../components/LoginModal.vue'
+import Toast      from '../components/Toast.vue'
+import { useHomePageState } from '../composables/useHomePageState'
 
-import Navbar from "../components/Navbar.vue"
-import Hero from "../components/Hero.vue"
-import Features from "../components/Features.vue"
-import CTA from "../components/CTA.vue"
-import Footer from "../components/Footer.vue"
-import Modal from "../components/Modal.vue"
-import Toast from "../components/Toast.vue"
-
-export default{
-
-components:{
-Navbar,
-Hero,
-Features,
-CTA,
-Footer,
-Modal,
-Toast
-},
-
-data(){
-return{
-modal:false,
-toast:false
-}
-},
-
-methods:{
-openModal(){
-this.modal=true
-},
-
-showToast(){
-this.toast=true
-setTimeout(()=> this.toast=false ,3000)
-}
-
-}
-
-}
-
+const {
+  showSignup,
+  showLogin,
+  showToast,
+  isDark,
+  openSignup,
+  closeSignup,
+  openLogin,
+  closeLogin,
+  toggleDark,
+  handleSignupSuccess,
+} = useHomePageState()
 </script>

@@ -1,0 +1,156 @@
+.footer {
+  width: 100%;
+  padding: 5rem 3.5rem 3rem;
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+  transition: background 0.3s;
+}
+
+.footer-top {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 5rem;
+  margin-bottom: 4rem;
+}
+
+.f-brand-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  text-decoration: none;
+  margin-bottom: 0.85rem;
+}
+
+.f-mark {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.f-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.f-tagline {
+  font-size: 0.83rem;
+  font-weight: 300;
+  line-height: 1.65;
+  color: var(--text-faint);
+  margin-bottom: 1.75rem;
+}
+
+.f-socials {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.fsoc {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  border: 1px solid var(--border);
+  background: var(--off);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  color: var(--text-muted);
+  transition: all 0.2s;
+}
+
+.fsoc:hover {
+  background: var(--text);
+  color: var(--bg);
+  border-color: var(--text);
+}
+
+.footer-cols {
+  display: grid;
+  grid-template-columns: repeat(4,1fr);
+  gap: 2.5rem;
+}
+
+.fc-h {
+  font-size: 0.83rem;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 1.15rem;
+}
+
+.fc-ul {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.fc-ul a {
+  font-size: 0.83rem;
+  font-weight: 300;
+  color: var(--text-faint);
+  text-decoration: none;
+  transition: color 0.18s;
+}
+
+.fc-ul a:hover {
+  color: var(--text);
+}
+
+.footer-bot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid var(--border);
+  padding-top: 1.75rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.f-copy {
+  font-size: 0.78rem;
+  color: var(--text-faint);
+}
+
+.f-legal {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.f-legal a {
+  font-size: 0.78rem;
+  color: var(--text-faint);
+  text-decoration: none;
+  transition: color 0.18s;
+}
+
+.f-legal a:hover {
+  color: var(--text);
+}
+
+@media (max-width: 1100px) {
+  .footer-top {
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+  }
+
+  .footer-cols {
+    grid-template-columns: repeat(2,1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .footer {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+
+  .footer-cols {
+    grid-template-columns: 1fr;
+  }
+}

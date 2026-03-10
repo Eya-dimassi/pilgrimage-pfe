@@ -1,119 +1,84 @@
 ﻿<template>
+  <div class="modal-bg" :class="{ open: show }" @click.self="emit('close')">
+    <div class="modal-box">
+      <button class="modal-close" type="button" @click="emit('close')">✕</button>
 
-<div v-if="show" class="fixed inset-0 bg-black/80 flex items-center justify-center">
+      <div class="modal-title">Demande d'accès</div>
+      <p class="modal-sub">Notre équipe vous contactera sous 24h · Sans engagement</p>
 
-<div class="bg-black rounded-2xl p-8 max-w-xl w-full">
+      <form @submit.prevent="handleSubmit">
+        <div class="mf-row">
+          <input class="fi" v-model="form.nomAgence" placeholder="Nom de l'agence" required />
+          <input class="fi" v-model="form.telephone" placeholder="Téléphone" required />
+        </div>
 
-<h2 class="text-3xl font-bold text-white">Demande d'Accès</h2>
-<p class="text-gray-400 mt-1">Notre équipe vous contactera sous 24h</p>
-                
+        <input class="fi fi-full" type="email" v-model="form.email" placeholder="Email professionnel" required />
+        <input class="fi fi-full" type="password" v-model="form.motDePasse" placeholder="Mot de passe" required />
+        <input class="fi fi-full" v-model="form.adresse" placeholder="Adresse" />
+        <input class="fi fi-full" v-model="form.siteWeb" placeholder="Site web (optionnel)" />
 
-<form @submit.prevent="submit">
+        <div class="modal-actions">
+          <button type="button" class="btn-cancel" @click="emit('close')">Annuler</button>
+          <button type="submit" class="btn-send" :disabled="loading">
+            {{ loading ? 'Envoi...' : 'Envoyer →' }}
+          </button>
+        </div>
 
-<!-- nom agence -->
-<input
-v-model="form.nomAgence"
-placeholder="Nom de l'agence"
-class="w-full mb-4 p-3 bg-white border border-gray-700 rounded"
-/>
-
-<!-- email -->
-<input
-v-model="form.email"
-type="email"
-placeholder="Email"
-class="w-full mb-4 p-3 bg-white border border-gray-700 rounded"
-/>
-
-<!-- mot de passe -->
-<input
-v-model="form.motDePasse"
-type="password"
-placeholder="Mot de passe"
-class="w-full mb-4 p-3 bg-white border border-gray-700 rounded"
-/>
-
-<!-- adresse -->
-<input
-v-model="form.adresse"
-placeholder="Adresse"
-class="w-full mb-4 p-3 bg-white border border-gray-700 rounded"
-/>
-
-<!-- telephone -->
-<input
-v-model="form.telephone"
-placeholder="Téléphone"
-class="w-full mb-4 p-3 bg-white border border-gray-700 rounded"
-/>
-
-<!-- site web -->
-<input
-v-model="form.siteWeb"
-placeholder="Site Web"
-class="w-full mb-6 p-3 bg-white border border-gray-700 rounded"
-/>
-
-<div class="flex gap-4">
-
-<button
-type="button"
-@click="$emit('close')"
-class="flex-1 bg-gray-700 py-3 rounded"
->
-Annuler
-</button>
-
-<button
-type="submit"
-class="flex-1 bg-yellow-400 py-3 rounded text-white"
->
-Demander
-</button>
-
-</div>
-
-</form>
-
-</div>
-
-</div>
-
+        <p v-if="error" class="modal-error">{{ error }}</p>
+      </form>
+    </div>
+  </div>
 </template>
 
-<script>
-export default {
+<script setup>
+import { ref } from 'vue'
+import { register } from '@/services/auth.service'
 
-props:["show"],
+defineProps({
+  show: {
+    type: Boolean,
+    default: false,
+  },
+})
 
-data(){
-return{
+const emit = defineEmits(['close', 'submit'])
 
-form:{
-nomAgence:"",
-email:"",
-motDePasse:"",
-adresse:"",
-telephone:"",
-siteWeb:""
-}
+const loading = ref(false)
+const error = ref('')
 
-}
-},
+const initialForm = () => ({
+  nomAgence: '',
+  telephone: '',
+  email: '',
+  motDePasse: '',
+  adresse: '',
+  siteWeb: '',
+})
 
-methods:{
+const form = ref(initialForm())
 
-submit(){
+const handleSubmit = async () => {
+  error.value = ''
+  loading.value = true
 
-// envoyer les données au parent
-this.$emit("submit", this.form)
+  try {
+    const data = await register(form.value)
 
-this.$emit("success")
-this.$emit("close")
-
-}
-
-}
-
+    form.value = initialForm()
+    emit('submit', data)
+    emit('close')
+  } catch (err) {
+    error.value = err?.response?.data?.message || err?.message || "Erreur lors de l'envoi"
+  } finally {
+    loading.value = false
+  }
 }
 </script>
+
+<style scoped>
+.modal-error {
+  color: #e53e3e;
+  font-size: 0.8rem;
+  margin-top: 0.5rem;
+}
+</style>
