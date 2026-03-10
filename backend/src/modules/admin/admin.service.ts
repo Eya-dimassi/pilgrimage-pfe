@@ -124,4 +124,18 @@ export const suspendAgence = async (id: string) => {
   return { message: 'Agence suspendue' };
 };
 
+export const deleteAgence = async (id: string) => {
+  const agence = await prisma.agenceVoyage.findUnique({
+    where: { id },
+  });
 
+  if (!agence) {
+    throw new Error('Agence introuvable');
+  }
+
+  await prisma.utilisateur.delete({
+    where: { id: agence.utilisateurId },
+  });
+
+  return { message: 'Agence supprimée avec succès' };
+};
