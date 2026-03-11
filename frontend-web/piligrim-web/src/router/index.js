@@ -17,6 +17,10 @@ const routes = [
     component: () => import('@/views/AdminView.vue'),
     meta: { requiresAuth: true, role: 'SUPER_ADMIN' }
   },
+  {
+  path: '/auth/set-password',
+  component: () => import('@/views/SetPasswordView.vue')
+  },
 ]
 
 const router = createRouter({
