@@ -3,6 +3,8 @@ import cors from "cors";
 import authRouter from "./modules/auth/auth.router";
 import agencesRouter from "./modules/agences/agences.router";
 import adminRouter from './modules/admin/admin.router';
+import pelerinsRouter from './modules/agences/pelerin/pelerins.router';
+import groupesRouter from './modules/agences/groupes/groupes.router';
 const app=express();
 
 app.use(cors());
@@ -15,6 +17,7 @@ app.get("/health", (req, res) => {
 app.use('/auth', authRouter);
 app.use('/agences', agencesRouter);
 app.use('/admin', adminRouter);
-
+app.use('/agence/pelerins', pelerinsRouter);
+app.use('/agence/groupes', groupesRouter);
 
 export default app;
