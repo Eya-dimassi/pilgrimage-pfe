@@ -1,9 +1,11 @@
 // src/services/guide.service.ts
 import prisma from '../../../config/prisma';
-import bcrypt from 'bcrypt'; // Utilisation de bcrypt au lieu de bcryptjs
+import { createPasswordToken } from '../../../utils/token.utils';
+import { sendGuideActivationEmail } from '../../../utils/mailer.utils'; // ⭐ AJOUTER
 
 /**
- * Créer un nouveau guide
+ * Créer un nouveau guide SANS mot de passe
+ * Envoie un email avec lien d'activation
  */
 export const createGuide = async (
   agenceId: string,
@@ -13,7 +15,6 @@ export const createGuide = async (
     email: string;
     telephone?: string;
     specialite?: string;
-    motDePasse: string;
   }
 ) => {
   // Vérifier que l'email n'existe pas déjà
@@ -27,7 +28,12 @@ export const createGuide = async (
 
   // Vérifier que l'agence existe et est approuvée
   const agence = await prisma.agenceVoyage.findUnique({
-    where: { id: agenceId }
+    where: { id: agenceId },
+    select: {
+      id: true,
+      status: true,
+      nomAgence: true
+    }
   });
 
   if (!agence) {
@@ -38,21 +44,18 @@ export const createGuide = async (
     throw new Error('Seules les agences approuvées peuvent créer des guides');
   }
 
-  // Hasher le mot de passe (bcrypt avec 10 rounds comme votre auth.service)
-  const hashedPassword = await bcrypt.hash(guideData.motDePasse, 10);
-
-  // Créer le guide avec transaction
-  const guide = await prisma.$transaction(async (tx) => {
-    // 1. Créer l'utilisateur
+  // Créer le guide SANS mot de passe
+  const result = await prisma.$transaction(async (tx) => {
+    // 1. Créer l'utilisateur SANS mot de passe
     const utilisateur = await tx.utilisateur.create({
       data: {
         email: guideData.email,
-        motDePasse: hashedPassword,
+        motDePasse: null, // ⭐ PAS DE MOT DE PASSE
         nom: guideData.nom,
         prenom: guideData.prenom,
         telephone: guideData.telephone,
         role: 'GUIDE',
-        actif: true,
+        actif: false, // ⭐ INACTIF jusqu'à activation
         createdById: agenceId
       }
     });
@@ -84,15 +87,84 @@ export const createGuide = async (
       }
     });
 
-    return newGuide;
+    return { utilisateur, guide: newGuide };
   });
 
-  return guide;
+  // 3. Générer le token d'activation (expire dans 7 jours)
+  const activationToken = await createPasswordToken(
+    result.utilisateur.id,
+    'SET_PASSWORD'
+  );
+
+  // 4. Envoyer l'email d'activation au guide
+  await sendGuideActivationEmail(
+    guideData.email,
+    guideData.prenom,
+    guideData.nom,
+    agence.nomAgence,
+    activationToken
+  );
+
+  return result.guide;
 };
 
+// ⭐ AJOUTER CETTE NOUVELLE FONCTION
 /**
- * Récupérer tous les guides d'une agence
+ * Renvoyer l'email d'activation à un guide
  */
+export const resendActivationEmail = async (guideId: string, agenceId: string) => {
+  const guide = await prisma.guide.findFirst({
+    where: {
+      id: guideId,
+      agenceId
+    },
+    include: {
+      utilisateur: {
+        select: {
+          id: true,
+          email: true,
+          nom: true,
+          prenom: true,
+          actif: true,
+          motDePasse: true
+        }
+      },
+      agence: {
+        select: {
+          nomAgence: true
+        }
+      }
+    }
+  });
+
+  if (!guide) {
+    throw new Error('Guide introuvable');
+  }
+
+  // Si déjà activé, pas besoin de renvoyer
+  if (guide.utilisateur.actif && guide.utilisateur.motDePasse) {
+    throw new Error('Ce guide a déjà activé son compte');
+  }
+
+  // Générer nouveau token
+  const activationToken = await createPasswordToken(
+    guide.utilisateur.id,
+    'SET_PASSWORD'
+  );
+
+  // Renvoyer l'email
+  await sendGuideActivationEmail(
+    guide.utilisateur.email,
+    guide.utilisateur.prenom,
+    guide.utilisateur.nom,
+    guide.agence.nomAgence,
+    activationToken
+  );
+
+  return { message: 'Email d\'activation renvoyé avec succès' };
+};
+
+// ⭐ MODIFIER getGuidesByAgence pour ajouter isActivated
 export const getGuidesByAgence = async (agenceId: string) => {
   const guides = await prisma.guide.findMany({
     where: { agenceId },
@@ -105,6 +177,7 @@ export const getGuidesByAgence = async (agenceId: string) => {
           prenom: true,
           telephone: true,
           actif: true,
+          motDePasse: true, // ⭐ AJOUTER pour vérifier activation
           createdAt: true,
           updatedAt: true
         }
@@ -120,8 +193,18 @@ export const getGuidesByAgence = async (agenceId: string) => {
     }
   });
 
-  return guides;
+  // ⭐ AJOUTER le statut d'activation
+  return guides.map(guide => ({
+    ...guide,
+    utilisateur: {
+      ...guide.utilisateur,
+      isActivated: !!(guide.utilisateur.actif && guide.utilisateur.motDePasse),
+      motDePasse: undefined // Ne pas exposer le hash
+    }
+  }));
 };
+
+// Gardez les autres fonctions telles quelles (getGuideById, updateGuide, deleteGuide, etc.)
 
 /**
  * Récupérer un guide par ID

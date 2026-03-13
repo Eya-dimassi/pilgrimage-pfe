@@ -7,7 +7,8 @@ import {
   getGuideDetailsController,
   getGuideStatsController,
   updateGuideController,
-  deleteGuideController
+  deleteGuideController,
+  resendActivationController
 } from './guide.controller';
 import { authenticate, requireRole } from '../../auth/auth.middleware';
 
@@ -21,7 +22,7 @@ router.use(requireRole('AGENCE'));
  * @route   POST /api/agence/guides
  * @desc    Créer un nouveau guide
  * @access  AGENCE
- * @body    { nom, prenom, email, telephone?, specialite?, motDePasse }
+ * @body    { nom, prenom, email, telephone?, specialite?}
  */
 router.post('/', createGuideController);
 
@@ -53,14 +54,14 @@ router.get('/:id', getGuideDetailsController);
  * @access  AGENCE
  */
 router.get('/:id/stats', getGuideStatsController);
-
+router.post('/:id/resend-activation', resendActivationController);
 /**
  * @route   PUT /api/agence/guides/:id
  * @desc    Mettre à jour un guide
  * @access  AGENCE
  * @body    { nom?, prenom?, email?, telephone?, specialite?, actif? }
  */
-router.put('/:id', updateGuideController);
+router.patch('/:id', updateGuideController);
 
 /**
  * @route   DELETE /api/agence/guides/:id

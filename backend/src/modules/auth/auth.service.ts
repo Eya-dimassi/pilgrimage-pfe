@@ -244,3 +244,35 @@ export const setPassword = async (plainToken: string, newPassword: string) => {
 
   return { message: 'Mot de passe défini avec succès' };
 };
+// ⭐ AJOUTER CETTE FONCTION
+export const verifyActivationToken = async (token: string) => {
+  // Vérifier et décoder le token
+  const record = await verifyPasswordToken(token);
+  
+  // Récupérer les infos de l'utilisateur
+  const utilisateur = await prisma.utilisateur.findUnique({
+    where: { id: record.utilisateurId },
+    select: {
+      id: true,
+      email: true,
+      nom: true,
+      prenom: true,
+      actif: true,
+      motDePasse: true
+    }
+  });
+
+  if (!utilisateur) {
+    throw new Error('Utilisateur introuvable');
+  }
+
+  // Si déjà activé, erreur
+  if (utilisateur.actif && utilisateur.motDePasse) {
+    throw new Error('Ce compte est déjà activé');
+  }
+
+  return {
+    email: utilisateur.email,
+    nom: `${utilisateur.prenom} ${utilisateur.nom}`
+  };
+};

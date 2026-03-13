@@ -88,9 +88,20 @@ router.post('/set-password', async (req: Request, res: Response) => {
   }
 });
 
+// ⭐ AJOUTER CETTE ROUTE
+router.post('/verify-activation-token', async (req: Request, res: Response) => {
+  try {
+    const { token } = req.body;
+    if (!token) {
+      return res.status(400).json({ message: 'Token requis' });
+    }
 
-
-
+    const result = await authService.verifyActivationToken(token);
+    return res.status(200).json(result);
+  } catch (error: any) {
+    return res.status(400).json({ message: error.message });
+  }
+});
 // GET /auth/me — protected route
 router.get('/me', authenticate, async (req: AuthRequest, res: Response) => {
   try {

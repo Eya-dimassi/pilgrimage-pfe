@@ -92,3 +92,49 @@ export const sendPasswordResetEmail = async (
     `,
   });
 };
+// ⭐ AJOUTER CETTE FONCTION
+export const sendGuideActivationEmail = async (
+  email: string,
+  prenom: string,
+  nom: string,
+  nomAgence: string,
+  plainToken: string
+): Promise<void> => {
+  const link = `${env.APP_URL}/activate-account?token=${plainToken}`;
+
+  await transporter.sendMail({
+    from: env.MAIL_FROM,
+    to: email,
+    subject: `Activez votre compte Guide — ${nomAgence}`,
+    html: `
+      <h2>Bienvenue ${prenom} ${nom} !</h2>
+      <p>L'agence <strong>${nomAgence}</strong> vous a créé un compte Guide sur la plateforme Hajj/Umrah.</p>
+      
+      <p><strong>Votre email de connexion :</strong> ${email}</p>
+      
+      <p>Pour activer votre compte et définir votre mot de passe, cliquez sur le bouton ci-dessous :</p>
+      
+      <a href="${link}" style="
+        background: #2E7D32;
+        color: white;
+        padding: 12px 24px;
+        border-radius: 6px;
+        text-decoration: none;
+        display: inline-block;
+        margin: 16px 0;
+      ">Activer mon compte</a>
+      
+      <p><strong>Important :</strong></p>
+      <ul>
+        <li>Ce lien est valable pendant <strong>7 jours</strong></li>
+        <li>Vous devrez définir un mot de passe de minimum 8 caractères</li>
+        <li>Après activation, vous pourrez vous connecter</li>
+      </ul>
+      
+      <p>Si vous n'êtes pas à l'origine de cette demande, veuillez contacter l'agence ${nomAgence}.</p>
+      
+      <hr>
+      <p style="color: #666; font-size: 12px;">SmartHajj - Gestion intelligente du Hajj & Umrah</p>
+    `,
+  });
+};

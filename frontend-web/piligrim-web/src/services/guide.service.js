@@ -56,5 +56,12 @@ export const guideService = {
   async deleteGuide(guideId) {
     const response = await api.delete(`/agence/guides/${guideId}`);
     return response.data;
+  },
+  /**
+   * Renvoyer l'email d'activation
+   */
+  async resendActivation(guideId) {
+    const response = await api.post(`/agence/guides/${guideId}/resend-activation`);
+    return response.data;
   }
 };

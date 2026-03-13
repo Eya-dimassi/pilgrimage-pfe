@@ -163,6 +163,18 @@ export const useGuidesStore = defineStore('guides', {
         this.loading.delete = false;
       }
     },
+    /**
+ * Renvoyer l'email d'activation à un guide
+ */
+async resendActivationEmail(guideId) {
+  try {
+    const response = await guideService.resendActivation(guideId);
+    return response;
+  } catch (error) {
+    console.error('Erreur renvoi activation:', error);
+    throw error;
+  }
+},
 
     /**
      * Réinitialiser le store

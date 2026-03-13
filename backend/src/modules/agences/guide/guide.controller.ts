@@ -8,30 +8,30 @@ import {
   updateGuide,
   deleteGuide,
   getAvailableGuides,
-  getGuideStats
+  getGuideStats,
+  resendActivationEmail
 } from './guide.service';
 
 /**
  * POST /api/agence/guides
- * Créer un nouveau guide
+ * Créer un nouveau guide (SANS mot de passe)
  */
 export const createGuideController = async (req: AuthRequest, res: Response) => {
   try {
     const agenceId = req.user!.agenceId;
     
-    // Vérifier que l'utilisateur a bien une agence
     if (!agenceId) {
       return res.status(400).json({
         message: 'Utilisateur non associé à une agence'
       });
     }
 
-    const { nom, prenom, email, telephone, specialite, motDePasse } = req.body;
+    const { nom, prenom, email, telephone, specialite } = req.body; // ⭐ RETIRER motDePasse
 
     // Validation
-    if (!nom || !prenom || !email || !motDePasse) {
+    if (!nom || !prenom || !email) { // ⭐ RETIRER motDePasse de la validation
       return res.status(400).json({
-        message: 'Nom, prénom, email et mot de passe sont obligatoires'
+        message: 'Nom, prénom et email sont obligatoires'
       });
     }
 
@@ -41,24 +41,18 @@ export const createGuideController = async (req: AuthRequest, res: Response) => 
       return res.status(400).json({ message: 'Format email invalide' });
     }
 
-    // Valider mot de passe (min 8 caractères)
-    if (motDePasse.length < 8) {
-      return res.status(400).json({
-        message: 'Le mot de passe doit contenir au moins 8 caractères'
-      });
-    }
+    // ⭐ RETIRER la validation du mot de passe
 
     const guide = await createGuide(agenceId, {
       nom,
       prenom,
       email,
       telephone,
-      specialite,
-      motDePasse
+      specialite
     });
 
     res.status(201).json({
-      message: 'Guide créé avec succès',
+      message: 'Guide créé avec succès. Un email d\'activation a été envoyé à ' + email,
       guide
     });
   } catch (error: any) {
@@ -70,6 +64,36 @@ export const createGuideController = async (req: AuthRequest, res: Response) => 
   }
 };
 
+// ⭐ AJOUTER CETTE NOUVELLE FONCTION
+/**
+ * POST /api/agence/guides/:id/resend-activation
+ * Renvoyer l'email d'activation
+ */
+export const resendActivationController = async (req: AuthRequest, res: Response) => {
+  try {
+    const agenceId = req.user!.agenceId;
+    
+    if (!agenceId) {
+      return res.status(400).json({
+        message: 'Utilisateur non associé à une agence'
+      });
+    }
+
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+
+    const result = await resendActivationEmail(id, agenceId);
+
+    res.json(result);
+  } catch (error: any) {
+    console.error('Erreur renvoi activation:', error);
+    if (error.message.includes('introuvable') || error.message.includes('déjà activé')) {
+      return res.status(400).json({ message: error.message });
+    }
+    res.status(500).json({ message: 'Erreur serveur' });
+  }
+};
+
+// Gardez les autres fonctions telles quelles
 /**
  * GET /api/agence/guides
  * Récupérer tous les guides de l'agence
