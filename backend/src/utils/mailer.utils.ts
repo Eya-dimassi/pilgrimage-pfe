@@ -15,7 +15,7 @@ export const sendActivationEmail = async (
   nom: string,
   plainToken: string
 ): Promise<void> => {
-  const link = `${env.APP_URL}/auth/set-password?token=${plainToken}`;
+  const link = `${env.APP_URL}/activate-account?token=${plainToken}`;
 
   await transporter.sendMail({
     from: env.MAIL_FROM,
@@ -33,8 +33,15 @@ export const sendActivationEmail = async (
         display: inline-block;
         margin: 16px 0;
       ">Activer mon compte</a>
-      <p>Ce lien expire dans 7 jours.</p>
-      <p>Si vous n'attendiez pas cet email, ignorez-le.</p>
+       
+      <p><strong>Important :</strong></p>
+      <ul>
+        <li>Ce lien est valable pendant <strong>7 jours</strong></li>
+        <li>Vous devrez définir un mot de passe de minimum 8 caractères</li>
+        <li>Après activation, vous pourrez vous connecter</li>
+      </ul>
+      <hr>
+      <p style="color: #666; font-size: 12px;">SmartHajj - Gestion intelligente du Hajj & Umrah</p>
     `,
   });
 };
@@ -92,7 +99,7 @@ export const sendPasswordResetEmail = async (
     `,
   });
 };
-// ⭐ AJOUTER CETTE FONCTION
+/* ⭐ AJOUTER CETTE FONCTION
 export const sendGuideActivationEmail = async (
   email: string,
   prenom: string,
@@ -137,4 +144,4 @@ export const sendGuideActivationEmail = async (
       <p style="color: #666; font-size: 12px;">SmartHajj - Gestion intelligente du Hajj & Umrah</p>
     `,
   });
-};
+};*/

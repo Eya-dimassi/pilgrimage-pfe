@@ -1,7 +1,7 @@
 // src/services/guide.service.ts
 import prisma from '../../../config/prisma';
 import { createPasswordToken } from '../../../utils/token.utils';
-import { sendGuideActivationEmail } from '../../../utils/mailer.utils'; // ⭐ AJOUTER
+import { sendActivationEmail } from '../../../utils/mailer.utils'; // ⭐ AJOUTER
 
 /**
  * Créer un nouveau guide SANS mot de passe
@@ -97,11 +97,9 @@ export const createGuide = async (
   );
 
   // 4. Envoyer l'email d'activation au guide
-  await sendGuideActivationEmail(
+  await sendActivationEmail(
     guideData.email,
-    guideData.prenom,
     guideData.nom,
-    agence.nomAgence,
     activationToken
   );
 
@@ -153,11 +151,9 @@ export const resendActivationEmail = async (guideId: string, agenceId: string) =
   );
 
   // Renvoyer l'email
-  await sendGuideActivationEmail(
+  await sendActivationEmail(
     guide.utilisateur.email,
-    guide.utilisateur.prenom,
     guide.utilisateur.nom,
-    guide.agence.nomAgence,
     activationToken
   );
 

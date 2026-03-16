@@ -13,7 +13,7 @@ import {
 } from './guide.service';
 
 /**
- * POST /api/agence/guides
+ * POST /agence/guides
  * Créer un nouveau guide (SANS mot de passe)
  */
 export const createGuideController = async (req: AuthRequest, res: Response) => {

@@ -10,53 +10,28 @@
         </div>
       </div>
 
-      <!-- Menu -->
-      <nav class="p-4 space-y-2">
-        <div class="mb-4">
-          <p class="text-xs text-gray-500 uppercase font-semibold mb-2 px-3">Navigation</p>
-          
-          <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-blue-600/20 text-blue-400 hover:bg-blue-600/30 transition">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
-            </svg>
-            <span class="font-medium">Vue d'ensemble</span>
-          </a>
+      <nav class="sidebar-nav">
+        <p class="nav-section-label">Navigation</p>
 
-          <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-400 hover:bg-gray-800/50 transition">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
-            </svg>
-            <span>Mes Pèlerins</span>
-          </a>
+        <a v-for="item in navItems" :key="item.view"
+          href="#"
+          :class="['nav-item', { active: currentView === item.view }]"
+          @click.prevent="currentView = item.view">
+          <span class="nav-icon" v-html="item.icon"></span>
+          <span>{{ item.label }}</span>
+          <span v-if="item.badge && getBadge(item.badge) > 0" class="nav-badge">
+            {{ getBadge(item.badge) }}
+          </span>
+        </a>
+      </nav>
 
-          <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-400 hover:bg-gray-800/50 transition">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path>
-            </svg>
-            <span>Mes Groupes</span>
-          </a>
-
-          <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-400 hover:bg-gray-800/50 transition">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
-            </svg>
-            <span>Mes Guides</span>
-          </a>
-
-          <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-400 hover:bg-gray-800/50 transition">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-            </svg>
-            <span>Planning Hajj</span>
-          </a>
-
-          <a href="#" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gray-400 hover:bg-gray-800/50 transition">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
-            </svg>
-            <span>Localisation GPS</span>
-          </a>
+      <div class="sidebar-footer">
+        <div class="user-card">
+          <div class="user-avatar">{{ userInitials }}</div>
+          <div class="user-info">
+            <div class="user-name">{{ user?.prenom }} {{ user?.nom }}</div>
+            <div class="user-role">Agence</div>
+          </div>
         </div>
         <button @click="handleLogout" class="logout-btn" title="Déconnecter">
           <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -64,9 +39,9 @@
               d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
           </svg>
         </button>
-      </nav>
+      </div>
     </aside>
-  
+
     <!-- Main -->
     <div class="main-area">
       <!-- Topbar -->
@@ -112,7 +87,8 @@
         </div>
 
         <template v-else>
-          <!-- ── DASHBOARD ─────────────────────────────────────── -->
+
+          <!-- ── DASHBOARD ── -->
           <div v-if="currentView === 'dashboard'" class="view-dashboard">
             <div class="stats-grid">
               <div class="stat-card gold">
@@ -149,7 +125,6 @@
               </div>
             </div>
 
-            <!-- Recent tables -->
             <div class="recent-grid">
               <div class="card">
                 <div class="card-header">
@@ -166,6 +141,26 @@
                     </div>
                     <span :class="['status-pill', p.utilisateur?.actif ? 'active' : 'pending']">
                       {{ p.utilisateur?.actif ? 'Actif' : 'En attente' }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="card">
+                <div class="card-header">
+                  <h3>Derniers Guides</h3>
+                  <button @click="currentView='guides'" class="card-link">Voir tout →</button>
+                </div>
+                <div class="mini-table">
+                  <div v-if="guides.length === 0" class="empty-row">Aucun guide</div>
+                  <div v-for="g in guides.slice(0,5)" :key="g.id" class="mini-row">
+                    <div class="mini-avatar green-av">{{ initials(g.utilisateur?.prenom, g.utilisateur?.nom) }}</div>
+                    <div class="mini-info">
+                      <div class="mini-name">{{ g.utilisateur?.prenom }} {{ g.utilisateur?.nom }}</div>
+                      <div class="mini-sub">{{ g.specialite || 'Pas de spécialité' }}</div>
+                    </div>
+                    <span :class="['status-pill', g.utilisateur?.actif ? 'active' : 'pending']">
+                      {{ g.utilisateur?.actif ? 'Actif' : 'En attente' }}
                     </span>
                   </div>
                 </div>
@@ -191,13 +186,12 @@
             </div>
           </div>
 
-          <!-- ── PÈLERINS ───────────────────────────────────────── -->
+          <!-- ── PÈLERINS ── -->
           <div v-if="currentView === 'pelerins'" class="view-section">
             <div class="section-topbar">
               <input v-model="searchP" class="search-input" placeholder="Rechercher un pèlerin..." />
               <button @click="openModal('createPelerin')" class="btn-primary">+ Nouveau pèlerin</button>
             </div>
-
             <div class="card">
               <div v-if="filteredPelerins.length === 0" class="empty-state">Aucun pèlerin trouvé</div>
               <table v-else class="data-table">
@@ -238,8 +232,8 @@
                     </td>
                     <td>
                       <div class="action-btns">
-                        <button @click="openEdit('pelerin', p)" class="act-btn edit" title="Modifier">✏️</button>
-                        <button @click="confirmDelete('pelerin', p)" class="act-btn del" title="Supprimer">🗑</button>
+                        <button @click="openEdit('pelerin', p)" class="act-btn" title="Modifier">✏️</button>
+                        <button @click="confirmDelete('pelerin', p)" class="act-btn" title="Supprimer">🗑</button>
                       </div>
                     </td>
                   </tr>
@@ -248,7 +242,7 @@
             </div>
           </div>
 
-          <!-- ── GUIDES ─────────────────────────────────────────── -->
+          <!-- ── GUIDES ── -->
           <div v-if="currentView === 'guides'" class="view-section">
             <div class="section-topbar">
               <input v-model="searchG" class="search-input" placeholder="Rechercher un guide..." />
@@ -274,6 +268,7 @@
                         <div class="cell-avatar green-av">{{ initials(g.utilisateur?.prenom, g.utilisateur?.nom) }}</div>
                         <div>
                           <div class="cell-name">{{ g.utilisateur?.prenom }} {{ g.utilisateur?.nom }}</div>
+                          <div class="cell-sub">{{ g.utilisateur?.email }}</div>
                         </div>
                       </div>
                     </td>
@@ -282,16 +277,30 @@
                       <div class="cell-sub">{{ g.utilisateur?.telephone || '—' }}</div>
                     </td>
                     <td class="cell-sub">{{ g.specialite || '—' }}</td>
-                    <td class="cell-sub">{{ g.groupes?.length ?? 0 }} groupe(s)</td>
+                    <td class="cell-sub">{{ g._count?.groupes ?? g.groupes?.length ?? 0 }} groupe(s)</td>
                     <td>
-                      <span :class="['status-pill', g.utilisateur?.actif ? 'active' : 'pending']">
-                        {{ g.utilisateur?.actif ? 'Actif' : 'En attente' }}
-                      </span>
+                      <div class="guide-status-cell">
+                        <span :class="['status-pill', g.utilisateur?.actif ? 'active' : 'pending']">
+                          {{ g.utilisateur?.actif ? 'Actif' : 'En attente' }}
+                        </span>
+                       <button
+                       v-if="!g.utilisateur?.actif" @click="doResendActivation(g)" class="resend-btn"
+                        :disabled="resendingId === g.id" title="Renvoyer l'email d'activation">
+
+                          <span v-if="resendingId === g.id">...</span>
+
+                          <svg v-else class="w-4 h-4" fill="none" stroke="white" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                          </svg>
+                        </button>
+                        
+                      </div>
                     </td>
                     <td>
                       <div class="action-btns">
-                        <button @click="openEdit('guide', g)" class="act-btn edit" title="Modifier">✏️</button>
-                        <button @click="confirmDelete('guide', g)" class="act-btn del" title="Supprimer">🗑</button>
+                        <button @click="openEdit('guide', g)" class="act-btn" title="Modifier">✏️</button>
+                        <button @click="confirmDelete('guide', g)" class="act-btn" title="Supprimer">🗑</button>
                       </div>
                     </td>
                   </tr>
@@ -300,7 +309,7 @@
             </div>
           </div>
 
-          <!-- ── GROUPES ────────────────────────────────────────── -->
+          <!-- ── GROUPES ── -->
           <div v-if="currentView === 'groupes'" class="view-section">
             <div class="section-topbar">
               <input v-model="searchGr" class="search-input" placeholder="Rechercher un groupe..." />
@@ -314,8 +323,8 @@
                     {{ gr.typeVoyage }}
                   </div>
                   <div class="group-actions">
-                    <button @click="openEdit('groupe', gr)" class="act-btn edit">✏️</button>
-                    <button @click="confirmDelete('groupe', gr)" class="act-btn del">🗑</button>
+                    <button @click="openEdit('groupe', gr)" class="act-btn">✏️</button>
+                    <button @click="confirmDelete('groupe', gr)" class="act-btn">🗑</button>
                   </div>
                 </div>
                 <div class="group-name">{{ gr.nom }}</div>
@@ -337,11 +346,12 @@
               </div>
             </div>
           </div>
+
         </template>
       </div>
     </div>
 
-    <!-- ── MODALS ──────────────────────────────────────────────── -->
+    <!-- ── MODALS ── -->
 
     <!-- Create Pèlerin -->
     <div v-if="modal === 'createPelerin'" class="modal-overlay" @click.self="modal = null">
@@ -375,7 +385,18 @@
           <div class="form-field"><label>Nom *</label><input v-model="form.nom" placeholder="Nom" /></div>
           <div class="form-field"><label>Email *</label><input v-model="form.email" type="email" placeholder="email@exemple.com" /></div>
           <div class="form-field"><label>Téléphone</label><input v-model="form.telephone" placeholder="+213..." /></div>
-          <div class="form-field full"><label>Spécialité</label><input v-model="form.specialite" placeholder="Hajj, Umrah..." /></div>
+          <div class="form-field full"><label>Spécialité</label>
+          <select 
+              v-model="form.specialite"
+              class="w-full px-4 py-3 rounded-lg bg-black border border-white/20 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">Aucune spécialité</option>
+              <option value="Hajj">Hajj</option>
+              <option value="Umrah">Umrah</option>
+              <option value="Bilingue">Bilingue (Arabe/Français)</option>
+              <option value="Médical">Formation médicale</option>
+              <option value="Senior">Guide senior (10+ ans)</option>
+            </select></div>
         </div>
         <p v-if="modalError" class="modal-error">{{ modalError }}</p>
         <div class="modal-actions">
@@ -524,6 +545,7 @@ const currentView = ref('dashboard')
 const loading = ref(true)
 const fetchError = ref('')
 const actionLoading = ref(false)
+const resendingId = ref(null)
 const modal = ref(null)
 const modalError = ref('')
 const editType = ref('')
@@ -538,27 +560,34 @@ const searchGr = ref('')
 const pelerins = ref([])
 const guides = ref([])
 const groupes = ref([])
-
 const form = ref({})
 
 const navItems = [
-  { view: 'dashboard', label: 'Vue d\'ensemble', badge: null,
-    icon: '<svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>' },
-  { view: 'pelerins', label: 'Pèlerins', badge: 'pelerins',
-    icon: '<svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>' },
-  { view: 'guides', label: 'Guides', badge: null,
-    icon: '<svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>' },
-  { view: 'groupes', label: 'Groupes', badge: 'groupes',
-    icon: '<svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>' },
+  {
+    view: 'dashboard', label: "Vue d'ensemble", badge: null,
+    icon: '<svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>'
+  },
+  {
+    view: 'pelerins', label: 'Pèlerins', badge: 'pelerins',
+    icon: '<svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>'
+  },
+  {
+    view: 'guides', label: 'Guides', badge: 'guides',
+    icon: '<svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>'
+  },
+  {
+    view: 'groupes', label: 'Groupes', badge: 'groupes',
+    icon: '<svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>'
+  },
 ]
 
 const viewTitle = computed(() => ({
-  dashboard: 'Vue d\'ensemble', pelerins: 'Pèlerins', guides: 'Guides', groupes: 'Groupes'
+  dashboard: "Vue d'ensemble", pelerins: 'Pèlerins', guides: 'Guides', groupes: 'Groupes'
 }[currentView.value]))
 
-const userInitials = computed(() => {
-  return ((user.value?.prenom?.[0] ?? '') + (user.value?.nom?.[0] ?? '')).toUpperCase() || 'AG'
-})
+const userInitials = computed(() =>
+  ((user.value?.prenom?.[0] ?? '') + (user.value?.nom?.[0] ?? '')).toUpperCase() || 'AG'
+)
 
 const filteredPelerins = computed(() =>
   pelerins.value.filter(p => {
@@ -587,6 +616,7 @@ const unassignedPelerins = computed(() =>
 
 function getBadge(type) {
   if (type === 'pelerins') return pelerins.value.filter(p => !p.utilisateur?.actif).length
+  if (type === 'guides') return guides.value.filter(g => !g.utilisateur?.actif).length
   if (type === 'groupes') return groupes.value.length
   return 0
 }
@@ -600,17 +630,25 @@ const headers = () => ({
   Authorization: `Bearer ${token}`,
 })
 
+// ── Data loading ──────────────────────────────────────────────
 async function loadAll() {
   loading.value = true
   fetchError.value = ''
   try {
-    const [rP, rGr] = await Promise.all([
+    const [rP, rG, rGr] = await Promise.all([
       fetch(`${BASE}/agence/pelerins`, { headers: headers() }),
+      fetch(`${BASE}/agence/guides`, { headers: headers() }),     // ✅ guides fetchés
       fetch(`${BASE}/agence/groupes`, { headers: headers() }),
     ])
-    if (!rP.ok || !rGr.ok) throw new Error('Erreur serveur')
+
+    if (!rP.ok || !rG.ok || !rGr.ok) throw new Error('Erreur serveur')
+
     pelerins.value = await rP.json()
-    guides.value = [] // à compléter quand ton ami finit les guides
+
+    // L'API renvoie { count, guides } ou directement un tableau
+    const guidesData = await rG.json()
+    guides.value = Array.isArray(guidesData) ? guidesData : (guidesData.guides ?? [])
+
     groupes.value = await rGr.json()
   } catch (e) {
     fetchError.value = 'Impossible de charger les données. Vérifiez que le serveur est démarré.'
@@ -698,7 +736,7 @@ async function doCreatePelerin() {
     const data = await res.json()
     if (!res.ok) throw new Error(data.message)
     modal.value = null
-    showToast('Pèlerin créé — email d\'activation envoyé', 'success')
+    showToast("Pèlerin créé — email d'activation envoyé", 'success')
     await loadAll()
   } catch (e) { modalError.value = e.message }
   finally { actionLoading.value = false }
@@ -718,7 +756,7 @@ async function doCreateGuide() {
     const data = await res.json()
     if (!res.ok) throw new Error(data.message)
     modal.value = null
-    showToast('Guide créé — email d\'activation envoyé', 'success')
+    showToast("Guide créé — email d'activation envoyé", 'success')
     await loadAll()
   } catch (e) { modalError.value = e.message }
   finally { actionLoading.value = false }
@@ -793,6 +831,20 @@ async function doDelete() {
   finally { actionLoading.value = false }
 }
 
+// ✅ Renvoyer email d'activation guide
+async function doResendActivation(guide) {
+  resendingId.value = guide.id
+  try {
+    const res = await fetch(`${BASE}/agence/guides/${guide.id}/resend-activation`, {
+      method: 'POST', headers: headers()
+    })
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.message)
+    showToast("Email d'activation renvoyé", 'success')
+  } catch (e) { showToast(e.message, 'error') }
+  finally { resendingId.value = null }
+}
+
 const toast = ref({ show: false, message: '', type: 'success' })
 function showToast(message, type = 'success') {
   toast.value = { show: true, message, type }
@@ -805,7 +857,6 @@ onMounted(loadAll)
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
 
-/* ── Tokens ─────────────────────────────────────────────────── */
 .dashboard {
   --gold: #C9A84C;
   --gold-dim: #8a6e2f;
@@ -836,7 +887,7 @@ onMounted(loadAll)
   --shadow: 0 2px 16px rgba(0,0,0,0.4);
 }
 
-/* ── Sidebar ─────────────────────────────────────────────────── */
+/* ── Sidebar ── */
 .sidebar {
   width: 240px;
   min-width: 240px;
@@ -845,7 +896,6 @@ onMounted(loadAll)
   flex-direction: column;
   border-right: 1px solid rgba(201,168,76,0.12);
 }
-
 .sidebar-logo {
   display: flex;
   align-items: center;
@@ -853,39 +903,23 @@ onMounted(loadAll)
   padding: 24px 20px 20px;
   border-bottom: 1px solid rgba(201,168,76,0.1);
 }
-
 .logo-icon { font-size: 26px; }
 .logo-name { font-family: 'Syne', sans-serif; font-weight: 800; color: var(--gold); font-size: 15px; letter-spacing: 0.5px; }
 .logo-sub { color: #5a5040; font-size: 11px; margin-top: 1px; }
-
 .sidebar-nav { flex: 1; padding: 16px 12px; overflow-y: auto; }
 .nav-section-label { color: #3a3428; font-size: 10px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; padding: 0 8px; margin-bottom: 8px; }
-
 .nav-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  border-radius: 10px;
-  color: #7a6e5e;
-  cursor: pointer;
-  font-size: 13.5px;
-  font-weight: 500;
-  transition: all 0.15s;
-  margin-bottom: 2px;
-  text-decoration: none;
+  display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+  border-radius: 10px; color: #7a6e5e; cursor: pointer; font-size: 13.5px;
+  font-weight: 500; transition: all 0.15s; margin-bottom: 2px; text-decoration: none;
 }
 .nav-item:hover { background: rgba(201,168,76,0.08); color: #c9a84c; }
 .nav-item.active { background: rgba(201,168,76,0.15); color: var(--gold); }
 .nav-icon { opacity: 0.8; display: flex; }
 .nav-badge { margin-left: auto; background: var(--gold); color: #0d0c09; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 20px; }
-
 .sidebar-footer {
-  padding: 16px 12px;
-  border-top: 1px solid rgba(201,168,76,0.1);
-  display: flex;
-  align-items: center;
-  gap: 10px;
+  padding: 16px 12px; border-top: 1px solid rgba(201,168,76,0.1);
+  display: flex; align-items: center; gap: 10px;
 }
 .user-card { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
 .user-avatar { width: 34px; height: 34px; border-radius: 10px; background: var(--gold-glow); border: 1px solid var(--gold-dim); color: var(--gold); font-family: 'Syne', sans-serif; font-weight: 700; font-size: 13px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
@@ -895,18 +929,12 @@ onMounted(loadAll)
 .logout-btn { background: none; border: none; color: #4a4030; cursor: pointer; padding: 6px; border-radius: 8px; transition: all 0.15s; flex-shrink: 0; }
 .logout-btn:hover { color: #e05555; background: rgba(224,85,85,0.1); }
 
-/* ── Main ────────────────────────────────────────────────────── */
+/* ── Main ── */
 .main-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-
 .topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 28px;
-  height: 58px;
-  background: var(--bg2);
-  border-bottom: 1px solid var(--border);
-  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 28px; height: 58px; background: var(--bg2);
+  border-bottom: 1px solid var(--border); flex-shrink: 0;
 }
 .breadcrumb { display: flex; align-items: center; gap: 8px; }
 .breadcrumb-root { color: var(--text2); font-size: 13px; }
@@ -915,72 +943,60 @@ onMounted(loadAll)
 .topbar-right { display: flex; gap: 8px; }
 .topbar-btn { background: var(--bg3); border: 1px solid var(--border); color: var(--text2); width: 34px; height: 34px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
 .topbar-btn:hover { border-color: var(--gold); color: var(--gold); }
-
 .content { flex: 1; overflow-y: auto; padding: 24px 28px; }
 
-/* ── State ───────────────────────────────────────────────────── */
+/* ── State ── */
 .state-center { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 300px; gap: 16px; color: var(--text2); }
 .spinner { width: 36px; height: 36px; border: 3px solid var(--border); border-top-color: var(--gold); border-radius: 50%; animation: spin 0.8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .error-text { color: #e05555; }
 
-/* ── Dashboard ───────────────────────────────────────────────── */
+/* ── Stats ── */
 .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
-
-.stat-card {
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 20px;
-  position: relative;
-  overflow: hidden;
-  box-shadow: var(--shadow);
-}
+.stat-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; padding: 20px; position: relative; overflow: hidden; box-shadow: var(--shadow); }
 .stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
 .stat-card.gold::before { background: linear-gradient(90deg, var(--gold), #e8c060); }
 .stat-card.blue::before { background: linear-gradient(90deg, #4a9eff, #7bb8ff); }
 .stat-card.green::before { background: linear-gradient(90deg, #4ade80, #86efac); }
 .stat-card.orange::before { background: linear-gradient(90deg, #fb923c, #fdba74); }
-
 .stat-icon { font-size: 28px; margin-bottom: 12px; }
 .stat-body { display: flex; align-items: baseline; gap: 8px; margin-bottom: 4px; }
 .stat-value { font-family: 'Syne', sans-serif; font-size: 32px; font-weight: 800; color: var(--text); }
 .stat-label { color: var(--text2); font-size: 13px; }
 .stat-sub { color: var(--text2); font-size: 12px; }
+.recent-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
 
-.recent-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-
-/* ── Card ────────────────────────────────────────────────────── */
+/* ── Card ── */
 .card { background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; padding: 20px; box-shadow: var(--shadow); }
 .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
 .card-header h3 { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 15px; color: var(--text); }
 .card-link { color: var(--gold); font-size: 12px; font-weight: 500; background: none; border: none; cursor: pointer; }
 .card-link:hover { text-decoration: underline; }
-
 .mini-table { display: flex; flex-direction: column; gap: 4px; }
 .empty-row { text-align: center; color: var(--text2); font-size: 13px; padding: 24px; }
 .mini-row { display: flex; align-items: center; gap: 12px; padding: 10px 8px; border-radius: 10px; transition: background 0.1s; }
 .mini-row:hover { background: var(--bg3); }
 .mini-avatar { width: 36px; height: 36px; border-radius: 10px; background: rgba(74,158,255,0.1); color: #4a9eff; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 13px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .gold-av { background: var(--gold-glow); color: var(--gold); }
+.green-av { background: rgba(74,222,128,0.1); color: #4ade80; }
 .mini-info { flex: 1; min-width: 0; }
 .mini-name { font-size: 13.5px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mini-sub { font-size: 11.5px; color: var(--text2); }
 
-/* ── Status pills ────────────────────────────────────────────── */
+/* ── Pills ── */
 .status-pill { font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px; }
 .status-pill.active { background: rgba(74,222,128,0.12); color: #4ade80; }
 .status-pill.pending { background: rgba(251,146,60,0.12); color: #fb923c; }
 .type-pill { font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px; background: var(--gold-glow); color: var(--gold); }
 
-/* ── Section views ───────────────────────────────────────────── */
+/* ── Sections ── */
 .view-section { display: flex; flex-direction: column; gap: 16px; }
 .section-topbar { display: flex; align-items: center; gap: 12px; }
 .search-input { flex: 1; max-width: 320px; padding: 9px 14px; background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; color: var(--text); font-size: 13.5px; font-family: 'DM Sans', sans-serif; outline: none; transition: border-color 0.15s; }
 .search-input:focus { border-color: var(--gold); }
 .search-input::placeholder { color: var(--text2); }
 
-/* ── Table ───────────────────────────────────────────────────── */
+/* ── Table ── */
 .data-table { width: 100%; border-collapse: collapse; }
 .data-table th { text-align: left; padding: 10px 14px; font-size: 11.5px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; color: var(--text2); border-bottom: 1px solid var(--border); }
 .data-table td { padding: 13px 14px; border-bottom: 1px solid var(--border); font-size: 13.5px; }
@@ -988,7 +1004,6 @@ onMounted(loadAll)
 .data-table tbody tr:hover td { background: var(--bg3); }
 .cell-user { display: flex; align-items: center; gap: 10px; }
 .cell-avatar { width: 34px; height: 34px; border-radius: 10px; background: rgba(74,158,255,0.1); color: #4a9eff; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.green-av { background: rgba(74,222,128,0.1); color: #4ade80; }
 .cell-name { font-size: 13.5px; font-weight: 500; color: var(--text); }
 .cell-sub { font-size: 12px; color: var(--text2); }
 .group-tag { background: var(--gold-glow); color: var(--gold); font-size: 11.5px; font-weight: 500; padding: 3px 10px; border-radius: 20px; }
@@ -997,7 +1012,17 @@ onMounted(loadAll)
 .act-btn:hover { border-color: var(--gold); transform: scale(1.05); }
 .empty-state { text-align: center; color: var(--text2); font-size: 14px; padding: 48px; }
 
-/* ── Groups grid ─────────────────────────────────────────────── */
+/* ── Guide status cell ── */
+.guide-status-cell { display: flex; align-items: center; gap: 6px; }
+.resend-btn {
+  background: none; border: none; cursor: pointer; font-size: 14px;
+  padding: 2px 4px; border-radius: 6px; transition: all 0.15s;
+  opacity: 0.7; line-height: 1;
+}
+.resend-btn:hover { opacity: 1; transform: scale(1.1); }
+.resend-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+/* ── Groups grid ── */
 .groups-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
 .group-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; padding: 20px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 10px; }
 .group-card-header { display: flex; align-items: center; justify-content: space-between; }
@@ -1014,7 +1039,7 @@ onMounted(loadAll)
 .btn-assign { background: var(--gold-glow); border: 1px solid rgba(201,168,76,0.25); color: var(--gold); padding: 8px 14px; border-radius: 10px; font-size: 12.5px; font-weight: 600; cursor: pointer; transition: all 0.15s; margin-top: 4px; }
 .btn-assign:hover { background: rgba(201,168,76,0.2); }
 
-/* ── Buttons ─────────────────────────────────────────────────── */
+/* ── Buttons ── */
 .btn-primary { background: var(--gold); color: #0d0c09; border: none; padding: 9px 18px; border-radius: 10px; font-size: 13.5px; font-weight: 700; font-family: 'DM Sans', sans-serif; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
 .btn-primary:hover { background: #e0bb5a; }
 .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -1024,7 +1049,7 @@ onMounted(loadAll)
 .btn-danger:hover { background: #c44; }
 .btn-danger:disabled { opacity: 0.5; }
 
-/* ── Modals ──────────────────────────────────────────────────── */
+/* ── Modals ── */
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 20px; }
 .modal { background: var(--bg2); border: 1px solid var(--border); border-radius: 20px; padding: 28px; width: 100%; max-width: 500px; box-shadow: 0 20px 60px rgba(0,0,0,0.4); }
 .modal-sm { max-width: 380px; }
@@ -1033,26 +1058,19 @@ onMounted(loadAll)
 .modal-desc { color: var(--text2); font-size: 14px; margin-bottom: 20px; line-height: 1.5; }
 .modal-error { color: #e05555; font-size: 13px; margin-bottom: 12px; }
 .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
-
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .form-field { display: flex; flex-direction: column; gap: 6px; }
 .form-field.full { grid-column: 1 / -1; }
 .form-field label { font-size: 12px; font-weight: 600; color: var(--text2); letter-spacing: 0.3px; }
 .form-field input, .form-field select {
-  padding: 9px 12px;
-  background: var(--bg3);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  color: var(--text);
-  font-size: 13.5px;
-  font-family: 'DM Sans', sans-serif;
-  outline: none;
-  transition: border-color 0.15s;
+  padding: 9px 12px; background: var(--bg3); border: 1px solid var(--border);
+  border-radius: 10px; color: var(--text); font-size: 13.5px;
+  font-family: 'DM Sans', sans-serif; outline: none; transition: border-color 0.15s;
 }
 .form-field input:focus, .form-field select:focus { border-color: var(--gold); }
 .form-field select option { background: var(--bg2); }
 
-/* ── Toast ───────────────────────────────────────────────────── */
+/* ── Toast ── */
 .toast { position: fixed; bottom: 28px; right: 28px; padding: 14px 20px; border-radius: 12px; font-size: 13.5px; font-weight: 500; z-index: 200; box-shadow: 0 8px 24px rgba(0,0,0,0.3); animation: slideUp 0.25s ease; }
 .toast.success { background: #1a2e1a; color: #4ade80; border: 1px solid rgba(74,222,128,0.2); }
 .toast.error { background: #2e1a1a; color: #f87171; border: 1px solid rgba(248,113,113,0.2); }

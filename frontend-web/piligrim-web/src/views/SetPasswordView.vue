@@ -1,7 +1,7 @@
-<template>
+<!--<template>
   <div class="sp-root">
     <div class="sp-card">
-      <!-- Logo -->
+      <!-- Logo 
       <div class="sp-logo">
         <span class="sp-logo-icon">🕌</span>
         <div>
@@ -10,7 +10,7 @@
         </div>
       </div>
 
-      <!-- Success -->
+      <!-- Success 
       <div v-if="success" class="sp-success">
         <div class="sp-success-icon">✅</div>
         <h2 class="sp-title">Compte activé !</h2>
@@ -18,14 +18,14 @@
         <button @click="$router.push('/')" class="sp-btn">Se connecter</button>
       </div>
 
-      <!-- Invalid token -->
+      <!-- Invalid token 
       <div v-else-if="tokenError" class="sp-error-state">
         <div class="sp-error-icon">⚠️</div>
         <h2 class="sp-title">Lien invalide</h2>
         <p class="sp-desc">{{ tokenError }}</p>
       </div>
 
-      <!-- Form -->
+      <!-- Form 
       <div v-else>
         <h2 class="sp-title">Définir votre mot de passe</h2>
         <p class="sp-desc">Choisissez un mot de passe sécurisé pour activer votre compte.</p>
@@ -87,7 +87,6 @@ const error = ref('')
 const success = ref(false)
 const tokenError = ref('')
 const showPwd = ref(false)
-
 onMounted(() => {
   token.value = route.query.token
   if (!token.value) tokenError.value = 'Lien d\'activation invalide ou expiré.'
@@ -262,4 +261,4 @@ async function handleSubmit() {
 .sp-success, .sp-error-state { text-align: center; padding: 12px 0; }
 .sp-success-icon, .sp-error-icon { font-size: 48px; margin-bottom: 16px; }
 .sp-success .sp-desc, .sp-error-state .sp-desc { margin-bottom: 28px; }
-</style>
+</style>-->

@@ -1,6 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomePageView from '@/views/HomePageView.vue'
-import GuideView from '@/views/GuideView.vue'
 import ActivateAccountView from '@/views/ActivateAccountView.vue'
 const routes = [
   // login is now a modal on the homepage — redirect /login to /
@@ -17,16 +16,6 @@ const routes = [
     path: '/admin',
     component: () => import('@/views/AdminView.vue'),
     meta: { requiresAuth: true, role: 'SUPER_ADMIN' }
-  },
-{
-  path: '/auth/set-password',
-  component: () => import('@/views/SetPasswordView.vue')
-},
-{
-    path: '/agence/guides',
-    name: 'Guides',
-    component: GuideView,
-    meta: { requiresAuth: true, role: 'AGENCE'}
   },
    {
     path: '/activate-account',
