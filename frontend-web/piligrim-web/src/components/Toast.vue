@@ -1,8 +1,4 @@
-﻿
-Toast · VUE
-Copy
-
-<template>
+﻿<template>
   <Teleport to="body">
     <div class="toast" :class="{ show }">
       <div class="t-ico">✓</div>

@@ -43,6 +43,8 @@ api.interceptors.response.use(
         localStorage.removeItem('accessToken')
         localStorage.removeItem('refreshToken')
         localStorage.removeItem('user')
+        window.location.href = '/'          // ← kick to login
+        return Promise.reject(refreshError) // ← stop further processing
       }
     }
 

@@ -9,7 +9,7 @@ const routes = [
 
   {
     path: '/dashboard',
-    component: () => import('@/views/DashboardView.vue'),
+    component: () => import('@/views/agence/DashboardView.vue'),
     meta: { requiresAuth: true, role: 'AGENCE' }
   },
   {
