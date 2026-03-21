@@ -85,7 +85,7 @@ export const approveAgence = async (agenceId: string) => {
 
 
 //reject agency
-export const rejectAgence = async (agenceId: string) => {
+export const rejectAgence = async (agenceId: string, _reason?: string) => {
   const agence = await prisma.agenceVoyage.findUnique({
     where: { id: agenceId },
     include: { utilisateur: true },
