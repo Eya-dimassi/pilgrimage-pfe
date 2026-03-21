@@ -1,8 +1,6 @@
 # pilgrimage-pfe
 # SmartHajj — Intelligent Pilgrimage Management Platform
- 
-> Final Year Project (Projet de Fin d'Études) — Computer Science  
-> Academic Year 2025–2026
+
  
 ---
  
