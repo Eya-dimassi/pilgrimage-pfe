@@ -12,8 +12,12 @@ export const createGroupe = async (
   }
 ) => {
   if (data.guideId) {
-    const guide = await prisma.guide.findFirst({ where: { id: data.guideId, agenceId } });
-    if (!guide) throw new Error("Guide introuvable ou n'appartient pas à votre agence");
+    const guide = await prisma.guide.findFirst({
+      where: { id: data.guideId, agenceId },
+      include: { utilisateur: { select: { actif: true } } }
+    })
+    if (!guide) throw new Error("Guide introuvable ou n'appartient pas à votre agence")
+    if (!guide.utilisateur.actif) throw new Error("Ce guide n'a pas encore activé son compte")
   }
 
   return prisma.groupe.create({
@@ -33,8 +37,8 @@ export const createGroupe = async (
       },
       _count: { select: { pelerins: true } },
     },
-  });
-};
+  })
+}
 
 // ── GET ALL ───────────────────────────────────────────────────────────────────
 export const getGroupes = async (agenceId: string) => {
@@ -92,12 +96,16 @@ export const updateGroupe = async (
     guideId?: string | null;
   }
 ) => {
-  const groupe = await prisma.groupe.findFirst({ where: { id: groupeId, agenceId } });
-  if (!groupe) throw new Error('Groupe introuvable');
+  const groupe = await prisma.groupe.findFirst({ where: { id: groupeId, agenceId } })
+  if (!groupe) throw new Error('Groupe introuvable')
 
   if (data.guideId) {
-    const guide = await prisma.guide.findFirst({ where: { id: data.guideId, agenceId } });
-    if (!guide) throw new Error("Guide introuvable ou n'appartient pas à votre agence");
+    const guide = await prisma.guide.findFirst({
+      where: { id: data.guideId, agenceId },
+      include: { utilisateur: { select: { actif: true } } }
+    })
+    if (!guide) throw new Error("Guide introuvable ou n'appartient pas à votre agence")
+    if (!guide.utilisateur.actif) throw new Error("Ce guide n'a pas encore activé son compte")
   }
 
   return prisma.groupe.update({
@@ -117,8 +125,8 @@ export const updateGroupe = async (
       },
       _count: { select: { pelerins: true } },
     },
-  });
-};
+  })
+}
 
 // ── DELETE ────────────────────────────────────────────────────────────────────
 export const deleteGroupe = async (agenceId: string, groupeId: string) => {
@@ -137,21 +145,24 @@ export const assignerPelerin = async (
   groupeId: string,
   pelerinId: string
 ) => {
-  const groupe = await prisma.groupe.findFirst({ where: { id: groupeId, agenceId } });
-  if (!groupe) throw new Error('Groupe introuvable');
+  const groupe = await prisma.groupe.findFirst({ where: { id: groupeId, agenceId } })
+  if (!groupe) throw new Error('Groupe introuvable')
 
-  const pelerin = await prisma.pelerin.findFirst({ where: { id: pelerinId, agenceId } });
-  if (!pelerin) throw new Error("Pèlerin introuvable ou n'appartient pas à votre agence");
-
-  if (pelerin.groupeId === groupeId) throw new Error('Ce pèlerin est déjà dans ce groupe');
+  const pelerin = await prisma.pelerin.findFirst({
+    where: { id: pelerinId, agenceId },
+    include: { utilisateur: { select: { actif: true } } }  // ← add this
+  })
+  if (!pelerin) throw new Error("Pèlerin introuvable ou n'appartient pas à votre agence")
+  if (!pelerin.utilisateur.actif) throw new Error("Ce pèlerin n'a pas encore activé son compte")  // ← add this
+  if (pelerin.groupeId === groupeId) throw new Error('Ce pèlerin est déjà dans ce groupe')
 
   await prisma.pelerin.update({
     where: { id: pelerinId },
     data: { groupeId },
-  });
+  })
 
-  return { message: 'Pèlerin ajouté au groupe avec succès' };
-};
+  return { message: 'Pèlerin ajouté au groupe avec succès' }
+}
 
 // ── REMOVE PELERIN ─────────────────────────────────────────────────────────────
 export const retirerPelerin = async (

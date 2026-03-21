@@ -26,6 +26,6 @@ app.use('/agence/pelerins', pelerinsRouter);
 app.use('/agence/groupes', groupesRouter);
 
 app.use('/agence/guides', guideRouter);
-
+app.use('/agence', agencesRouter);
 
 export default app;

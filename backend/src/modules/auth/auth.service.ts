@@ -158,41 +158,50 @@ export const logout = async (refreshToken: string) => {
 export const refresh = async (refreshToken: string) => {
   const tokenRecord = await prisma.refreshToken.findUnique({
     where: { token: refreshToken },
-    include: { utilisateur: true },
-  });
+    include: {
+      utilisateur: {
+        include: {
+          agence:  { select: { id: true } },
+          guide:   { select: { agenceId: true } },
+          pelerin: { select: { agenceId: true } },
+          famille: { select: { agenceId: true } },
+        }
+      }
+    },
+  })
 
-  if (!tokenRecord) throw new Error('Refresh token invalide');
-  
+  if (!tokenRecord) throw new Error('Refresh token invalide')
+
   if (tokenRecord.expiresAt < new Date()) {
-    await prisma.refreshToken.delete({ where: { token: refreshToken } });
-    throw new Error('Refresh token expiré');
+    await prisma.refreshToken.delete({ where: { token: refreshToken } })
+    throw new Error('Refresh token expiré')
   }
 
-  const utilisateur = tokenRecord.utilisateur;
+  const u = tokenRecord.utilisateur
+
+  let agenceId: string | null = null
+  if (u.role === 'AGENCE')        agenceId = u.agence?.id        ?? null
+  else if (u.role === 'GUIDE')    agenceId = u.guide?.agenceId   ?? null
+  else if (u.role === 'PELERIN')  agenceId = u.pelerin?.agenceId ?? null
+  else if (u.role === 'FAMILLE')  agenceId = u.famille?.agenceId ?? null
 
   const accessToken = jwt.sign(
-    {
-      sub: utilisateur.id,
-      email: utilisateur.email,
-      role: utilisateur.role,
-    },
+    { sub: u.id, email: u.email, role: u.role, agenceId },
     env.JWT_SECRET,
     { expiresIn: '15m' }
-  );
+  )
 
-  // rotate refresh token — old one deleted, new one created
-  const newRefreshToken = uuidv4();
-  const expiresAt = new Date();
-  expiresAt.setDate(expiresAt.getDate() + 30);
+  const newRefreshToken = uuidv4()
+  const expiresAt = new Date()
+  expiresAt.setDate(expiresAt.getDate() + 30)
 
   await prisma.refreshToken.update({
     where: { token: refreshToken },
     data: { token: newRefreshToken, expiresAt },
-  });
+  })
 
-  return { accessToken, refreshToken: newRefreshToken };
-};
-
+  return { accessToken, refreshToken: newRefreshToken }
+}
 
 export const getMe =async(userId: string) => {
   return prisma.utilisateur.findUnique({
@@ -276,3 +285,4 @@ export const verifyActivationToken = async (token: string) => {
     nom: `${utilisateur.prenom} ${utilisateur.nom}`
   };
 };
+

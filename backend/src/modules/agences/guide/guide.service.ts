@@ -50,12 +50,12 @@ export const createGuide = async (
     const utilisateur = await tx.utilisateur.create({
       data: {
         email: guideData.email,
-        motDePasse: null, // ⭐ PAS DE MOT DE PASSE
+        motDePasse: null, //  PAS DE MOT DE PASSE
         nom: guideData.nom,
         prenom: guideData.prenom,
         telephone: guideData.telephone,
         role: 'GUIDE',
-        actif: false, // ⭐ INACTIF jusqu'à activation
+        actif: false, // INACTIF jusqu'à activation
         createdById: agenceId
       }
     });
@@ -194,7 +194,7 @@ export const getGuidesByAgence = async (agenceId: string) => {
     ...guide,
     utilisateur: {
       ...guide.utilisateur,
-      isActivated: !!(guide.utilisateur.actif && guide.utilisateur.motDePasse),
+      isActivated: guide.utilisateur.motDePasse !== null,
       motDePasse: undefined // Ne pas exposer le hash
     }
   }));

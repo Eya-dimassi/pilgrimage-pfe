@@ -46,6 +46,66 @@ export const createAgence = async (data: {
     agenceId: utilisateur.agence!.id,
   };
 };
+export const getAgenceProfile = async (agenceId: string) => {
+  const agence = await prisma.agenceVoyage.findUnique({
+    where: { id: agenceId },
+    include: {
+      utilisateur: {
+        select: {
+          id: true,
+          nom: true,
+          prenom: true,
+          email: true,
+          telephone: true,
+        },
+      },
+    },
+  })
+  if (!agence) throw new Error('Agence introuvable')
+  return agence
+}
+ 
+export const updateAgenceProfile = async (
+  agenceId: string,
+  data: {
+    nomAgence?: string
+    adresse?: string
+    siteWeb?: string
+    telephone?: string
+  }
+) => {
+  const agence = await prisma.agenceVoyage.findUnique({
+    where: { id: agenceId },
+    include: { utilisateur: true },
+  })
+  if (!agence) throw new Error('Agence introuvable')
+
+  // ── 1. Update Utilisateur first ───────────────────────────
+  if (data.telephone !== undefined || data.nomAgence !== undefined) {
+    await prisma.utilisateur.update({
+      where: { id: agence.utilisateurId },
+      data: {
+        ...(data.telephone !== undefined && { telephone: data.telephone }),
+        ...(data.nomAgence !== undefined && { nom: data.nomAgence }),
+      },
+    })
+  }
+
+  // ── 2. Update AgenceVoyage and return fresh data ──────────
+  return prisma.agenceVoyage.update({
+    where: { id: agenceId },
+    data: {
+      ...(data.nomAgence !== undefined && { nomAgence: data.nomAgence }),
+      ...(data.adresse   !== undefined && { adresse: data.adresse }),
+      ...(data.siteWeb   !== undefined && { siteWeb: data.siteWeb }),
+    },
+    include: {
+      utilisateur: {
+        select: { id: true, nom: true, prenom: true, email: true, telephone: true },
+      },
+    },
+  })
+}
 
 export const getAgences = async () => {
   return prisma.agenceVoyage.findMany({

@@ -1,5 +1,5 @@
 import prisma from '../../config/prisma';
-import { sendApprovalEmail } from '../../utils/mailer.utils';
+import { sendApprovalEmail, sendRejectionEmail, sendSuspensionEmail } from '../../utils/mailer.utils';
 
 
 //list agencies
@@ -52,77 +52,99 @@ export const getAgenceById = async (id: string) => {
 };
 
 //approve agency
-export const approveAgence = async (id: string) => {
+export const approveAgence = async (agenceId: string) => {
+  // ── 1. DB update first — this is the source of truth ─────
   const agence = await prisma.agenceVoyage.findUnique({
-    where: { id },
-    include: {
-      utilisateur: { select: { email: true, nom: true } }
-    }
-  });
-  if (!agence) throw new Error('Agence introuvable');
-  if (agence.status!== 'PENDING') throw new Error('Seules les agences en attente peuvent être approuvées');
+    where: { id: agenceId },
+    include: { utilisateur: true },
+  })
+  if (!agence) throw new Error('Agence introuvable')
+  if (agence.status === 'APPROVED') throw new Error('Agence déjà approuvée')
 
   await prisma.$transaction([
     prisma.agenceVoyage.update({
-      where: { id },
-      data: { status: 'APPROVED', approvedAt: new Date() },
+      where: { id: agenceId },
+      data: { status: 'APPROVED' },
     }),
     prisma.utilisateur.update({
       where: { id: agence.utilisateurId },
       data: { actif: true },
     }),
-  ]);
-  // send approval email
-  await sendApprovalEmail(agence.utilisateur.email, agence.nomAgence);
+  ])
 
-  return { message: 'Agence approuvée avec succès' };
-};
+  // ── 2. Email — best effort, never throws to caller ────────
+  try {
+    await sendApprovalEmail(agence.utilisateur.email, agence.nomAgence)
+  } catch (mailError) {
+    console.error('Approval email failed (agency already approved):', mailError)
+    // don't rethrow — DB is already correct
+  }
+
+  return { message: 'Agence approuvée avec succès' }
+}
 
 
 //reject agency
-export const rejectAgence = async(id: string, reason: string) => {
-  const agence = await prisma.agenceVoyage.findUnique({ where: { id } });
-  if (!agence) throw new Error('Agence introuvable');
-
-if (agence.status !== 'PENDING') {
-    throw new Error("Seules les agences en attente peuvent être refusées");
-  }
+export const rejectAgence = async (agenceId: string) => {
+  const agence = await prisma.agenceVoyage.findUnique({
+    where: { id: agenceId },
+    include: { utilisateur: true },
+  })
+  if (!agence) throw new Error('Agence introuvable')
+  if (agence.status === 'REJECTED') throw new Error('Agence déjà rejetée')
 
   await prisma.$transaction([
     prisma.agenceVoyage.update({
-      where: { id },
-      data: {status: 'REJECTED', rejectedAt: new Date(), rejectionReason: reason },
+      where: { id: agenceId },
+      data: { status: 'REJECTED' },
     }),
     prisma.utilisateur.update({
-      where: {id: agence.utilisateurId },
-      data: {actif: false },
+      where: { id: agence.utilisateurId },
+      data: { actif: false },
     }),
-  ]);
+  ])
 
-  return { message: 'Agence refusée' };
-};
-
-export const suspendAgence = async (id: string) => {
-  const agence = await prisma.agenceVoyage.findUnique({ where: { id } });
-  if (!agence) throw new Error('Agence introuvable');
-
-  if (agence.status !== 'APPROVED') {
-    throw new Error("Seules les agences approuvées peuvent être suspendues");
+  try {
+    await sendRejectionEmail(agence.utilisateur.email, agence.nomAgence)
+  } catch (mailError) {
+    console.error('Rejection email failed (agency already rejected):', mailError)
   }
+
+  return { message: 'Agence rejetée' }
+}
+
+export const suspendAgence = async (agenceId: string) => {
+  const agence = await prisma.agenceVoyage.findUnique({
+    where: { id: agenceId },
+    include: { utilisateur: true },
+  })
+  if (!agence) throw new Error('Agence introuvable')
+  if (agence.status === 'SUSPENDED') throw new Error('Agence déjà suspendue')
 
   await prisma.$transaction([
     prisma.agenceVoyage.update({
-      where: { id },
+      where: { id: agenceId },
       data: { status: 'SUSPENDED' },
     }),
     prisma.utilisateur.update({
       where: { id: agence.utilisateurId },
       data: { actif: false },
     }),
-  ]);
+  ])
 
-  return { message: 'Agence suspendue' };
-};
+  try {
+    await sendSuspensionEmail(agence.utilisateur.email, agence.nomAgence)
+  } catch (mailError) {
+    console.error('Suspension email failed (agency already suspended):', mailError)
+  }
+
+  // Also invalidate all refresh tokens so they get kicked immediately
+  await prisma.refreshToken.deleteMany({
+    where: { utilisateur: { agence: { id: agenceId } } }
+  })
+
+  return { message: 'Agence suspendue' }
+}
 
 export const deleteAgence = async (id: string) => {
   const agence = await prisma.agenceVoyage.findUnique({

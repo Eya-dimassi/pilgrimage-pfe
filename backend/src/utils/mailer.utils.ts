@@ -99,6 +99,40 @@ export const sendPasswordResetEmail = async (
     `,
   });
 };
+export const sendRejectionEmail = async (email: string, nomAgence: string) => {
+  await transporter.sendMail({
+    from: `"SmartHajj" <${env.MAIL_FROM}>`,
+    to: email,
+    subject: 'Votre demande d\'inscription a été refusée',
+    html: `
+      <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
+        <h2 style="color: #c0392b;">Demande refusée</h2>
+        <p>Bonjour,</p>
+        <p>Nous avons examiné la demande d'inscription de l'agence <strong>${nomAgence}</strong> et nous ne sommes malheureusement pas en mesure de l'approuver pour le moment.</p>
+        <p>Si vous pensez qu'il s'agit d'une erreur ou souhaitez plus d'informations, veuillez nous contacter.</p>
+        <p style="color: #888; font-size: 13px; margin-top: 32px;">L'équipe SmartHajj</p>
+      </div>
+    `,
+  })
+}
+
+export const sendSuspensionEmail = async (email: string, nomAgence: string) => {
+  await transporter.sendMail({
+    from: `"SmartHajj" <${env.MAIL_FROM}>`,
+    to: email,
+    subject: 'Votre compte a été suspendu',
+    html: `
+      <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
+        <h2 style="color: #e67e22;">Compte suspendu</h2>
+        <p>Bonjour,</p>
+        <p>Le compte de l'agence <strong>${nomAgence}</strong> a été suspendu par notre équipe d'administration.</p>
+        <p>Vous ne pouvez plus accéder à la plateforme SmartHajj jusqu'à nouvel ordre.</p>
+        <p>Pour toute question, veuillez nous contacter directement.</p>
+        <p style="color: #888; font-size: 13px; margin-top: 32px;">L'équipe SmartHajj</p>
+      </div>
+    `,
+  })
+}
 /* ⭐ AJOUTER CETTE FONCTION
 export const sendGuideActivationEmail = async (
   email: string,
