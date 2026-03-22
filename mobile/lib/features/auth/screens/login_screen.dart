@@ -1,89 +1,82 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
-class LoginScreen extends StatefulWidget {
+import '../domain/auth_exception.dart';
+import '../providers/auth_provider.dart';
+
+class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
-  final emailController = TextEditingController();
-  final passwordController = TextEditingController();
-  bool obscurePassword = true;
-  bool isLoading = false; // pour afficher un loader
+class _LoginScreenState extends ConsumerState<LoginScreen> {
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  bool _obscurePassword = true;
+  bool _isSubmitting = false;
 
-  // Remplace par l'URL de ton backend Node.js
-  final String backendUrl = "http://10.0.2.2:3000/auth/login";
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
 
-  Future<void> loginUser() async {
+  Future<void> _login() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+
+    if (email.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Email et mot de passe requis'),
+        ),
+      );
+      return;
+    }
+
     setState(() {
-      isLoading = true;
+      _isSubmitting = true;
     });
 
     try {
-      final response = await http.post(
-        Uri.parse(backendUrl),
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode({
-          "email": emailController.text.trim(),
-          "motDePasse": passwordController.text.trim(),
-        }),
-      );
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final accessToken = data["accessToken"] as String;
-        final refreshToken = data["refreshToken"] as String;
-        final user = data["utilisateur"];
-        final role = user["role"] as String;
-
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('accessToken', accessToken);
-        await prefs.setString('refreshToken', refreshToken);
-        await prefs.setString('role', role);
-        await prefs.setString('user', jsonEncode(user));
-        if (!mounted) return;
-
-        if (role == 'PELERIN') {
-          Navigator.pushReplacementNamed(context, '/home');
-        } else if (role == 'GUIDE') {
-          Navigator.pushReplacementNamed(context, '/guide-home');
-        } else if (role == 'FAMILLE') {
-          Navigator.pushReplacementNamed(context, '/famille-home');
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                "Ce portail mobile est réservé aux pèlerins, guides et familles",
-              ),
-            ),
+      await ref.read(authProvider.notifier).login(
+            email: email,
+            password: password,
           );
-        }
-      } else {
-        final data = jsonDecode(response.body);
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(data["message"] ?? "Login échoué")),
-        );
+    } on AuthException catch (error) {
+      if (!mounted) {
+        return;
       }
-    } catch (e) {
-      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Erreur de connexion au serveur")),
+        SnackBar(content: Text(error.message)),
+      );
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Une erreur est survenue'),
+        ),
       );
     } finally {
-      setState(() {
-        isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final authState = ref.watch(authProvider);
+    final isLoading = _isSubmitting || (authState.isLoading && authState.valueOrNull == null);
+
     return Scaffold(
       backgroundColor: const Color(0xFF0D0F1A),
       body: SafeArea(
@@ -93,8 +86,6 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Column(
               children: [
                 const SizedBox(height: 60),
-
-                /// Logo
                 Container(
                   width: 100,
                   height: 100,
@@ -103,9 +94,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     gradient: const LinearGradient(
                       colors: [Color(0xFFD4AF37), Color(0xFFFFD700)],
                     ),
-                    boxShadow: [
+                    boxShadow: const [
                       BoxShadow(
-                        color: const Color(0xFFD4AF37),
+                        color: Color(0xFFD4AF37),
                         blurRadius: 25,
                         spreadRadius: 3,
                       ),
@@ -119,7 +110,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 30),
                 const Text(
-                  "Hajj & Umrah",
+                  'Hajj & Umrah',
                   style: TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
@@ -128,33 +119,31 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 10),
                 const Text(
-                  "Connexion à votre espace spirituel",
+                  'Connexion a votre espace spirituel',
                   style: TextStyle(color: Colors.white60),
                 ),
                 const SizedBox(height: 50),
-
-                /// Card
                 Container(
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
                     color: const Color(0xFF1B1E2E),
                     borderRadius: BorderRadius.circular(25),
-                    boxShadow: [
+                    boxShadow: const [
                       BoxShadow(
                         color: Colors.black,
                         blurRadius: 25,
-                        offset: const Offset(0, 15),
+                        offset: Offset(0, 15),
                       ),
                     ],
                   ),
                   child: Column(
                     children: [
-                      /// EMAIL
                       TextField(
-                        controller: emailController,
+                        controller: _emailController,
+                        keyboardType: TextInputType.emailAddress,
                         style: const TextStyle(color: Colors.white),
                         decoration: InputDecoration(
-                          labelText: "Email",
+                          labelText: 'Email',
                           labelStyle: const TextStyle(color: Colors.white70),
                           prefixIcon: const Icon(
                             Icons.email,
@@ -169,14 +158,12 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                       const SizedBox(height: 20),
-
-                      /// PASSWORD
                       TextField(
-                        controller: passwordController,
-                        obscureText: obscurePassword,
+                        controller: _passwordController,
+                        obscureText: _obscurePassword,
                         style: const TextStyle(color: Colors.white),
                         decoration: InputDecoration(
-                          labelText: "Mot de passe",
+                          labelText: 'Mot de passe',
                           labelStyle: const TextStyle(color: Colors.white70),
                           prefixIcon: const Icon(
                             Icons.lock,
@@ -184,14 +171,14 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           suffixIcon: IconButton(
                             icon: Icon(
-                              obscurePassword
+                              _obscurePassword
                                   ? Icons.visibility_off
                                   : Icons.visibility,
                               color: Colors.white70,
                             ),
                             onPressed: () {
                               setState(() {
-                                obscurePassword = !obscurePassword;
+                                _obscurePassword = !_obscurePassword;
                               });
                             },
                           ),
@@ -204,13 +191,11 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                       const SizedBox(height: 30),
-
-                      /// BUTTON GOLD
                       SizedBox(
                         width: double.infinity,
                         height: 55,
                         child: ElevatedButton(
-                          onPressed: isLoading ? null : loginUser,
+                          onPressed: isLoading ? null : _login,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFFD4AF37),
                             shape: RoundedRectangleBorder(
@@ -223,7 +208,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   color: Colors.black,
                                 )
                               : const Text(
-                                  "Se connecter",
+                                  'Se connecter',
                                   style: TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
@@ -233,11 +218,12 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                       const SizedBox(height: 15),
-
                       TextButton(
-                        onPressed: () {},
+                        onPressed: isLoading
+                            ? null
+                            : () => context.push('/forgot-password'),
                         child: const Text(
-                          "Mot de passe oublié ?",
+                          'Mot de passe oublie ?',
                           style: TextStyle(color: Color(0xFFD4AF37)),
                         ),
                       ),
