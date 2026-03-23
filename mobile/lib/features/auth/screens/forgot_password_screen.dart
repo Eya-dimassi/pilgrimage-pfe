@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/theme/app_theme.dart';
 import '../providers/auth_provider.dart';
+import '../widgets/auth_shell.dart';
 
 class ForgotPasswordScreen extends ConsumerStatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -59,63 +61,86 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF0D0F1A),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF0D0F1A),
-        foregroundColor: Colors.white,
-        elevation: 0,
-        title: const Text('Mot de passe oublie'),
+    return AuthShell(
+      leading: IconButton(
+        onPressed: () => Navigator.of(context).pop(),
+        icon: const Icon(Icons.arrow_back_rounded),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const SizedBox(height: 24),
-            const Text(
-              'Entrez votre email et nous vous enverrons les instructions de reinitialisation.',
-              style: TextStyle(color: Colors.white70, fontSize: 16),
+      eyebrow: 'Assistance compte',
+      title: 'Recuperez l acces\nen toute simplicite.',
+      subtitle:
+          'Saisissez votre email professionnel et nous vous enverrons la marche a suivre pour reinitialiser votre mot de passe.',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Mot de passe oublie',
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.6,
             ),
-            const SizedBox(height: 24),
-            TextField(
-              controller: _emailController,
-              keyboardType: TextInputType.emailAddress,
-              style: const TextStyle(color: Colors.white),
-              decoration: InputDecoration(
-                labelText: 'Email',
-                labelStyle: const TextStyle(color: Colors.white70),
-                filled: true,
-                fillColor: const Color(0xFF1B1E2E),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-              ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Le lien de reinitialisation sera envoye a l adresse associee a votre espace SmartHajj.',
+            style: TextStyle(
+              fontSize: 14,
+              height: 1.5,
+              color: AppColors.textMuted,
             ),
-            const SizedBox(height: 24),
-            SizedBox(
-              height: 52,
-              child: ElevatedButton(
-                onPressed: _isSubmitting ? null : _submit,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFD4AF37),
-                  foregroundColor: Colors.black,
-                ),
-                child: _isSubmitting
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text(
-                        'Envoyer',
-                        style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 24),
+          TextField(
+            controller: _emailController,
+            keyboardType: TextInputType.emailAddress,
+            textInputAction: TextInputAction.done,
+            onSubmitted: (_) {
+              if (!_isSubmitting) {
+                _submit();
+              }
+            },
+            decoration: const InputDecoration(
+              labelText: 'Email',
+              hintText: 'nom@agence.com',
+              prefixIcon: Icon(Icons.email_outlined),
+            ),
+          ),
+          const SizedBox(height: 22),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: _isSubmitting ? null : _submit,
+              child: _isSubmitting
+                  ? const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.2,
+                        color: AppColors.background,
                       ),
+                    )
+                  : const Text('Envoyer les instructions'),
+            ),
+          ),
+          const SizedBox(height: 14),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: AppColors.blueSoft,
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: const Text(
+              'Si vous ne voyez pas l email dans quelques minutes, verifiez egalement vos courriers indesirables.',
+              style: TextStyle(
+                fontSize: 13,
+                height: 1.45,
+                color: AppColors.textMuted,
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

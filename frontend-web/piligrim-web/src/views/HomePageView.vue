@@ -20,7 +20,6 @@
       :show="showLogin"
       @close="closeLogin"
       @switch-to-signup="closeLogin(); openSignup()"
-      @forgot="closeLogin"
     />
     <Toast :show="showToast" />
   </div>

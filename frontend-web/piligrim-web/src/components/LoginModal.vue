@@ -36,7 +36,7 @@
         <div class="field-group">
           <div class="field-label-row">
             <label class="field-label">Mot de passe</label>
-            <button type="button" class="forgot-link" @click="emit('forgot')">
+            <button type="button" class="forgot-link" @click="goToForgotPassword">
               Mot de passe oublié ?
             </button>
           </div>
@@ -104,7 +104,7 @@ defineProps({
 })
 
 // ✅ kebab-case to match @switch-to-signup in HomePageView
-const emit = defineEmits(['close', 'forgot', 'switch-to-signup'])
+const emit = defineEmits(['close', 'switch-to-signup'])
 
 const router       = useRouter()
 const email        = ref('')
@@ -112,6 +112,11 @@ const password     = ref('')
 const showPassword = ref(false)
 const errorMessage = ref('')
 const loading      = ref(false)
+
+const goToForgotPassword = () => {
+  emit('close')
+  router.push('/forgot-password')
+}
 
 const handleLogin = async () => {
   errorMessage.value = ''

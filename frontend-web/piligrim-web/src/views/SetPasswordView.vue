@@ -1,141 +1,153 @@
-<!--<template>
+<template>
   <div class="sp-root">
     <div class="sp-card">
-      <!-- Logo 
       <div class="sp-logo">
-        <span class="sp-logo-icon">🕌</span>
         <div>
           <div class="sp-logo-name">SmartHajj</div>
-          <div class="sp-logo-sub">Activation du compte</div>
+          <div class="sp-logo-sub">Reinitialisation du mot de passe</div>
         </div>
       </div>
 
-      <!-- Success 
-      <div v-if="success" class="sp-success">
-        <div class="sp-success-icon">✅</div>
-        <h2 class="sp-title">Compte activé !</h2>
-        <p class="sp-desc">Votre mot de passe a été défini avec succès. Vous pouvez maintenant vous connecter.</p>
-        <button @click="$router.push('/')" class="sp-btn">Se connecter</button>
+      <div v-if="success" class="sp-state">
+        <h1 class="sp-title">Mot de passe mis a jour</h1>
+        <p class="sp-text">Vous pouvez maintenant vous reconnecter avec votre nouveau mot de passe.</p>
+        <button class="sp-btn" type="button" @click="router.push('/')">Retour a la connexion</button>
       </div>
 
-      <!-- Invalid token 
-      <div v-else-if="tokenError" class="sp-error-state">
-        <div class="sp-error-icon">⚠️</div>
-        <h2 class="sp-title">Lien invalide</h2>
-        <p class="sp-desc">{{ tokenError }}</p>
+      <div v-else-if="tokenError" class="sp-state">
+        <h1 class="sp-title">Lien invalide</h1>
+        <p class="sp-text">{{ tokenError }}</p>
+        <button class="sp-link" type="button" @click="router.push('/forgot-password')">
+          Demander un nouveau lien
+        </button>
       </div>
 
-      <!-- Form 
-      <div v-else>
-        <h2 class="sp-title">Définir votre mot de passe</h2>
-        <p class="sp-desc">Choisissez un mot de passe sécurisé pour activer votre compte.</p>
+      <form v-else @submit.prevent="handleSubmit">
+        <h1 class="sp-title">Definir un nouveau mot de passe</h1>
+        <p class="sp-text">Choisissez un mot de passe securise pour finaliser la reinitialisation.</p>
 
-        <div class="sp-field">
-          <label>Nouveau mot de passe</label>
-          <div class="sp-input-wrap">
-            <input
-              v-model="password"
-              :type="showPwd ? 'text' : 'password'"
-              placeholder="Minimum 8 caractères"
-            />
-            <button class="sp-eye" @click="showPwd = !showPwd" type="button">
-              {{ showPwd ? '🙈' : '👁️' }}
-            </button>
-          </div>
-          <div class="sp-strength" v-if="password">
-            <div class="sp-strength-bar">
-              <div class="sp-strength-fill" :style="{ width: strengthPct + '%', background: strengthColor }"></div>
-            </div>
-            <span :style="{ color: strengthColor }">{{ strengthLabel }}</span>
-          </div>
-        </div>
-
-        <div class="sp-field">
-          <label>Confirmer le mot de passe</label>
+        <label class="sp-label" for="password">Nouveau mot de passe</label>
+        <div class="sp-password-wrap">
           <input
-            v-model="confirm"
-            :type="showPwd ? 'text' : 'password'"
-            placeholder="Répétez le mot de passe"
-            :class="{ 'sp-input-error': confirm && confirm !== password }"
+            id="password"
+            v-model="password"
+            class="sp-input"
+            :type="showPassword ? 'text' : 'password'"
+            placeholder="Minimum 8 caracteres"
+            required
           />
-          <span v-if="confirm && confirm !== password" class="sp-field-err">Les mots de passe ne correspondent pas</span>
+          <button class="sp-toggle" type="button" @click="showPassword = !showPassword">
+            {{ showPassword ? 'Masquer' : 'Afficher' }}
+          </button>
         </div>
+
+        <div v-if="password" class="sp-strength">
+          <div class="sp-strength-bar">
+            <div class="sp-strength-fill" :style="{ width: `${strengthPct}%`, backgroundColor: strengthColor }"></div>
+          </div>
+          <span :style="{ color: strengthColor }">{{ strengthLabel }}</span>
+        </div>
+
+        <label class="sp-label" for="confirm">Confirmer le mot de passe</label>
+        <input
+          id="confirm"
+          v-model="confirm"
+          class="sp-input"
+          :class="{ 'sp-input-error': confirm && confirm !== password }"
+          :type="showPassword ? 'text' : 'password'"
+          placeholder="Repetez le mot de passe"
+          required
+        />
 
         <p v-if="error" class="sp-error">{{ error }}</p>
 
-        <button @click="handleSubmit" :disabled="loading" class="sp-btn">
-          <span v-if="loading" class="sp-spinner"></span>
-          {{ loading ? 'Activation...' : 'Activer mon compte' }}
+        <button class="sp-btn" type="submit" :disabled="loading || !isValid">
+          {{ loading ? 'Mise a jour...' : 'Enregistrer le mot de passe' }}
         </button>
-      </div>
+      </form>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import axios from 'axios'
 
 const route = useRoute()
 const router = useRouter()
 
-const token = ref('')
+const token = ref(typeof route.query.token === 'string' ? route.query.token : '')
 const password = ref('')
 const confirm = ref('')
+const showPassword = ref(false)
 const loading = ref(false)
-const error = ref('')
 const success = ref(false)
-const tokenError = ref('')
-const showPwd = ref(false)
-onMounted(() => {
-  token.value = route.query.token
-  if (!token.value) tokenError.value = 'Lien d\'activation invalide ou expiré.'
-})
+const error = ref('')
+const tokenError = ref(token.value ? '' : 'Le lien de reinitialisation est invalide ou incomplet.')
 
 const strengthPct = computed(() => {
-  const p = password.value
-  if (!p) return 0
+  const value = password.value
   let score = 0
-  if (p.length >= 8) score += 25
-  if (p.length >= 12) score += 25
-  if (/[A-Z]/.test(p)) score += 25
-  if (/[0-9!@#$%^&*]/.test(p)) score += 25
+
+  if (value.length >= 8) score += 25
+  if (value.length >= 12) score += 25
+  if (/[A-Z]/.test(value)) score += 25
+  if (/[0-9!@#$%^&*]/.test(value)) score += 25
+
   return score
 })
 
 const strengthLabel = computed(() => {
-  const s = strengthPct.value
-  if (s <= 25) return 'Faible'
-  if (s <= 50) return 'Moyen'
-  if (s <= 75) return 'Bon'
+  if (strengthPct.value <= 25) return 'Faible'
+  if (strengthPct.value <= 50) return 'Moyen'
+  if (strengthPct.value <= 75) return 'Bon'
   return 'Fort'
 })
 
 const strengthColor = computed(() => {
-  const s = strengthPct.value
-  if (s <= 25) return '#f87171'
-  if (s <= 50) return '#fb923c'
-  if (s <= 75) return '#C9A84C'
+  if (strengthPct.value <= 25) return '#f87171'
+  if (strengthPct.value <= 50) return '#fb923c'
+  if (strengthPct.value <= 75) return '#c9a84c'
   return '#4ade80'
 })
 
+const isValid = computed(() => (
+  token.value &&
+  password.value.length >= 8 &&
+  password.value === confirm.value
+))
+
 async function handleSubmit() {
-  error.value = ''
-  if (password.value.length < 8) { error.value = 'Le mot de passe doit contenir au moins 8 caractères.'; return }
-  if (password.value !== confirm.value) { error.value = 'Les mots de passe ne correspondent pas.'; return }
+  if (!token.value) {
+    tokenError.value = 'Le lien de reinitialisation est invalide ou incomplet.'
+    return
+  }
+
+  if (password.value.length < 8) {
+    error.value = 'Le mot de passe doit contenir au moins 8 caracteres.'
+    return
+  }
+
+  if (password.value !== confirm.value) {
+    error.value = 'Les mots de passe ne correspondent pas.'
+    return
+  }
 
   loading.value = true
+  error.value = ''
+
   try {
-    const res = await fetch('http://localhost:3000/auth/set-password', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ token: token.value, newPassword: password.value }),
-    })
-    const data = await res.json()
-    if (!res.ok) throw new Error(data.message)
+    await axios.post(
+      `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/auth/set-password`,
+      {
+        token: token.value,
+        newPassword: password.value,
+      }
+    )
     success.value = true
   } catch (err) {
-    error.value = err.message || 'Une erreur est survenue.'
+    error.value = err.response?.data?.message || 'Une erreur est survenue.'
   } finally {
     loading.value = false
   }
@@ -147,118 +159,155 @@ async function handleSubmit() {
 
 .sp-root {
   min-height: 100vh;
-  background: #0d0c09;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 24px;
+  background:
+    radial-gradient(circle at top right, rgba(201, 168, 76, 0.14), transparent 32%),
+    linear-gradient(160deg, #0d0c09 0%, #16130d 100%);
   font-family: 'DM Sans', sans-serif;
-}
-
-/* subtle gold grain background */
-.sp-root::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background: radial-gradient(ellipse at 30% 20%, rgba(201,168,76,0.06) 0%, transparent 60%),
-              radial-gradient(ellipse at 70% 80%, rgba(201,168,76,0.04) 0%, transparent 60%);
-  pointer-events: none;
 }
 
 .sp-card {
-  background: #151410;
-  border: 1px solid rgba(201,168,76,0.15);
-  border-radius: 24px;
-  padding: 40px;
   width: 100%;
-  max-width: 420px;
-  box-shadow: 0 24px 80px rgba(0,0,0,0.5);
-  position: relative;
-  z-index: 1;
+  max-width: 460px;
+  padding: 40px;
+  border-radius: 24px;
+  background: rgba(21, 20, 16, 0.96);
+  border: 1px solid rgba(201, 168, 76, 0.15);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
 }
 
-/* ── Logo ── */
-.sp-logo { display: flex; align-items: center; gap: 12px; margin-bottom: 32px; }
-.sp-logo-icon { font-size: 28px; }
-.sp-logo-name { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 16px; color: #C9A84C; letter-spacing: 0.5px; }
-.sp-logo-sub  { font-size: 11px; color: #5a5040; margin-top: 1px; }
+.sp-logo {
+  margin-bottom: 28px;
+}
 
-/* ── Titles ── */
-.sp-title { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 22px; color: #f0ede6; margin-bottom: 8px; }
-.sp-desc  { font-size: 14px; color: #8a8070; line-height: 1.55; margin-bottom: 28px; }
+.sp-logo-name {
+  font-family: 'Syne', sans-serif;
+  font-size: 18px;
+  font-weight: 800;
+  color: #c9a84c;
+}
 
-/* ── Fields ── */
-.sp-field { margin-bottom: 20px; }
-.sp-field label { display: block; font-size: 12px; font-weight: 600; color: #8a8070; letter-spacing: 0.3px; margin-bottom: 8px; text-transform: uppercase; }
+.sp-logo-sub {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #86785e;
+}
 
-.sp-field input,
-.sp-input-wrap input {
+.sp-title {
+  margin: 0 0 10px;
+  font-family: 'Syne', sans-serif;
+  font-size: 28px;
+  font-weight: 800;
+  color: #f3efe5;
+}
+
+.sp-text {
+  margin: 0 0 24px;
+  color: #b3a894;
+  line-height: 1.6;
+}
+
+.sp-label {
+  display: block;
+  margin: 18px 0 8px;
+  color: #d2c5ae;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.sp-password-wrap {
+  position: relative;
+}
+
+.sp-input {
   width: 100%;
-  padding: 12px 16px;
-  background: #1c1a15;
-  border: 1px solid rgba(255,255,255,0.07);
-  border-radius: 12px;
-  color: #f0ede6;
-  font-size: 14px;
-  font-family: 'DM Sans', sans-serif;
+  padding: 14px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  background: #1d1a14;
+  color: #f7f1e6;
   outline: none;
-  transition: border-color 0.15s;
   box-sizing: border-box;
 }
-.sp-field input:focus,
-.sp-input-wrap input:focus { border-color: #C9A84C; box-shadow: 0 0 0 3px rgba(201,168,76,0.1); }
-.sp-field input::placeholder,
-.sp-input-wrap input::placeholder { color: #5a5040; }
-.sp-input-error { border-color: #f87171 !important; }
 
-.sp-input-wrap { position: relative; }
-.sp-input-wrap input { padding-right: 44px; }
-.sp-eye { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 16px; line-height: 1; }
+.sp-input:focus {
+  border-color: #c9a84c;
+  box-shadow: 0 0 0 3px rgba(201, 168, 76, 0.12);
+}
 
-/* ── Strength bar ── */
-.sp-strength { margin-top: 8px; display: flex; align-items: center; gap: 10px; }
-.sp-strength-bar { flex: 1; height: 4px; background: rgba(255,255,255,0.06); border-radius: 4px; overflow: hidden; }
-.sp-strength-fill { height: 100%; border-radius: 4px; transition: width 0.3s, background 0.3s; }
-.sp-strength span { font-size: 12px; font-weight: 600; white-space: nowrap; }
+.sp-input-error {
+  border-color: #f87171;
+}
 
-.sp-field-err { font-size: 12px; color: #f87171; margin-top: 6px; display: block; }
-
-/* ── Error ── */
-.sp-error { color: #f87171; font-size: 13px; margin-bottom: 16px; padding: 10px 14px; background: rgba(248,113,113,0.08); border: 1px solid rgba(248,113,113,0.2); border-radius: 10px; }
-
-/* ── Button ── */
-.sp-btn {
-  width: 100%;
-  padding: 13px;
-  background: #C9A84C;
+.sp-toggle {
+  position: absolute;
+  top: 50%;
+  right: 14px;
+  transform: translateY(-50%);
   border: none;
-  border-radius: 12px;
-  color: #0d0c09;
-  font-size: 14px;
-  font-weight: 700;
-  font-family: 'DM Sans', sans-serif;
+  background: transparent;
+  color: #c9a84c;
   cursor: pointer;
-  transition: all 0.15s;
+}
+
+.sp-strength {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
-  margin-top: 8px;
+  gap: 10px;
+  margin-top: 10px;
 }
-.sp-btn:hover:not(:disabled) { background: #e0bb5a; }
-.sp-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-.sp-spinner {
-  width: 16px; height: 16px;
-  border: 2px solid rgba(0,0,0,0.2);
-  border-top-color: #0d0c09;
-  border-radius: 50%;
-  animation: sp-spin 0.7s linear infinite;
+.sp-strength-bar {
+  flex: 1;
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
 }
-@keyframes sp-spin { to { transform: rotate(360deg); } }
 
-/* ── Success / Error states ── */
-.sp-success, .sp-error-state { text-align: center; padding: 12px 0; }
-.sp-success-icon, .sp-error-icon { font-size: 48px; margin-bottom: 16px; }
-.sp-success .sp-desc, .sp-error-state .sp-desc { margin-bottom: 28px; }
-</style>-->
+.sp-strength-fill {
+  height: 100%;
+  transition: width 0.2s ease;
+}
+
+.sp-error {
+  margin-top: 14px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(220, 38, 38, 0.12);
+  color: #fda4a4;
+  font-size: 13px;
+}
+
+.sp-btn,
+.sp-link {
+  width: 100%;
+  margin-top: 18px;
+  padding: 13px 16px;
+  border-radius: 14px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.sp-btn {
+  border: none;
+  background: #c9a84c;
+  color: #16120b;
+}
+
+.sp-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.sp-link {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: transparent;
+  color: #d6cab6;
+}
+</style>

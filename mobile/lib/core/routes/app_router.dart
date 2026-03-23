@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../theme/app_theme.dart';
+import '../widgets/brand_frame.dart';
 import '../../features/auth/providers/auth_provider.dart';
 import '../../features/auth/screens/forgot_password_screen.dart';
 import '../../features/auth/screens/login_screen.dart';
@@ -112,10 +114,31 @@ class _SplashScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      backgroundColor: Color(0xFF0D0F1A),
-      body: Center(
-        child: CircularProgressIndicator(color: Color(0xFFD4AF37)),
+    return Scaffold(
+      body: BrandBackdrop(
+        child: SafeArea(
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: const [
+                BrandWordmark(
+                  caption: 'Chargement de votre espace',
+                  markSize: 52,
+                  titleSize: 24,
+                ),
+                SizedBox(height: 28),
+                SizedBox(
+                  width: 28,
+                  height: 28,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.4,
+                    color: AppColors.gold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
