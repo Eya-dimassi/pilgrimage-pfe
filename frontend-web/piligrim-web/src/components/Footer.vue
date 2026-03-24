@@ -1,17 +1,16 @@
-﻿<template>
+<template>
   <footer class="footer" id="contact">
     <div class="footer-top">
       <div>
         <a class="f-brand-logo" href="#">
-          <div class="f-mark">☪</div>
-          <span class="f-name">SmartHajj</span>
+          <BrandIdentity :size="42" :caption="brand.tagline" />
         </a>
-        <p class="f-tagline">La plateforme de référence pour les agences Hajj &amp; Umrah modernes.</p>
+        <p class="f-tagline">{{ brand.tagline }}</p>
         <div class="f-socials">
           <a class="fsoc" href="#">f</a>
           <a class="fsoc" href="#">in</a>
-          <a class="fsoc" href="#">𝕏</a>
-          <a class="fsoc" href="#">◎</a>
+          <a class="fsoc" href="#">X</a>
+          <a class="fsoc" href="#">@</a>
         </div>
       </div>
       <div class="footer-cols">
@@ -20,8 +19,8 @@
           <ul class="fc-ul">
             <li><a href="#">Tarifs</a></li>
             <li><a href="#">Entreprise</a></li>
-            <li><a href="#">Intégrations</a></li>
-            <li><a href="#">Nouveautés</a></li>
+            <li><a href="#">Integrations</a></li>
+            <li><a href="#">Nouveautes</a></li>
           </ul>
         </div>
         <div>
@@ -30,7 +29,7 @@
             <li><a href="#">Gestion Hajj</a></li>
             <li><a href="#">Gestion Umrah</a></li>
             <li><a href="#">Groupes &amp; Guides</a></li>
-            <li><a href="#">Suivi pèlerins</a></li>
+            <li><a href="#">Suivi pelerins</a></li>
           </ul>
         </div>
         <div>
@@ -38,15 +37,15 @@
           <ul class="fc-ul">
             <li><a href="#">Blog</a></li>
             <li><a href="#">Centre d'aide</a></li>
-            <li><a href="#">Guide de démarrage</a></li>
+            <li><a href="#">Guide de demarrage</a></li>
             <li><a href="#">API Docs</a></li>
           </ul>
         </div>
         <div>
           <div class="fc-h">Entreprise</div>
           <ul class="fc-ul">
-            <li><a href="#">À propos</a></li>
-            <li><a href="#">Carrières</a></li>
+            <li><a href="#">A propos</a></li>
+            <li><a href="#">Carrieres</a></li>
             <li><a href="#">Contact</a></li>
             <li><a href="#">Presse</a></li>
           </ul>
@@ -54,13 +53,17 @@
       </div>
     </div>
     <div class="footer-bot">
-      <span class="f-copy">© 2024 SmartHajj · Fait avec ♥ pour chaque agence</span>
+      <span class="f-copy">{{ brand.footerCopy }}</span>
       <div class="f-legal">
         <a href="#">CGU</a>
-        <a href="#">Confidentialité</a>
-        <a href="#">Sécurité</a>
+        <a href="#">Confidentialite</a>
+        <a href="#">Securite</a>
       </div>
     </div>
   </footer>
 </template>
 
+<script setup>
+import { brand } from '@/content/brand'
+import BrandIdentity from './BrandIdentity.vue'
+</script>

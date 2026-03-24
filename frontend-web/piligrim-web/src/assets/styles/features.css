@@ -1,8 +1,8 @@
 .why {
   width: 100%;
-  padding: 110px 3.5rem;
+  padding: var(--section-pad-y) var(--page-pad);
   background: var(--bg-section);
-  transition: background 0.3s;
+  transition: background var(--transition-base);
 }
 
 .why-header {
@@ -11,7 +11,7 @@
   gap: 5rem;
   align-items: end;
   margin-bottom: 4.5rem;
-  max-width: 1400px;
+  max-width: var(--content-max);
 }
 
 .why-h2 {
@@ -77,22 +77,22 @@
   display: grid;
   grid-template-columns: repeat(3,1fr);
   gap: 1.25rem;
-  max-width: 1400px;
+  max-width: var(--content-max);
 }
 
 .wcard {
   background: var(--bg-card);
-  border-radius: 20px;
+  border-radius: var(--radius-card-md);
   padding: 2rem 2rem 2.25rem;
   border: 1px solid var(--border2);
-  transition: all 0.3s;
+  transition: all var(--transition-base);
   position: relative;
   overflow: hidden;
 }
 
 .wcard:hover {
   transform: translateY(-4px);
-  box-shadow: 0 20px 60px rgba(0,0,0,0.12);
+  box-shadow: var(--shadow-card-hover);
   border-color: var(--border);
 }
 
@@ -104,8 +104,8 @@
   right: 0;
   height: 3px;
   background: transparent;
-  transition: background 0.3s;
-  border-radius: 20px 20px 0 0;
+  transition: background var(--transition-base);
+  border-radius: var(--radius-card-md) var(--radius-card-md) 0 0;
 }
 
 .wcard:hover::before {
@@ -146,9 +146,9 @@
 
 .everyone {
   width: 100%;
-  padding: 110px 3.5rem;
+  padding: var(--section-pad-y) var(--page-pad);
   background: var(--bg);
-  transition: background 0.3s;
+  transition: background var(--transition-base);
 }
 
 .ev-top {
@@ -156,7 +156,7 @@
   grid-template-columns: 1fr auto;
   align-items: end;
   margin-bottom: 3.5rem;
-  max-width: 1400px;
+  max-width: var(--content-max);
   gap: 3rem;
 }
 
@@ -216,7 +216,7 @@
   display: grid;
   grid-template-columns: repeat(2,1fr);
   gap: 1.25rem;
-  max-width: 1400px;
+  max-width: var(--content-max);
 }
 
 .bc {
@@ -228,7 +228,7 @@
   display: flex;
   flex-direction: column;
   border: 1px solid var(--border2);
-  transition: all 0.3s;
+  transition: all var(--transition-base);
 }
 
 .bc:hover {
@@ -379,8 +379,8 @@
 @media (max-width: 768px) {
   .why,
   .everyone {
-    padding-left: 1.5rem;
-    padding-right: 1.5rem;
+    padding-left: var(--page-pad-mobile);
+    padding-right: var(--page-pad-mobile);
   }
 
   .why-grid {

@@ -10,7 +10,7 @@
 }
 
 .hero-left {
-  padding: 5rem 3rem 5rem 3.5rem;
+  padding: 5rem 3rem 5rem var(--page-pad);
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -23,7 +23,7 @@
   background: var(--off);
   border: 1px solid var(--border);
   padding: 0.42rem 0.9rem;
-  border-radius: 100px;
+  border-radius: var(--radius-pill);
   margin-bottom: 2.25rem;
   font-size: 0.8rem;
   color: var(--text-muted);
@@ -162,7 +162,7 @@
 }
 
 .hero-right {
-  padding: 4rem 3.5rem 4rem 1rem;
+  padding: 4rem var(--page-pad) 4rem 1rem;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -344,11 +344,11 @@
   }
 
   .hero-right {
-    padding: 2rem 3.5rem 3rem;
+    padding: 2rem var(--page-pad) 3rem;
   }
 
   .hero-left {
-    padding: 5rem 3.5rem 2rem;
+    padding: 5rem var(--page-pad) 2rem;
   }
 
   .fc-1,
@@ -359,6 +359,6 @@
 
 @media (max-width: 768px) {
   .hero-left {
-    padding: 6rem 1.5rem 4rem;
+    padding: 6rem var(--page-pad-mobile) 4rem;
   }
 }

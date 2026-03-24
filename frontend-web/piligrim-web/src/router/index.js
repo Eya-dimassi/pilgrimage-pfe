@@ -3,42 +3,39 @@ import HomePageView from '@/views/HomePageView.vue'
 import ActivateAccountView from '@/views/ActivateAccountView.vue'
 import ForgotPasswordView from '@/views/ForgotPasswordView.vue'
 import SetPasswordView from '@/views/SetPasswordView.vue'
-const routes = [
-  // login is now a modal on the homepage — redirect /login to /
-  { path: '/login', redirect: '/' },
 
+const routes = [
+  // Login now lives in the homepage modal, so /login redirects home.
+  { path: '/login', redirect: '/' },
   { path: '/', component: HomePageView },
   {
     path: '/forgot-password',
     name: 'ForgotPassword',
     component: ForgotPasswordView,
-    meta: { requiresAuth: false }
+    meta: { requiresAuth: false },
   },
   {
     path: '/auth/set-password',
     name: 'SetPassword',
     component: SetPasswordView,
-    meta: { requiresAuth: false }
+    meta: { requiresAuth: false },
   },
-
   {
     path: '/dashboard',
-    component: () => import('@/views/agence/DashboardView.vue'),
-    meta: { requiresAuth: true, role: 'AGENCE' }
+    component: () => import('@/features/agence/views/DashboardView.vue'),
+    meta: { requiresAuth: true, role: 'AGENCE' },
   },
   {
     path: '/admin',
-    component: () => import('@/views/AdminView.vue'),
-    meta: { requiresAuth: true, role: 'SUPER_ADMIN' }
+    component: () => import('@/features/admin/views/AdminView.vue'),
+    meta: { requiresAuth: true, role: 'SUPER_ADMIN' },
   },
   {
     path: '/activate-account',
     name: 'ActivateAccount',
     component: ActivateAccountView,
-    meta: { 
-      requiresAuth: false  // Pas d'auth requise
-    }
-  }
+    meta: { requiresAuth: false },
+  },
 ]
 
 const router = createRouter({

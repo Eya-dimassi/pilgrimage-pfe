@@ -39,6 +39,24 @@ export async function getMe() {
   return data
 }
 
+export async function forgotPassword(email) {
+  const { data } = await api.post('/auth/forgot-password', { email })
+  return data
+}
+
+export async function setPassword(token, newPassword) {
+  const { data } = await api.post('/auth/set-password', {
+    token,
+    newPassword,
+  })
+  return data
+}
+
+export async function verifyActivationToken(token) {
+  const { data } = await api.post('/auth/verify-activation-token', { token })
+  return data
+}
+
 export function saveSession(data) {
   localStorage.setItem('accessToken', data.accessToken)
   localStorage.setItem('refreshToken', data.refreshToken)

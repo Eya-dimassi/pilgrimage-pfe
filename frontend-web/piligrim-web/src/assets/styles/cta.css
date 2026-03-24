@@ -6,12 +6,12 @@
 }
 
 .cta-left {
-  padding: 7rem 4rem 7rem 3.5rem;
+  padding: 7rem 4rem 7rem var(--page-pad);
   background: var(--bg-section);
   display: flex;
   flex-direction: column;
   justify-content: center;
-  transition: background 0.3s;
+  transition: background var(--transition-base);
 }
 
 .cta-left-h {
@@ -100,13 +100,13 @@
 }
 
 .cta-right {
-  padding: 5rem 3.5rem 5rem 4rem;
+  padding: 5rem var(--page-pad) 5rem 4rem;
   background: var(--bg-card);
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
-  transition: background 0.3s;
+  transition: background var(--transition-base);
 }
 
 .cta-right::before {
@@ -123,11 +123,11 @@
   width: 100%;
   max-width: 480px;
   border: 1.5px solid var(--border);
-  border-radius: 26px;
+  border-radius: var(--radius-card-lg);
   padding: 2.75rem;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 8px 50px rgba(0,0,0,0.07);
+  box-shadow: var(--shadow-card);
   background: var(--bg-card);
 }
 
@@ -135,7 +135,7 @@
   content: '';
   position: absolute;
   inset: 0;
-  border-radius: 26px;
+  border-radius: var(--radius-card-lg);
   z-index: -1;
   pointer-events: none;
   background: linear-gradient(135deg, #D4AF37 0%, #C07A42 35%, #7EAD8C 70%, #6B8DD4 100%);
@@ -263,8 +263,8 @@
 @media (max-width: 768px) {
   .cta-left,
   .cta-right {
-    padding-left: 1.5rem;
-    padding-right: 1.5rem;
+    padding-left: var(--page-pad-mobile);
+    padding-right: var(--page-pad-mobile);
   }
 
   .frow {
