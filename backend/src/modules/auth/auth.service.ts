@@ -113,6 +113,7 @@ export const signup = async (data: {
   motDePasse: string;
   telephone?: string;
   adresse?: string;
+  siteWeb?: string;
 }) => {
   // check email not already taken
   const exist = await prisma.utilisateur.findUnique({
@@ -135,6 +136,7 @@ export const signup = async (data: {
         create: {
           nomAgence: data.nomAgence,
           adresse: data.adresse,
+          siteWeb: data.siteWeb,
           status: StatutAgence.PENDING, // admin must approve
         },
       },

@@ -23,13 +23,13 @@ router.post('/login', async (req: Request, res: Response) => {
 // POST /auth/signup
 router.post('/signup',async(req: Request, res: Response)=> {
   try {
-    const {nomAgence, email, motDePasse, telephone, adresse}=req.body;
+    const {nomAgence, email, motDePasse, telephone, adresse, siteWeb}=req.body;
 
     if (!nomAgence || !email || !motDePasse) {
       return res.status(400).json({ message: 'Nom agence, email et mot de passe requis'});
     }
 
-    const result = await authService.signup({nomAgence, email, motDePasse, telephone, adresse});
+    const result = await authService.signup({nomAgence, email, motDePasse, telephone, adresse, siteWeb});
     return res.status(201).json(result);
   } catch (error: any) {
     return res.status(400).json({ message: error.message });
