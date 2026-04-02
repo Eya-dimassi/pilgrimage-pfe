@@ -5,9 +5,12 @@
       :current-view="currentView"
       :get-badge="getBadge"
       :user-initials="userInitials"
-      :user="user"
-      logo-variant="brand-mark"
-      logo-subtitle="Espace Agence"
+      :user="sidebarUser"
+      header-title="Bienvenue"
+      :header-subtitle="welcomeSubtitle"
+      profile-position="bottom"
+      footer-variant="profile"
+      logout-position="bottom"
       user-role="Agence"
       profile-clickable
       @navigate="currentView = $event"
@@ -21,7 +24,7 @@
         root-label="Agence"
         :is-dark="isDark"
         @refresh="loadAll"
-        @toggle-theme="isDark = !isDark"
+        @toggle-theme="toggleTheme"
       />
 
       <div class="content">
@@ -59,9 +62,12 @@
             :pelerins="pelerins"
             :groupes="groupes"
             :bulk-assign-loading="bulkAssignLoading"
+            :resending-id="resendingPelerinId"
             @create="openModal('createPelerin')"
+            @detail="openPelerinDetail($event)"
             @edit="openEdit('pelerin', $event)"
             @delete="confirmDelete('pelerin', $event)"
+            @resend="doResendPelerinActivation($event)"
             @assign="doAssignerPelerin($event)"
             @bulk-assign="doBulkAssignerPelerins($event)"
             @unassign="doRetirerPelerin($event)"
@@ -71,11 +77,13 @@
             v-if="currentView === 'guides'"
             :guides="guides"
             :resending-id="resendingId"
+            :groupes="groupes"
             @create="openModal('createGuide')"
             @detail="openGuideDetail($event)"
             @edit="openEdit('guide', $event)"
             @delete="confirmDelete('guide', $event)"
             @resend="doResendActivation($event)"
+            @assign="doAssignerGuide($event)"
           />
 
           <DashGroupes
@@ -86,6 +94,7 @@
             @delete="confirmDelete('groupe', $event)"
             @assign="openAssign($event)"
             @remove-pelerin="doRetirerPelerin($event)"
+            @remove-guide="doRetirerGuide($event)"
           />
         </template>
       </div>
@@ -132,22 +141,34 @@
 
     <DashboardModalShell
       v-if="modal === 'assign'"
-      :title="`Affecter un pelerin - ${selectedGroupe?.nom ?? ''}`"
+      :title="`Affecter des pelerins - ${selectedGroupe?.nom ?? ''}`"
       :error="modalError"
       @close="closeModal"
     >
       <div class="form-field">
-        <label>Choisir un pelerin</label>
-        <select v-model="form.pelerinId">
-          <option value="">Selectionner</option>
-          <option v-for="p in unassignedPelerins" :key="p.id" :value="p.id">
-            {{ p.utilisateur?.prenom }} {{ p.utilisateur?.nom }}
-          </option>
-        </select>
+        <label>Choisir des pelerins</label>
+
+        <div class="multi-select" @click="assignDropdownOpen = !assignDropdownOpen">
+          <div class="multi-select-value">{{ assignSelectedLabel }}</div>
+          <AppIcon :name="assignDropdownOpen ? 'chevron-up' : 'chevron-down'" :size="14" />
+        </div>
+
+        <div v-if="assignDropdownOpen" class="multi-select-menu" @click.stop>
+          <input v-model="assignSearch" class="multi-select-search" placeholder="Rechercher un pelerin..." />
+
+          <div v-if="filteredUnassignedPelerins.length === 0" class="multi-select-empty">
+            Aucun pelerin disponible
+          </div>
+
+          <label v-for="p in filteredUnassignedPelerins" :key="p.id" class="multi-select-option">
+            <input type="checkbox" :value="p.id" v-model="form.pelerinIds" />
+            <span>{{ p.utilisateur?.prenom }} {{ p.utilisateur?.nom }}</span>
+          </label>
+        </div>
       </div>
       <template #actions>
         <button class="btn-secondary" @click="closeModal">Annuler</button>
-        <button class="btn-primary" :disabled="actionLoading || !form.pelerinId" @click="doAssign">
+        <button class="btn-primary" :disabled="actionLoading || selectedAssignPelerinIds.length === 0" @click="doAssign">
           {{ actionLoading ? 'Affectation...' : 'Affecter' }}
         </button>
       </template>
@@ -155,19 +176,29 @@
 
     <DashboardModalShell
       v-if="modal === 'delete'"
-      title="Confirmer la suppression"
+      :title="deleteModalTitle"
       danger
       small
       @close="closeModal"
     >
       <p class="modal-desc">
-        Supprimer <strong>{{ deleteTarget?.utilisateur?.prenom ?? deleteTarget?.nom }} {{ deleteTarget?.utilisateur?.nom ?? '' }}</strong>
-        ? Cette action est irreversible.
+        <template v-if="deleteTarget?.typeVoyage">
+          <template v-if="(deleteTarget?._count?.pelerins ?? deleteTarget?.pelerins?.length ?? 0) > 0">
+            Ce groupe contient des pelerins : il sera <strong>annule</strong> (statut <strong>ANNULE</strong>) au lieu d'etre supprime.
+          </template>
+          <template v-else>
+            Supprimer le groupe <strong>{{ deleteTarget?.nom }}</strong> ? Cette action est irreversible.
+          </template>
+        </template>
+        <template v-else>
+          Supprimer <strong>{{ deleteTarget?.utilisateur?.prenom ?? deleteTarget?.nom }} {{ deleteTarget?.utilisateur?.nom ?? '' }}</strong>
+          ? Cette action est irreversible.
+        </template>
       </p>
       <template #actions>
         <button class="btn-secondary" @click="closeModal">Annuler</button>
         <button class="btn-danger" :disabled="actionLoading" @click="doDelete">
-          {{ actionLoading ? 'Suppression...' : 'Supprimer' }}
+          {{ actionLoading ? deleteModalLoadingLabel : deleteModalConfirmLabel }}
         </button>
       </template>
     </DashboardModalShell>
@@ -190,14 +221,23 @@
       @close="closeGuideDetail"
     />
 
+    <PelerinDetailModal
+      v-if="selectedPelerinDetail"
+      :pelerin="selectedPelerinDetail"
+      :loading="pelerinDetailLoading"
+      :error="pelerinDetailError"
+      @close="closePelerinDetail"
+    />
+
     <div v-if="toast.show" :class="['toast', toast.type]">{{ toast.message }}</div>
   </div>
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import DashboardHome from '@/features/agence/components/dashboard/DashboardHome.vue'
 import DashboardModalShell from '@/features/agence/components/dashboard/DashboardModalShell.vue'
+import AppIcon from '@/components/AppIcon.vue'
 import AppSidebar from '@/components/layout/AppSidebar.vue'
 import AppTopbar from '@/components/layout/AppTopbar.vue'
 import CreateGroupeModal from '@/features/agence/components/modals/CreateGroupeModal.vue'
@@ -205,6 +245,7 @@ import CreateGuideModal from '@/features/agence/components/modals/CreateGuideMod
 import CreatePelerinModal from '@/features/agence/components/modals/CreatePelerinModal.vue'
 import EditModal from '@/features/agence/components/modals/EditModal.vue'
 import GuideDetailModal from '@/features/agence/components/modals/GuideDetailModal.vue'
+import PelerinDetailModal from '@/features/agence/components/modals/PelerinDetailModal.vue'
 import ProfileModal from '@/features/agence/components/modals/ProfileModal.vue'
 import { useAgenceData } from '@/features/agence/composables/useAgenceData'
 import { useDashboardStats } from '@/features/agence/composables/useDashboardStats'
@@ -228,6 +269,7 @@ const {
   getBadge,
   initials,
   getGuideStats,
+  getPelerinDetails,
   getProfile,
   updateProfile,
 } = useAgenceData()
@@ -238,6 +280,7 @@ const {
   actionLoading,
   bulkAssignLoading,
   resendingId,
+  resendingPelerinId,
   form,
   editType,
   deleteTarget,
@@ -256,11 +299,15 @@ const {
   doAssign,
   doDelete,
   doResendActivation,
+  doResendPelerinActivation,
   doAssignerPelerin,
+  doAssignerGuide,
   doBulkAssignerPelerins,
   doRetirerPelerin,
+  doRetirerGuide,
 } = useModal()
 
+const THEME_STORAGE_KEY = 'agence-dark'
 const isDark = ref(true)
 const currentView = ref('dashboard')
 const showProfile = ref(false)
@@ -271,10 +318,30 @@ const selectedGuideDetail = ref(null)
 const selectedGuideStats = ref(null)
 const guideDetailLoading = ref(false)
 const guideDetailError = ref('')
+const selectedPelerinDetail = ref(null)
+const pelerinDetailLoading = ref(false)
+const pelerinDetailError = ref('')
 
 const userInitials = computed(() =>
-  ((user.value?.prenom?.[0] ?? '') + (user.value?.nom?.[0] ?? '')).toUpperCase() || 'AG'
+  ((sidebarUser.value?.prenom?.[0] ?? '') + (sidebarUser.value?.nom?.[0] ?? '')).toUpperCase() || 'AG'
 )
+
+const sidebarUser = computed(() => {
+  const rawPrenom = String(user.value?.prenom ?? '').trim()
+  const rawNom = String(user.value?.nom ?? '').trim()
+
+  const prenom = rawPrenom === '-' || rawPrenom === '—' ? '' : rawPrenom
+  const nom = rawNom === '-' || rawNom === '—' ? '' : rawNom
+
+  return {
+    ...(user.value ?? {}),
+    prenom,
+    nom,
+  }
+})
+
+const agencyName = computed(() => sidebarUser.value?.nom || 'Agence')
+const welcomeSubtitle = computed(() => `Agence ${agencyName.value}`.trim())
 
 const { guideStatusClass, guideStatusLabel } = useGuideStatus()
 
@@ -293,9 +360,72 @@ const viewTitle = computed(() => ({
   groupes: 'Groupes',
 }[currentView.value]))
 
+const isGroupeCancelDelete = computed(() => {
+  const target = deleteTarget.value
+  if (!target?.typeVoyage) return false
+  const count = target?._count?.pelerins ?? target?.pelerins?.length ?? 0
+  return count > 0
+})
+
+const deleteModalTitle = computed(() =>
+  isGroupeCancelDelete.value ? "Confirmer l'annulation" : 'Confirmer la suppression'
+)
+
+const deleteModalConfirmLabel = computed(() =>
+  isGroupeCancelDelete.value ? 'Annuler le groupe' : 'Supprimer'
+)
+
+const deleteModalLoadingLabel = computed(() =>
+  isGroupeCancelDelete.value ? 'Annulation...' : 'Suppression...'
+)
+
 const unassignedPelerins = computed(() =>
   pelerins.value.filter((p) => !p.groupeId || p.groupeId !== selectedGroupe.value?.id)
 )
+
+const assignDropdownOpen = ref(false)
+const assignSearch = ref('')
+
+const selectedAssignPelerinIds = computed(() => {
+  const ids = Array.isArray(form.value?.pelerinIds) ? form.value.pelerinIds : []
+  return ids.filter(Boolean)
+})
+
+const filteredUnassignedPelerins = computed(() => {
+  const query = assignSearch.value.trim().toLowerCase()
+  if (!query) return unassignedPelerins.value
+
+  return unassignedPelerins.value.filter((p) => {
+    const prenom = p.utilisateur?.prenom ?? ''
+    const nom = p.utilisateur?.nom ?? ''
+    const full = `${prenom} ${nom}`.trim().toLowerCase()
+    return full.includes(query)
+  })
+})
+
+const assignSelectedLabel = computed(() => {
+  const count = selectedAssignPelerinIds.value.length
+  if (count === 0) return 'Selectionner des pelerins'
+  if (count === 1) {
+    const id = selectedAssignPelerinIds.value[0]
+    const p = unassignedPelerins.value.find((item) => item.id === id)
+    if (!p) return '1 pelerin selectionne'
+    return `${p.utilisateur?.prenom ?? ''} ${p.utilisateur?.nom ?? ''}`.trim() || '1 pelerin selectionne'
+  }
+  return `${count} pelerins selectionnes`
+})
+
+watch(modal, (value) => {
+  if (value !== 'assign') {
+    assignDropdownOpen.value = false
+    assignSearch.value = ''
+    return
+  }
+
+  if (!Array.isArray(form.value?.pelerinIds)) {
+    form.value = { ...(form.value ?? {}), pelerinIds: [] }
+  }
+})
 
 const navItems = [
   { view: 'dashboard', label: "Vue d'ensemble", badge: null, iconName: 'grid' },
@@ -306,6 +436,10 @@ const navItems = [
 
 function getGroupSymbol(typeVoyage) {
   return typeVoyage === 'HAJJ' ? 'HJ' : 'UM'
+}
+
+function toggleTheme() {
+  isDark.value = !isDark.value
 }
 
 async function openProfile() {
@@ -361,5 +495,39 @@ function closeGuideDetail() {
   guideDetailError.value = ''
 }
 
-onMounted(loadAll)
+async function openPelerinDetail(pelerin) {
+  selectedPelerinDetail.value = pelerin
+  pelerinDetailError.value = ''
+  pelerinDetailLoading.value = true
+
+  try {
+    selectedPelerinDetail.value = await getPelerinDetails(pelerin.id)
+  } catch (error) {
+    pelerinDetailError.value = error.response?.data?.message || 'Impossible de charger les details du pelerin.'
+  } finally {
+    pelerinDetailLoading.value = false
+  }
+}
+
+function closePelerinDetail() {
+  selectedPelerinDetail.value = null
+  pelerinDetailError.value = ''
+}
+
+watch(isDark, (value) => {
+  try {
+    localStorage.setItem(THEME_STORAGE_KEY, String(value))
+  } catch {}
+})
+
+onMounted(() => {
+  try {
+    const saved = localStorage.getItem(THEME_STORAGE_KEY)
+    if (saved === 'true' || saved === 'false') {
+      isDark.value = saved === 'true'
+    }
+  } catch {}
+
+  loadAll()
+})
 </script>

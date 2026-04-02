@@ -3,6 +3,27 @@ import { groupes, guides, pelerins, useAgenceData } from './useAgenceData'
 
 const TOAST_DURATION_MS = 8500
 
+function normalizeGroupe(raw) {
+  const guidesList = Array.isArray(raw?.guides)
+    ? raw.guides.map((rel) => rel?.guide ?? rel).filter((g) => g?.id)
+    : []
+  const activeGuide = raw?.guide ?? guidesList[0] ?? null
+  const pelerinsList = raw?.pelerins ?? raw?.membres?.map((m) => m?.pelerin).filter(Boolean) ?? []
+
+  return {
+    ...raw,
+    guides: guidesList,
+    guideIds: guidesList.map((g) => g.id),
+    guide: activeGuide,
+    guideId: raw?.guideId ?? activeGuide?.id ?? null,
+    pelerins: pelerinsList,
+    _count: {
+      ...(raw?._count ?? {}),
+      pelerins: raw?._count?.pelerins ?? raw?._count?.membres ?? pelerinsList.length,
+    },
+  }
+}
+
 export function useModal() {
   const {
     loadAll,
@@ -13,6 +34,7 @@ export function useModal() {
     updateGuide,
     deleteGuide,
     resendActivation,
+    resendPelerinActivation,
     createGroupe,
     updateGroupe,
     deleteGroupe,
@@ -25,6 +47,7 @@ export function useModal() {
   const actionLoading = ref(false)
   const bulkAssignLoading = ref(false)
   const resendingId = ref(null)
+  const resendingPelerinId = ref(null)
   const form = ref({})
   const editType = ref('')
   const editTarget = ref(null)
@@ -49,8 +72,28 @@ export function useModal() {
     resetModalError()
   }
 
+  function dateToInput(value) {
+    if (!value) return ''
+    const date = value instanceof Date ? value : new Date(value)
+    if (Number.isNaN(date.getTime())) return ''
+    return date.toISOString().slice(0, 10)
+  }
+
   function openModal(type) {
     form.value = { typeVoyage: 'HAJJ', annee: new Date().getFullYear() }
+
+    if (type === 'createGroupe') {
+      form.value = {
+        ...form.value,
+        nom: '',
+        description: '',
+        guideIds: [],
+        status: 'PLANIFIE',
+        dateDepart: '',
+        dateRetour: '',
+      }
+    }
+
     resetModalError()
     modal.value = type
   }
@@ -76,12 +119,22 @@ export function useModal() {
         specialite: target.specialite,
       }
     } else if (type === 'groupe') {
+      const guideIds = Array.isArray(target.guideIds)
+        ? target.guideIds.filter(Boolean)
+        : Array.isArray(target.guides)
+          ? target.guides.map((g) => g.id).filter(Boolean)
+          : target.guideId
+            ? [target.guideId]
+            : []
       form.value = {
         nom: target.nom,
         annee: target.annee,
         typeVoyage: target.typeVoyage,
         description: target.description,
-        guideId: target.guideId ?? '',
+        guideIds,
+        status: target.status ?? 'PLANIFIE',
+        dateDepart: dateToInput(target.dateDepart),
+        dateRetour: dateToInput(target.dateRetour),
       }
     }
 
@@ -90,7 +143,7 @@ export function useModal() {
 
   function openAssign(groupe) {
     selectedGroupe.value = groupe
-    form.value = { pelerinId: '' }
+    form.value = { pelerinIds: [] }
     resetModalError()
     modal.value = 'assign'
   }
@@ -181,11 +234,26 @@ export function useModal() {
   }
 
   async function doAssign() {
+    const idsToAssign = Array.isArray(form.value?.pelerinIds)
+      ? form.value.pelerinIds.filter(Boolean)
+      : form.value?.pelerinId
+        ? [form.value.pelerinId]
+        : []
+
+    if (idsToAssign.length === 0) {
+      modalError.value = 'Selectionnez au moins un pelerin'
+      return
+    }
+
     await runModalAction(
-      () => assignerPelerin(selectedGroupe.value.id, form.value.pelerinId),
+      async () => {
+        for (const pelerinId of idsToAssign) {
+          await assignerPelerin(selectedGroupe.value.id, pelerinId)
+        }
+      },
       async () => {
         closeModal()
-        showToast('Pelerin affecte au groupe')
+        showToast(idsToAssign.length === 1 ? 'Pelerin affecte au groupe' : `${idsToAssign.length} pelerins affectes au groupe`)
         await loadAll()
       }
     )
@@ -225,6 +293,7 @@ export function useModal() {
 
     try {
       const id = deleteTarget.value.id
+      let successMessage = 'Supprime avec succes'
 
       if (deleteType.value === 'pelerin') {
         const pelerin = pelerins.value.find((item) => item.id === id)
@@ -240,12 +309,23 @@ export function useModal() {
         await deleteGuide(id)
         guides.value = guides.value.filter((item) => item.id !== id)
       } else if (deleteType.value === 'groupe') {
-        await deleteGroupe(id)
-        groupes.value = groupes.value.filter((item) => item.id !== id)
+        const result = await deleteGroupe(id)
+
+        if (result?.action === 'status_changed' && result?.groupe) {
+          const index = groupes.value.findIndex((item) => item.id === id)
+          if (index >= 0) {
+            groupes.value[index] = normalizeGroupe(result.groupe)
+          } else {
+            groupes.value = [...groupes.value, normalizeGroupe(result.groupe)]
+          }
+          successMessage = 'Groupe annule (statut ANNULE)'
+        } else {
+          groupes.value = groupes.value.filter((item) => item.id !== id)
+        }
       }
 
       closeModal()
-      showToast('Supprime avec succes')
+      showToast(successMessage)
     } catch (error) {
       showToast(error.response?.data?.message || error.message, 'error')
     } finally {
@@ -263,6 +343,19 @@ export function useModal() {
       showToast(error.response?.data?.message || error.message, 'error')
     } finally {
       resendingId.value = null
+    }
+  }
+
+  async function doResendPelerinActivation(pelerin) {
+    resendingPelerinId.value = pelerin.id
+
+    try {
+      await resendPelerinActivation(pelerin.id)
+      showToast("Email d'activation renvoye")
+    } catch (error) {
+      showToast(error.response?.data?.message || error.message, 'error')
+    } finally {
+      resendingPelerinId.value = null
     }
   }
 
@@ -288,6 +381,48 @@ export function useModal() {
     }
   }
 
+  async function doAssignerGuide({ groupeId, guideId }) {
+    if (!groupeId || !guideId) return
+
+    try {
+      const groupeIndex = groupes.value.findIndex((item) => item.id === groupeId)
+      const existingGroupe = groupeIndex >= 0 ? groupes.value[groupeIndex] : null
+      const existingGuideIds = Array.isArray(existingGroupe?.guideIds)
+        ? existingGroupe.guideIds
+        : Array.isArray(existingGroupe?.guides)
+          ? existingGroupe.guides.map((g) => g.id).filter(Boolean)
+          : existingGroupe?.guideId
+            ? [existingGroupe.guideId]
+            : []
+      const nextGuideIds = Array.from(new Set([...existingGuideIds, guideId]))
+      const oldGuideId = existingGroupe?.guideId ?? existingGroupe?.guide?.id ?? null
+
+      const updated = normalizeGroupe(await updateGroupe(groupeId, { guideIds: nextGuideIds }))
+
+      if (groupeIndex >= 0) {
+        groupes.value[groupeIndex] = {
+          ...existingGroupe,
+          ...updated,
+          pelerins: existingGroupe?.pelerins ?? updated.pelerins,
+        }
+      } else {
+        groupes.value = [...groupes.value, updated]
+      }
+
+      if (!existingGuideIds.includes(guideId)) {
+        const newGuide = guides.value.find((item) => item.id === guideId)
+        if (newGuide) {
+          if (!newGuide._count) newGuide._count = {}
+          newGuide._count.groupes = (newGuide._count.groupes ?? 0) + 1
+        }
+      }
+
+      showToast('Guide affecte au groupe')
+    } catch (error) {
+      showToast(error.response?.data?.message || error.message, 'error')
+    }
+  }
+
   async function doRetirerPelerin({ groupeId, pelerinId }) {
     try {
       await retirerPelerin(groupeId, pelerinId)
@@ -300,6 +435,45 @@ export function useModal() {
 
       removePelerinFromGroupState(pelerinId, groupeId)
       showToast('Pelerin retire du groupe')
+    } catch (error) {
+      showToast(error.response?.data?.message || error.message, 'error')
+    }
+  }
+
+  async function doRetirerGuide({ groupeId, guideId }) {
+    if (!groupeId || !guideId) return
+
+    try {
+      const groupeIndex = groupes.value.findIndex((item) => item.id === groupeId)
+      const existingGroupe = groupeIndex >= 0 ? groupes.value[groupeIndex] : null
+
+      const existingGuideIds = Array.isArray(existingGroupe?.guideIds)
+        ? existingGroupe.guideIds
+        : Array.isArray(existingGroupe?.guides)
+          ? existingGroupe.guides.map((g) => g.id).filter(Boolean)
+          : existingGroupe?.guideId
+            ? [existingGroupe.guideId]
+            : []
+
+      const nextGuideIds = existingGuideIds.filter((id) => id !== guideId)
+      const updated = normalizeGroupe(await updateGroupe(groupeId, { guideIds: nextGuideIds }))
+
+      if (groupeIndex >= 0) {
+        groupes.value[groupeIndex] = {
+          ...existingGroupe,
+          ...updated,
+          pelerins: existingGroupe?.pelerins ?? updated.pelerins,
+        }
+      } else {
+        groupes.value = [...groupes.value, updated]
+      }
+
+      const guide = guides.value.find((item) => item.id === guideId)
+      if (guide?._count?.groupes != null) {
+        guide._count.groupes = Math.max(0, guide._count.groupes - 1)
+      }
+
+      showToast('Guide retire du groupe')
     } catch (error) {
       showToast(error.response?.data?.message || error.message, 'error')
     }
@@ -356,6 +530,7 @@ export function useModal() {
     actionLoading,
     bulkAssignLoading,
     resendingId,
+    resendingPelerinId,
     form,
     editType,
     editTarget,
@@ -376,8 +551,11 @@ export function useModal() {
     doAssign,
     doDelete,
     doResendActivation,
+    doResendPelerinActivation,
     doAssignerPelerin,
+    doAssignerGuide,
     doBulkAssignerPelerins,
     doRetirerPelerin,
+    doRetirerGuide,
   }
 }

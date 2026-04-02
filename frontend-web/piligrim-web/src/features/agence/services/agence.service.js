@@ -49,6 +49,16 @@ export async function resendAgenceGuideActivation(id) {
   return data
 }
 
+export async function resendAgencePelerinActivation(id) {
+  const { data } = await api.post(`/agence/pelerins/${id}/resend-activation`)
+  return data
+}
+
+export async function fetchAgencePelerin(id) {
+  const { data } = await api.get(`/agence/pelerins/${id}`)
+  return data
+}
+
 export async function fetchAvailableAgenceGuides() {
   const { data } = await api.get('/agence/guides/available')
   return Array.isArray(data) ? data : (data.guides ?? [])
@@ -60,13 +70,27 @@ export async function fetchAgenceGuideStats(id) {
 }
 
 export async function createAgenceGroupe(form) {
-  const body = { ...form, guideId: form.guideId || undefined }
+  const body = {
+    ...form,
+    guideId: form.guideId || undefined,
+    guideIds: Array.isArray(form.guideIds) ? form.guideIds : undefined,
+    dateDepart: form.dateDepart || undefined,
+    dateRetour: form.dateRetour || undefined,
+    status: form.status || undefined,
+  }
   const { data } = await api.post('/agence/groupes', body)
   return data
 }
 
 export async function updateAgenceGroupe(id, form) {
-  const { data } = await api.patch(`/agence/groupes/${id}`, form)
+  const body = {
+    ...form,
+    guideId: form.guideId === '' ? null : form.guideId,
+    guideIds: Array.isArray(form.guideIds) ? form.guideIds : undefined,
+    dateDepart: form.dateDepart === '' ? null : form.dateDepart,
+    dateRetour: form.dateRetour === '' ? null : form.dateRetour,
+  }
+  const { data } = await api.patch(`/agence/groupes/${id}`, body)
   return data
 }
 

@@ -4,13 +4,11 @@
       :nav-items="navItems"
       :current-view="currentView"
       :get-badge="getAdminBadge"
-      :user-initials="userInitials"
-      :user="user"
       user-role="Super Admin"
-      logo-variant="icon"
-      logo-icon-name="lock"
-      account-section-label="Compte"
-      footer-variant="profile"
+      header-title="Bienvenue"
+      :header-subtitle="`${user?.nom ?? ''}`.trim() || 'Admin'"
+      profile-position="bottom"
+      logout-position="bottom"
       @navigate="currentView = $event"
       @logout="handleLogout"
     />
@@ -77,7 +75,7 @@ const navItems = [
 ]
 
 const userInitials = computed(() =>
-  ((user.value?.prenom?.[0] ?? '') + (user.value?.nom?.[0] ?? '')).toUpperCase() || 'SA'
+  ((user.value?.prenom?.[0] ?? '') + (user.value?.nom?.[0] ?? '')).toUpperCase() || 'A'
 )
 
 function getAdminBadge(type) {

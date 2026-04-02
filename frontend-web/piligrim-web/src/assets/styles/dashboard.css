@@ -8,7 +8,10 @@
   --bg: #f4f3ef;
   --bg2: #ffffff;
   --bg3: #eeece8;
-  --sidebar-bg: #0f0e0b;
+  --sidebar-bg: #ffffff;
+  --sidebar-text: #1a1814;
+  --sidebar-muted: #6b6560;
+  --sidebar-muted2: rgba(26, 24, 20, 0.6);
   --text: #1a1814;
   --text2: #6b6560;
   --border: rgba(0, 0, 0, 0.08);
@@ -29,6 +32,10 @@
   --bg: #0d0c09;
   --bg2: #151410;
   --bg3: #1c1a15;
+  --sidebar-bg: #0f0e0b;
+  --sidebar-text: #f0ede6;
+  --sidebar-muted: #8a8070;
+  --sidebar-muted2: rgba(240, 237, 230, 0.65);
   --text: #f0ede6;
   --text2: #8a8070;
   --border: rgba(255, 255, 255, 0.06);
@@ -46,10 +53,28 @@
 
 .sidebar-logo {
   display: flex;
-  align-items: center;
-  gap: 12px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 14px;
   padding: 24px 20px 20px;
   border-bottom: 1px solid rgba(201, 168, 76, 0.1);
+}
+
+.sidebar-header-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sidebar-header-row > div {
+  min-width: 0;
+}
+
+.sidebar-header-profile {
+  border: 1px solid rgba(201, 168, 76, 0.12);
+  border-radius: 12px;
+  padding: 8px 10px;
+  background: rgba(201, 168, 76, 0.05);
 }
 
 .sidebar-logo .brand-mark {
@@ -61,13 +86,21 @@
   font-weight: 800;
   color: var(--gold);
   font-size: 15px;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
+  line-height: 1.15;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .logo-sub {
-  color: #5a5040;
+  color: var(--sidebar-muted2);
   font-size: 11px;
   margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .sidebar-nav {
@@ -77,7 +110,7 @@
 }
 
 .nav-section-label {
-  color: #3a3428;
+  color: var(--sidebar-muted2);
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 1.2px;
@@ -92,7 +125,7 @@
   gap: 10px;
   padding: 10px 12px;
   border-radius: 10px;
-  color: #7a6e5e;
+  color: var(--sidebar-muted);
   cursor: pointer;
   font-size: 13.5px;
   font-weight: 500;
@@ -103,7 +136,7 @@
 
 .nav-item:hover {
   background: rgba(201, 168, 76, 0.08);
-  color: #c9a84c;
+  color: var(--gold);
 }
 
 .nav-item.active {
@@ -131,7 +164,53 @@
   border-top: 1px solid rgba(201, 168, 76, 0.1);
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 10px;
+}
+
+.sidebar-footer-main {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.sidebar-footer-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.sidebar-footer-brand-name {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  color: var(--gold);
+  font-size: 13px;
+  letter-spacing: 0.4px;
+  opacity: 0.95;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sidebar-bottom--stack {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.sidebar-bottom--stack .sidebar-footer-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.sidebar-logout-bottom {
+  width: 100%;
+  margin: 0;
 }
 
 .user-card {
@@ -170,7 +249,7 @@
 }
 
 .user-name {
-  color: #c0b090;
+  color: var(--sidebar-text);
   font-size: 13px;
   font-weight: 500;
   white-space: nowrap;
@@ -179,14 +258,14 @@
 }
 
 .user-role {
-  color: #4a4030;
+  color: var(--sidebar-muted2);
   font-size: 11px;
 }
 
 .logout-btn {
   background: none;
   border: none;
-  color: #4a4030;
+  color: var(--sidebar-muted2);
   cursor: pointer;
   padding: 6px;
   border-radius: 8px;
@@ -1301,6 +1380,80 @@
 
 .form-field select option {
   background: var(--bg2);
+}
+
+.multi-select {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 12px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font-size: 13.5px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.multi-select-value {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.multi-select-menu {
+  margin-top: 8px;
+  padding: 10px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  max-height: 240px;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.multi-select-search {
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  font-size: 13px;
+}
+
+.multi-select-search:focus {
+  border-color: var(--gold);
+}
+
+.multi-select-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 8px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 13.5px;
+  color: var(--text);
+}
+
+.multi-select-option:hover {
+  background: rgba(201, 168, 76, 0.08);
+}
+
+.multi-select-option input {
+  accent-color: var(--gold);
+}
+
+.multi-select-empty {
+  padding: 8px 10px;
+  color: var(--text2);
+  font-size: 13px;
 }
 
 .modal-context {

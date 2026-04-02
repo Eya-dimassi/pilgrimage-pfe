@@ -24,7 +24,7 @@
 
     <div class="cta-right">
       <div class="form-card">
-        <div class="form-card-title">Demander l'acces</div>
+        <div class="form-card-title">Creer un compte</div>
         <p class="form-card-sub">Reponse garantie sous 24h - Sans engagement</p>
 
         <AgencyAccessForm />

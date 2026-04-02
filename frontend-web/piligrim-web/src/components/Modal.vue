@@ -3,7 +3,7 @@
     <div class="modal-box">
       <button class="modal-close" type="button" @click="emit('close')">✕</button>
 
-      <div class="modal-title">Demander l'acces</div>
+      <div class="modal-title">Creer un compte</div>
       <p class="modal-sub">
         Une version plus compacte, plus propre, et plus rapide a remplir.
       </p>

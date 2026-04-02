@@ -19,7 +19,7 @@
       <div class="hero-form">
         <input class="hero-input" type="email" placeholder="Email de votre agence" />
         <button class="hero-btn" type="button" @click="$emit('openModal')">
-          Demander l'acces
+          Creer un compte
         </button>
       </div>
 

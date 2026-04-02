@@ -87,8 +87,45 @@
             </td>
 
             <td>
-              <span v-if="guide._count?.groupes > 0" class="cell-name">{{ guide._count.groupes }} groupe(s)</span>
-              <span v-else class="cell-sub">Non assigne</span>
+              <div v-if="assigningId === guide.id" class="inline-assign">
+                <select
+                  :value="''"
+                  @change="handleAssign(guide, $event.target.value)"
+                  class="inline-select"
+                  :disabled="assignLoadingId === guide.id"
+                  autofocus
+                >
+                  <option value="">Choisir un groupe</option>
+                  <option v-for="groupe in availableGroupes" :key="groupe.id" :value="groupe.id">
+                    {{ groupe.nom }}
+                  </option>
+                </select>
+
+                <button @click="assigningId = null" class="inline-cancel" title="Annuler">
+                  <AppIcon name="x" :size="12" :stroke-width="2" />
+                </button>
+              </div>
+
+              <button
+                v-else
+                @click="assigningId = guide.id"
+                class="group-assign-btn"
+                :disabled="availableGroupes.length === 0"
+                :title="groupAssignTitle(guide)"
+              >
+                <template v-if="guide._count?.groupes > 0">
+                  <span class="group-tag">{{ guide._count.groupes }} groupe(s)</span>
+                  <span class="group-assign-empty" style="margin-left: 8px">
+                    <AppIcon name="plus" :size="11" :stroke-width="2" />
+                    Affecter
+                  </span>
+                </template>
+
+                <span v-else class="group-assign-empty">
+                  <AppIcon name="plus" :size="11" :stroke-width="2" />
+                  Affecter
+                </span>
+              </button>
             </td>
 
             <td>
@@ -144,7 +181,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import AppIcon from '@/components/AppIcon.vue'
 import StatusPill from '@/features/agence/components/dashboard/StatusPill.vue'
 import { useGuideStatus } from '@/features/agence/composables/useGuideStatus'
@@ -153,6 +190,10 @@ import { getInitials } from '@/features/agence/utils/initials'
 
 const props = defineProps({
   guides: {
+    type: Array,
+    default: () => [],
+  },
+  groupes: {
     type: Array,
     default: () => [],
   },
@@ -166,15 +207,17 @@ const props = defineProps({
   },
 })
 
-defineEmits(['create', 'detail', 'edit', 'delete', 'resend'])
+const emit = defineEmits(['create', 'detail', 'edit', 'delete', 'resend', 'assign'])
 
 const { guideStatusClass, guideStatusLabel } = useGuideStatus()
+
+const assigningId = ref(null)
+const assignLoadingId = ref(null)
 
 const filterConfigs = computed(() => [
   { key: 'all', label: 'Tous', predicate: () => true },
   { key: 'actif', label: 'Actifs', predicate: (guide) => guide.isActivated && guide.utilisateur?.actif },
-  { key: 'pending', label: 'En attente', predicate: (guide) => !guide.isActivated },
-  { key: 'suspended', label: 'Suspendus', predicate: (guide) => guide.isActivated && !guide.utilisateur?.actif },
+  { key: 'pending', label: 'En attente', predicate: (guide) => !guide.isActivated  },
   { key: 'assigned', label: 'Assignes', predicate: (guide) => guide._count?.groupes > 0 },
 ])
 
@@ -189,7 +232,6 @@ const emptyMessage = computed(() => {
   if (search.value) return `Aucun resultat pour "${search.value}"`
   if (activeFilter.value === 'actif') return 'Aucun guide actif pour le moment'
   if (activeFilter.value === 'pending') return "Aucun guide en attente d'activation"
-  if (activeFilter.value === 'suspended') return 'Aucun guide suspendu'
   if (activeFilter.value === 'assigned') return 'Aucun guide assigne a un groupe'
   return 'Aucun guide pour le moment'
 })
@@ -203,5 +245,31 @@ const emptyHint = computed(() => {
 
 function initials(prenom, nom) {
   return getInitials(prenom, nom)
+}
+
+const availableGroupes = computed(() =>
+  (props.groupes ?? []).filter((g) => !['TERMINE', 'ANNULE'].includes(g?.status))
+)
+
+function groupAssignTitle(guide) {
+  if (!guide.utilisateur?.actif) return "Ce guide n'a pas encore active son compte"
+  if (availableGroupes.value.length === 0) return 'Aucun groupe disponible'
+  return 'Affecter ce guide a un groupe'
+}
+
+async function handleAssign(guide, groupeId) {
+  if (!groupeId) {
+    assigningId.value = null
+    return
+  }
+
+  assigningId.value = null
+  assignLoadingId.value = guide.id
+
+  try {
+    emit('assign', { groupeId, guideId: guide.id })
+  } finally {
+    assignLoadingId.value = null
+  }
 }
 </script>

@@ -67,7 +67,7 @@
       </div>
 
       <button class="btn-signup-alt" type="button" @click="emit('switch-to-signup')">
-        Demander un acces agence
+        creer un compte 
       </button>
     </div>
   </div>

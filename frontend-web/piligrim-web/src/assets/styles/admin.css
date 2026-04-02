@@ -58,10 +58,28 @@ html.admin-dark {
 
 .sidebar-logo {
   display: flex;
-  align-items: center;
-  gap: 0.65rem;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.9rem;
   padding: 1.5rem 1.25rem 1.25rem;
   border-bottom: 1px solid rgba(201, 168, 76, 0.1);
+}
+
+.sidebar-header-row {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.sidebar-header-row > div {
+  min-width: 0;
+}
+
+.sidebar-header-profile {
+  border: 1px solid rgba(201, 168, 76, 0.12);
+  border-radius: 12px;
+  padding: 0.55rem 0.65rem;
+  background: rgba(201, 168, 76, 0.05);
 }
 
 .logo-mark {
@@ -81,8 +99,22 @@ html.admin-dark {
   font-family: 'Syne', sans-serif;
   font-size: 1rem;
   font-weight: 800;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
   color: var(--ad-accent);
+  overflow: hidden;
+  line-height: 1.15;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.logo-sub {
+  color: rgba(240, 237, 230, 0.65);
+  font-size: 0.75rem;
+  margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .sidebar-nav {
@@ -160,6 +192,54 @@ html.admin-dark {
 .sidebar-profile {
   padding: 1rem 1.25rem;
   border-top: 1px solid rgba(201, 168, 76, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.sidebar-footer-main {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.sidebar-footer-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.sidebar-footer-brand-name {
+  font-family: 'Syne', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  color: var(--ad-accent);
+  opacity: 0.95;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sidebar-bottom--stack {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.sidebar-bottom--stack .sidebar-footer-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.sidebar-logout-bottom {
+  width: 100%;
 }
 
 .sidebar-profile-card {

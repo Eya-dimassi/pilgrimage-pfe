@@ -30,7 +30,7 @@
         </button>
 
         <button class="nav-cta" type="button" @click="$emit('openModal')">
-          Demander l'acces
+          Creer un compte
         </button>
       </div>
     </div>

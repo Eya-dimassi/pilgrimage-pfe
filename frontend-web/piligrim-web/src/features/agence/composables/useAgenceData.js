@@ -8,12 +8,14 @@ import {
   deleteAgenceGuide,
   deleteAgenceGroupe,
   deleteAgencePelerin,
+  fetchAgencePelerin,
   fetchAgenceDashboardData,
   fetchAgenceGuideStats,
   fetchAgenceProfile,
   fetchAvailableAgenceGuides,
   removeAgencePelerin,
   resendAgenceGuideActivation,
+  resendAgencePelerinActivation,
   updateAgenceGuide,
   updateAgenceGroupe,
   updateAgencePelerin,
@@ -27,6 +29,38 @@ export const guides = ref([])
 export const groupes = ref([])
 export const loading = ref(true)
 export const fetchError = ref('')
+
+function normalizeGroupe(raw) {
+  const guidesList = Array.isArray(raw?.guides)
+    ? raw.guides.map((rel) => rel?.guide ?? rel).filter((g) => g?.id)
+    : []
+  const activeGuide = raw?.guide ?? guidesList[0] ?? null
+  const pelerinsList = raw?.pelerins ?? raw?.membres?.map((m) => m?.pelerin).filter(Boolean) ?? []
+
+  return {
+    ...raw,
+    guides: guidesList,
+    guideIds: guidesList.map((g) => g.id),
+    guide: activeGuide,
+    guideId: raw?.guideId ?? activeGuide?.id ?? null,
+    pelerins: pelerinsList,
+    _count: {
+      ...(raw?._count ?? {}),
+      pelerins: raw?._count?.pelerins ?? raw?._count?.membres ?? pelerinsList.length,
+    },
+  }
+}
+
+function normalizePelerin(raw) {
+  const membership = raw?.groupe ?? raw?.groupes?.[0]?.groupe ?? null
+  const groupeId = raw?.groupeId ?? raw?.groupes?.[0]?.groupeId ?? membership?.id ?? null
+
+  return {
+    ...raw,
+    groupeId,
+    groupe: membership,
+  }
+}
 
 export function useAgenceData() {
   const router = useRouter()
@@ -43,9 +77,9 @@ export function useAgenceData() {
 
     try {
       const { pelerins: pelerinsData, guides: guidesData, groupes: groupesData } = await fetchAgenceDashboardData()
-      pelerins.value = pelerinsData
+      pelerins.value = (Array.isArray(pelerinsData) ? pelerinsData : []).map(normalizePelerin)
       guides.value = Array.isArray(guidesData) ? guidesData : (guidesData.guides ?? [])
-      groupes.value = groupesData
+      groupes.value = (Array.isArray(groupesData) ? groupesData : []).map(normalizeGroupe)
     } catch {
       fetchError.value = 'Impossible de charger les donnees. Verifiez que le serveur est demarre.'
     } finally {
@@ -92,6 +126,14 @@ export function useAgenceData() {
     return resendAgenceGuideActivation(id)
   }
 
+  async function resendPelerinActivation(id) {
+    return resendAgencePelerinActivation(id)
+  }
+
+  async function getPelerinDetails(id) {
+    return fetchAgencePelerin(id)
+  }
+
   async function getAvailableGuides() {
     return fetchAvailableAgenceGuides()
   }
@@ -109,7 +151,7 @@ export function useAgenceData() {
   }
 
   async function deleteGroupe(id) {
-    await deleteAgenceGroupe(id)
+    return deleteAgenceGroupe(id)
   }
 
   async function assignerPelerin(groupeId, pelerinId) {
@@ -149,6 +191,8 @@ export function useAgenceData() {
     updateGuide,
     deleteGuide,
     resendActivation,
+    resendPelerinActivation,
+    getPelerinDetails,
     getAvailableGuides,
     getGuideStats,
     createGroupe,

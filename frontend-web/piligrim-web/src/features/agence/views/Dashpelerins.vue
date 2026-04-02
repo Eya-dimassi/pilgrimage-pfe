@@ -11,7 +11,7 @@
           <span class="bulk-assign-label">{{ selectedCount }} selectionne{{ selectedCount > 1 ? 's' : '' }}</span>
           <select v-model="bulkGroupeId" class="bulk-assign-select" :disabled="bulkAssignLoading">
             <option value="">Choisir un groupe</option>
-            <option v-for="groupe in groupes" :key="groupe.id" :value="groupe.id">
+            <option v-for="groupe in assignableGroupes" :key="groupe.id" :value="groupe.id">
               {{ groupe.nom }}
             </option>
           </select>
@@ -132,7 +132,14 @@
                   autofocus
                 >
                   <option value="">- Sans groupe -</option>
-                  <option v-for="groupe in groupes" :key="groupe.id" :value="groupe.id">
+                  <option
+                    v-if="lockedGroupeForPelerin(pelerin)"
+                    :value="pelerin.groupeId"
+                    disabled
+                  >
+                    {{ lockedGroupeForPelerin(pelerin).nom }} ({{ lockedGroupeForPelerin(pelerin).status === 'TERMINE' ? 'Termine' : 'Annule' }})
+                  </option>
+                  <option v-for="groupe in assignableGroupes" :key="groupe.id" :value="groupe.id">
                     {{ groupe.nom }}
                   </option>
                 </select>
@@ -167,6 +174,26 @@
 
             <td>
               <div class="action-btns">
+                <button
+                  @click="$emit('detail', pelerin)"
+                  class="act-btn"
+                  title="Voir details"
+                  :disabled="loadingRowId === pelerin.id"
+                >
+                  <AppIcon name="eye" :size="14" />
+                </button>
+
+                <button
+                  v-if="!pelerin.utilisateur?.actif"
+                  @click="$emit('resend', pelerin)"
+                  :disabled="resendingId === pelerin.id || loadingRowId === pelerin.id"
+                  class="resend-btn"
+                  title="Renvoyer l'email d'activation"
+                >
+                  <AppIcon v-if="resendingId !== pelerin.id" name="mail" :size="14" />
+                  <span v-else style="font-size: 10px; font-weight: 700">...</span>
+                </button>
+
                 <button
                   @click="$emit('edit', pelerin)"
                   class="act-btn"
@@ -209,6 +236,10 @@ const props = defineProps({
     type: Array,
     default: () => [],
   },
+  resendingId: {
+    type: String,
+    default: null,
+  },
   loadingRowId: {
     type: String,
     default: null,
@@ -219,7 +250,7 @@ const props = defineProps({
   },
 })
 
-const emit = defineEmits(['create', 'edit', 'delete', 'assign', 'bulk-assign', 'unassign'])
+const emit = defineEmits(['create', 'detail', 'edit', 'delete', 'resend', 'assign', 'bulk-assign', 'unassign'])
 
 const assigningId = ref(null)
 const assignLoadingId = ref(null)
@@ -232,6 +263,10 @@ const filterConfigs = computed(() => [
   { key: 'pending', label: 'En attente', predicate: (pelerin) => !pelerin.utilisateur?.actif },
   { key: 'nogroupe', label: 'Sans groupe', predicate: (pelerin) => !pelerin.groupeId },
 ])
+
+const assignableGroupes = computed(() =>
+  (props.groupes ?? []).filter((g) => !['TERMINE', 'ANNULE'].includes(g?.status))
+)
 
 const { search, activeFilter, filters, filtered, resetFilters } = useSearchFilter({
   items: computed(() => props.pelerins),
@@ -328,6 +363,14 @@ function handleBulkAssign() {
   })
 
   clearSelection()
+}
+
+function lockedGroupeForPelerin(pelerin) {
+  if (!pelerin?.groupeId) return null
+  const groupe = (props.groupes ?? []).find((g) => g.id === pelerin.groupeId)
+  if (!groupe) return null
+  if (groupe.status === 'TERMINE' || groupe.status === 'ANNULE') return groupe
+  return null
 }
 </script>
 
