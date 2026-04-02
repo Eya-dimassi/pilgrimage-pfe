@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class AppColors {
   static const Color gold = Color(0xFFB8962E);
@@ -32,7 +33,7 @@ ThemeData buildAppTheme() {
 
   return base.copyWith(
     scaffoldBackgroundColor: AppColors.background,
-    textTheme: base.textTheme.apply(
+    textTheme: GoogleFonts.dmSansTextTheme(base.textTheme).apply(
       bodyColor: AppColors.text,
       displayColor: AppColors.text,
     ),
@@ -58,7 +59,7 @@ ThemeData buildAppTheme() {
       fillColor: AppColors.section,
       hintStyle: const TextStyle(color: AppColors.textFaint),
       labelStyle: const TextStyle(color: AppColors.textMuted),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(20),
         borderSide: const BorderSide(color: AppColors.border),

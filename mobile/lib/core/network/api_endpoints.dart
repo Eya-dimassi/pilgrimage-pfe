@@ -9,5 +9,7 @@ class ApiEndpoints {
   static const String login = '/auth/login';
   static const String logout = '/auth/logout';
   static const String forgotPassword = '/auth/forgot-password';
+  static const String familySignup = '/auth/family-signup';
   static const String me = '/auth/me';
+  static const String updateMe = '/auth/me';
 }

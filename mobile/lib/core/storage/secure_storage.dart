@@ -15,6 +15,7 @@ class SecureStorageService {
   static const String _accessTokenKey = 'access_token';
   static const String _refreshTokenKey = 'refresh_token';
   static const String _sessionKey = 'auth_session';
+  static const String _introSeenKey = 'intro_seen';
 
   final FlutterSecureStorage _storage;
 
@@ -41,6 +42,15 @@ class SecureStorageService {
 
   Future<String?> readAccessToken() {
     return _storage.read(key: _accessTokenKey);
+  }
+
+  Future<void> markIntroSeen() {
+    return _storage.write(key: _introSeenKey, value: 'true');
+  }
+
+  Future<bool> hasSeenIntro() async {
+    final rawValue = await _storage.read(key: _introSeenKey);
+    return rawValue == 'true';
   }
 
   Future<void> clearSession() async {

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../theme/app_theme.dart';
 
@@ -12,34 +13,39 @@ class BrandBackdrop extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        Positioned(
-          top: -120,
-          right: -80,
-          child: _GlowOrb(
-            size: 260,
-            color: AppColors.goldSoft,
-          ),
+    return ColoredBox(
+      color: AppColors.background,
+      child: SizedBox.expand(
+        child: Stack(
+          children: [
+            Positioned(
+              top: -120,
+              right: -80,
+              child: _GlowOrb(
+                size: 260,
+                color: AppColors.goldSoft,
+              ),
+            ),
+            Positioned(
+              top: 190,
+              left: -90,
+              child: _GlowOrb(
+                size: 220,
+                color: AppColors.greenSoft,
+              ),
+            ),
+            Positioned(
+              bottom: -110,
+              right: -70,
+              child: _GlowOrb(
+                size: 250,
+                color: AppColors.blueSoft,
+              ),
+            ),
+            child,
+          ],
         ),
-        Positioned(
-          top: 190,
-          left: -90,
-          child: _GlowOrb(
-            size: 220,
-            color: AppColors.greenSoft,
-          ),
-        ),
-        Positioned(
-          bottom: -110,
-          right: -70,
-          child: _GlowOrb(
-            size: 250,
-            color: AppColors.blueSoft,
-          ),
-        ),
-        child,
-      ],
+      ),
     );
   }
 }
@@ -59,7 +65,6 @@ class BrandWordmark extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
-      mainAxisSize: MainAxisSize.min,
       children: [
         Container(
           width: markSize,
@@ -69,34 +74,58 @@ class BrandWordmark extends StatelessWidget {
             borderRadius: BorderRadius.circular(markSize * 0.34),
           ),
           alignment: Alignment.center,
-          child: Icon(
-            Icons.lock_outline_rounded,
-            size: markSize * 0.42,
-            color: AppColors.background,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Icon(
+                Icons.mosque_rounded,
+                size: markSize * 0.42,
+                color: AppColors.goldBright,
+              ),
+              Positioned(
+                top: markSize * 0.18,
+                right: markSize * 0.2,
+                child: Container(
+                  width: markSize * 0.12,
+                  height: markSize * 0.12,
+                  decoration: const BoxDecoration(
+                    color: AppColors.goldBright,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
         const SizedBox(width: 12),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'SmartHajj',
-              style: TextStyle(
-                fontSize: titleSize,
-                fontWeight: FontWeight.w700,
-                letterSpacing: -0.4,
-                color: AppColors.text,
-              ),
-            ),
-            if (caption != null)
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
               Text(
-                caption!,
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: AppColors.textMuted,
+                'Sacred Journey Hub',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.syne(
+                  fontSize: titleSize,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.4,
+                  color: AppColors.text,
                 ),
               ),
-          ],
+              if (caption != null)
+                Text(
+                  caption!,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textMuted,
+                  ),
+                ),
+            ],
+          ),
         ),
       ],
     );
