@@ -17,7 +17,15 @@ export const login =async(email: string, motDePasse: string) => {
       agence: { select: { id: true, status: true } },
       guide: { select: { agenceId: true } },
       pelerin: { select: { agenceId: true } },
-      famille: { select: { agenceId: true } },
+      famille: {
+        include: {
+          associations: {
+            where: { actif: true },
+            take: 1,
+            include: { pelerin: { select: { agenceId: true } } },
+          },
+        },
+      },
     },
   });
 
@@ -65,7 +73,7 @@ if (!utilisateur) {
   } else if (utilisateur.role === 'PELERIN' && utilisateur.pelerin) {
     agenceId = utilisateur.pelerin.agenceId;
   }else if (utilisateur.role === 'FAMILLE' && utilisateur.famille) {
-    agenceId = utilisateur.famille.agenceId;
+    agenceId = utilisateur.famille.associations?.[0]?.pelerin?.agenceId ?? null;
   }
 
 
@@ -166,7 +174,15 @@ export const refresh = async (refreshToken: string) => {
           agence:  { select: { id: true } },
           guide:   { select: { agenceId: true } },
           pelerin: { select: { agenceId: true } },
-          famille: { select: { agenceId: true } },
+          famille: {
+            include: {
+              associations: {
+                where: { actif: true },
+                take: 1,
+                include: { pelerin: { select: { agenceId: true } } },
+              },
+            },
+          },
         }
       }
     },
@@ -185,7 +201,7 @@ export const refresh = async (refreshToken: string) => {
   if (u.role === 'AGENCE')        agenceId = u.agence?.id        ?? null
   else if (u.role === 'GUIDE')    agenceId = u.guide?.agenceId   ?? null
   else if (u.role === 'PELERIN')  agenceId = u.pelerin?.agenceId ?? null
-  else if (u.role === 'FAMILLE')  agenceId = u.famille?.agenceId ?? null
+  else if (u.role === 'FAMILLE')  agenceId = u.famille?.associations?.[0]?.pelerin?.agenceId ?? null
 
   const accessToken = jwt.sign(
     { sub: u.id, email: u.email, role: u.role, agenceId },
@@ -206,17 +222,87 @@ export const refresh = async (refreshToken: string) => {
 }
 
 export const getMe =async(userId: string) => {
-  return prisma.utilisateur.findUnique({
+  const utilisateur = await prisma.utilisateur.findUnique({
     where: {id:userId},
-    select: {
-      id: true,
-      nom: true,
-      prenom: true,
-      email: true,
-      role: true,
-      telephone: true,
+    include: {
+      agence: { select: { id: true } },
+      guide: {
+        select: {
+          agenceId: true,
+          specialite: true,
+        },
+      },
+      pelerin: {
+        select: {
+          agenceId: true,
+          codeUnique: true,
+          dateNaissance: true,
+          nationalite: true,
+          numeroPasseport: true,
+          photoUrl: true,
+          groupes: {
+            where: {
+              actif: true,
+            },
+            orderBy: {
+              dateDebut: 'desc',
+            },
+            take: 1,
+            select: {
+              groupe: {
+                select: {
+                  nom: true,
+                },
+              },
+            },
+          },
+        },
+      },
+      famille: {
+        include: {
+          associations: {
+            where: { actif: true },
+            take: 1,
+            include: { pelerin: { select: { agenceId: true } } },
+          },
+        },
+      },
     },
   });
+
+  if (!utilisateur) {
+    return null;
+  }
+
+  let agenceId: string | null = null;
+
+  if (utilisateur.role === 'AGENCE' && utilisateur.agence) {
+    agenceId = utilisateur.agence.id;
+  } else if (utilisateur.role === 'GUIDE' && utilisateur.guide) {
+    agenceId = utilisateur.guide.agenceId;
+  } else if (utilisateur.role === 'PELERIN' && utilisateur.pelerin) {
+    agenceId = utilisateur.pelerin.agenceId;
+  } else if (utilisateur.role === 'FAMILLE' && utilisateur.famille) {
+    agenceId = utilisateur.famille.associations?.[0]?.pelerin?.agenceId ?? null;
+  }
+
+  return {
+    id: utilisateur.id,
+    nom: utilisateur.nom,
+    prenom: utilisateur.prenom,
+    email: utilisateur.email,
+    role: utilisateur.role,
+    telephone: utilisateur.telephone,
+    agenceId,
+    lienParente: utilisateur.famille?.lienParente ?? null,
+    specialite: utilisateur.guide?.specialite ?? null,
+    codeUnique: utilisateur.pelerin?.codeUnique ?? null,
+    dateNaissance: utilisateur.pelerin?.dateNaissance ?? null,
+    nationalite: utilisateur.pelerin?.nationalite ?? null,
+    numeroPasseport: utilisateur.pelerin?.numeroPasseport ?? null,
+    photoUrl: utilisateur.pelerin?.photoUrl ?? null,
+    groupeNom: utilisateur.pelerin?.groupes[0]?.groupe.nom ?? null,
+  };
 };
 
 
@@ -287,4 +373,238 @@ export const verifyActivationToken = async (token: string) => {
     nom: `${utilisateur.prenom} ${utilisateur.nom}`
   };
 };
+export const familySignup = async (data: {
+  nom: string;
+  prenom: string;
+  email: string;
+  motDePasse: string;
+  codeUnique: string;
+  telephone?: string;
+  lienParente?: string;
+}) => {
+  const normalizedEmail = data.email.trim().toLowerCase();
+  const normalizedCode = data.codeUnique.trim();
 
+  if (data.motDePasse.length < 8) {
+    throw new Error('Mot de passe trop court (8 caracteres minimum)');
+  }
+
+  const existingUser = await prisma.utilisateur.findUnique({
+    where: { email: normalizedEmail },
+  });
+
+  if (existingUser) {
+    throw new Error('Un compte avec cet email existe deja');
+  }
+
+  const pelerin = await prisma.pelerin.findUnique({
+    where: { codeUnique: normalizedCode },
+    include: {
+      utilisateur: {
+        select: {
+          nom: true,
+          prenom: true,
+        },
+      },
+    },
+  });
+
+  if (!pelerin) {
+    throw new Error('Code unique pelerin introuvable');
+  }
+
+  const hash = await bcrypt.hash(data.motDePasse, 10);
+
+  const famille = await prisma.famille.create({
+    data: {
+      lienParente: data.lienParente?.trim() || null,
+      utilisateur: {
+        create: {
+          email: normalizedEmail,
+          motDePasse: hash,
+          nom: data.nom.trim(),
+          prenom: data.prenom.trim(),
+          telephone: data.telephone?.trim() || null,
+          role: Role.FAMILLE,
+          actif: true,
+        },
+      },
+      associations: {
+        create: {
+          pelerinId: pelerin.id,
+        },
+      },
+    },
+    include: {
+      utilisateur: {
+        select: {
+          id: true,
+          email: true,
+          nom: true,
+          prenom: true,
+        },
+      },
+      associations: {
+        select: {
+          pelerinId: true,
+        },
+      },
+    },
+  });
+
+  return {
+    message: 'Compte famille cree avec succes. Vous pouvez maintenant vous connecter.',
+    familleId: famille.id,
+    utilisateurId: famille.utilisateur.id,
+    agenceId: pelerin.agenceId,
+    pelerin: {
+      id: pelerin.id,
+      codeUnique: pelerin.codeUnique,
+      nom: pelerin.utilisateur.nom,
+      prenom: pelerin.utilisateur.prenom,
+    },
+  };
+};
+export const updateMe = async (
+  userId: string,
+  data: {
+    nom?: string;
+    prenom?: string;
+    email?: string;
+    telephone?: string | null;
+    lienParente?: string | null;
+    specialite?: string | null;
+    dateNaissance?: string | Date | null;
+    nationalite?: string | null;
+    numeroPasseport?: string | null;
+    photoUrl?: string | null;
+  },
+) => {
+  const utilisateur = await prisma.utilisateur.findUnique({
+    where: { id: userId },
+    include: {
+      famille: {
+        select: {
+          id: true,
+        },
+      },
+      guide: {
+        select: {
+          id: true,
+        },
+      },
+      pelerin: {
+        select: {
+          id: true,
+        },
+      },
+    },
+  });
+
+  if (!utilisateur) {
+    throw new Error('Utilisateur introuvable');
+  }
+
+  const normalizedEmail = data.email?.trim().toLowerCase();
+  const normalizedNom = data.nom?.trim();
+  const normalizedPrenom = data.prenom?.trim();
+  const normalizedTelephone = data.telephone?.trim();
+  const normalizedLienParente = data.lienParente?.trim();
+  const normalizedSpecialite = data.specialite?.trim();
+  const normalizedNationalite = data.nationalite?.trim();
+  const normalizedNumeroPasseport = data.numeroPasseport?.trim();
+  const normalizedPhotoUrl = data.photoUrl?.trim();
+
+  let normalizedDateNaissance: Date | null | undefined;
+  if (data.dateNaissance !== undefined) {
+    if (!data.dateNaissance) {
+      normalizedDateNaissance = null;
+    } else {
+      const parsedDate =
+        data.dateNaissance instanceof Date
+          ? data.dateNaissance
+          : new Date(data.dateNaissance);
+
+      if (Number.isNaN(parsedDate.getTime())) {
+        throw new Error('Date de naissance invalide');
+      }
+
+      normalizedDateNaissance = parsedDate;
+    }
+  }
+
+  if (normalizedEmail) {
+    const existingUser = await prisma.utilisateur.findFirst({
+      where: {
+        email: normalizedEmail,
+        NOT: {
+          id: userId,
+        },
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (existingUser) {
+      throw new Error('Cet email est deja utilise');
+    }
+  }
+
+  await prisma.utilisateur.update({
+    where: { id: userId },
+    data: {
+      ...(normalizedNom ? { nom: normalizedNom } : {}),
+      ...(normalizedPrenom ? { prenom: normalizedPrenom } : {}),
+      ...(normalizedEmail ? { email: normalizedEmail } : {}),
+      telephone:
+        data.telephone !== undefined
+          ? normalizedTelephone || null
+          : undefined,
+    },
+  });
+
+  if (utilisateur.role === 'FAMILLE' && utilisateur.famille) {
+    await prisma.famille.update({
+      where: { id: utilisateur.famille.id },
+      data: {
+        lienParente:
+          data.lienParente !== undefined
+            ? normalizedLienParente || null
+            : undefined,
+      },
+    });
+  }
+
+  if (utilisateur.role === 'GUIDE' && utilisateur.guide) {
+    await prisma.guide.update({
+      where: { id: utilisateur.guide.id },
+      data: {
+        specialite:
+          data.specialite !== undefined ? normalizedSpecialite || null : undefined,
+      },
+    });
+  }
+
+  if (utilisateur.role === 'PELERIN' && utilisateur.pelerin) {
+    await prisma.pelerin.update({
+      where: { id: utilisateur.pelerin.id },
+      data: {
+        dateNaissance:
+          data.dateNaissance !== undefined ? normalizedDateNaissance : undefined,
+        nationalite:
+          data.nationalite !== undefined
+            ? normalizedNationalite || null
+            : undefined,
+        numeroPasseport:
+          data.numeroPasseport !== undefined
+            ? normalizedNumeroPasseport || null
+            : undefined,
+        photoUrl:
+          data.photoUrl !== undefined ? normalizedPhotoUrl || null : undefined,
+      },
+    });
+  }
+
+  return getMe(userId);
+};

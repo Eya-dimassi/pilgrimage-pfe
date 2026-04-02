@@ -180,7 +180,7 @@ export const getGuidesByAgence = async (agenceId: string) => {
       },
       _count: {
         select: {
-          groupes: true
+          groupes: { where: { actif: true } }
         }
       }
     },
@@ -189,12 +189,12 @@ export const getGuidesByAgence = async (agenceId: string) => {
     }
   });
 
-  // ⭐ AJOUTER le statut d'activation
+  // ⭐  le statut d'activation
   return guides.map(guide => ({
     ...guide,
+    isActivated: guide.utilisateur.motDePasse !== null, // ← AU NIVEAU RACINE
     utilisateur: {
       ...guide.utilisateur,
-      isActivated: guide.utilisateur.motDePasse !== null,
       motDePasse: undefined // Ne pas exposer le hash
     }
   }));
@@ -225,21 +225,26 @@ export const getGuideById = async (guideId: string, agenceId: string) => {
         }
       },
       groupes: {
-        select: {
-          id: true,
-          nom: true,
-          annee: true,
-          typeVoyage: true,
-          _count: {
+        where: { actif: true },
+        include: {
+          groupe: {
             select: {
-              pelerins: true
+              id: true,
+              nom: true,
+              annee: true,
+              typeVoyage: true,
+              _count: {
+                select: {
+                  membres: { where: { actif: true } }
+                }
+              }
             }
           }
-        }
+        },
       },
       _count: {
         select: {
-          groupes: true
+          groupes: { where: { actif: true } }
         }
       }
     }
@@ -249,7 +254,15 @@ export const getGuideById = async (guideId: string, agenceId: string) => {
     throw new Error('Guide introuvable ou non autorisé');
   }
 
-  return guide;
+  return {
+    ...guide,
+    groupes: (guide.groupes ?? []).map((rel) => ({
+      ...rel.groupe,
+      _count: {
+        pelerins: rel.groupe?._count?.membres ?? 0,
+      },
+    })),
+  };
 };
 
 /**
@@ -355,7 +368,7 @@ export const deleteGuide = async (guideId: string, agenceId: string) => {
     include: {
       _count: {
         select: {
-          groupes: true
+          groupes: { where: { actif: true } }
         }
       }
     }
@@ -386,10 +399,7 @@ export const deleteGuide = async (guideId: string, agenceId: string) => {
 export const getAvailableGuides = async (agenceId: string) => {
   const guides = await prisma.guide.findMany({
     where: {
-      agenceId,
-      groupes: {
-        none: {} // Guides sans groupes assignés
-      }
+      agenceId
     },
     include: {
       utilisateur: {
@@ -418,13 +428,19 @@ export const getGuideStats = async (guideId: string, agenceId: string) => {
     },
     include: {
       groupes: {
+        where: { actif: true },
         include: {
-          _count: {
+          groupe: {
             select: {
-              pelerins: true
+              typeVoyage: true,
+              _count: {
+                select: {
+                  membres: { where: { actif: true } }
+                }
+              }
             }
           }
-        }
+        },
       }
     }
   });
@@ -433,12 +449,16 @@ export const getGuideStats = async (guideId: string, agenceId: string) => {
     throw new Error('Guide introuvable');
   }
 
+  const activeGroupes = (guide.groupes ?? [])
+    .map((rel) => rel.groupe)
+    .filter((groupe): groupe is NonNullable<typeof groupe> => Boolean(groupe));
+
   const stats = {
-    totalGroupes: guide.groupes.length,
-    totalPelerins: guide.groupes.reduce((sum, g) => sum + g._count.pelerins, 0),
+    totalGroupes: activeGroupes.length,
+    totalPelerins: activeGroupes.reduce((sum: number, g) => sum + (g._count?.membres ?? 0), 0),
     groupesParType: {
-      HAJJ: guide.groupes.filter(g => g.typeVoyage === 'HAJJ').length,
-      UMRAH: guide.groupes.filter(g => g.typeVoyage === 'UMRAH').length
+      HAJJ: activeGroupes.filter((g) => g.typeVoyage === 'HAJJ').length,
+      UMRAH: activeGroupes.filter((g) => g.typeVoyage === 'UMRAH').length
     }
   };
 

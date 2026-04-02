@@ -1,6 +1,7 @@
 import prisma from '../../../config/prisma';
 import { createPasswordToken } from '../../../utils/token.utils';
 import { sendActivationEmail } from '../../../utils/mailer.utils';
+import { v4 as uuidv4 } from 'uuid';
 
 // ── CREATE ────────────────────────────────────────────────────────────────────
 export const createPelerin = async (
@@ -32,6 +33,7 @@ export const createPelerin = async (
       pelerin: {
         create: {
           agenceId,
+          codeUnique: uuidv4(),
           nationalite: data.nationalite,
           numeroPasseport: data.numeroPasseport,
           dateNaissance: data.dateNaissance ? new Date(data.dateNaissance) : undefined,
@@ -57,7 +59,7 @@ export const createPelerin = async (
 
 // ── GET ALL ───────────────────────────────────────────────────────────────────
 export const getPelerins = async (agenceId: string) => {
-  return prisma.pelerin.findMany({
+  const list = await prisma.pelerin.findMany({
     where: { agenceId },
     include: {
       utilisateur: {
@@ -71,11 +73,25 @@ export const getPelerins = async (agenceId: string) => {
           createdAt: true,
         },
       },
-      groupe: {
-        select: { id: true, nom: true },
+      groupes: {
+        where: { actif: true },
+        take: 1,
+        orderBy: { dateDebut: 'desc' },
+        include: {
+          groupe: { select: { id: true, nom: true } },
+        },
       },
     },
     orderBy: { createdAt: 'desc' },
+  });
+
+  return list.map((p) => {
+    const membership = p.groupes?.[0] ?? null;
+    return {
+      ...p,
+      groupeId: membership?.groupeId ?? null,
+      groupe: membership?.groupe ?? null,
+    };
   });
 };
 
@@ -95,14 +111,24 @@ export const getPelerinById = async (agenceId: string, pelerinId: string) => {
           createdAt: true,
         },
       },
-      groupe: {
-        select: { id: true, nom: true, typeVoyage: true },
+      groupes: {
+        where: { actif: true },
+        take: 1,
+        orderBy: { dateDebut: 'desc' },
+        include: {
+          groupe: { select: { id: true, nom: true, typeVoyage: true } },
+        },
       },
     },
   });
 
   if (!pelerin) throw new Error('Pèlerin introuvable');
-  return pelerin;
+  const membership = pelerin.groupes?.[0] ?? null;
+  return {
+    ...pelerin,
+    groupeId: membership?.groupeId ?? null,
+    groupe: membership?.groupe ?? null,
+  };
 };
 
 // ── UPDATE ────────────────────────────────────────────────────────────────────
@@ -145,8 +171,22 @@ export const updatePelerin = async (
       utilisateur: {
         select: { id: true, nom: true, prenom: true, email: true, telephone: true, actif: true },
       },
-      groupe: { select: { id: true, nom: true } },
+      groupes: {
+        where: { actif: true },
+        take: 1,
+        orderBy: { dateDebut: 'desc' },
+        include: {
+          groupe: { select: { id: true, nom: true } },
+        },
+      },
     },
+  }).then((p) => {
+    const membership = p.groupes?.[0] ?? null;
+    return {
+      ...p,
+      groupeId: membership?.groupeId ?? null,
+      groupe: membership?.groupe ?? null,
+    };
   });
 };
 
@@ -158,4 +198,40 @@ export const deletePelerin = async (agenceId: string, pelerinId: string) => {
   await prisma.utilisateur.delete({ where: { id: pelerin.utilisateurId } });
 
   return { message: 'Pèlerin supprimé avec succès' };
+};
+
+/**
+ * Renvoyer l'email d'activation à un pèlerin
+ */
+export const resendActivationEmail = async (pelerinId: string, agenceId: string) => {
+  const pelerin = await prisma.pelerin.findFirst({
+    where: { id: pelerinId, agenceId },
+    include: {
+      utilisateur: {
+        select: {
+          id: true,
+          email: true,
+          nom: true,
+          prenom: true,
+          actif: true,
+          motDePasse: true,
+        },
+      },
+    },
+  });
+
+  if (!pelerin) throw new Error('Pèlerin introuvable');
+
+  if (pelerin.utilisateur.actif && pelerin.utilisateur.motDePasse) {
+    throw new Error('Ce pèlerin a déjà activé son compte');
+  }
+
+  const activationToken = await createPasswordToken(pelerin.utilisateur.id, 'SET_PASSWORD');
+  await sendActivationEmail(
+    pelerin.utilisateur.email,
+    pelerin.utilisateur.prenom || pelerin.utilisateur.nom,
+    activationToken
+  );
+
+  return { message: "Email d'activation renvoyé avec succès" };
 };

@@ -9,7 +9,7 @@ router.use(authenticate, requireRole('AGENCE'));
 // POST /agence/groupes
 router.post('/', async (req: AuthRequest, res: Response) => {
   try {
-    const { nom, annee, typeVoyage, description, guideId } = req.body;
+    const { nom, annee, typeVoyage, description, guideId, dateDepart, dateRetour, status } = req.body;
 
     if (!nom || !annee || !typeVoyage) {
       return res.status(400).json({ message: 'Nom, année et type de voyage sont requis' });
@@ -18,8 +18,19 @@ router.post('/', async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ message: 'typeVoyage doit être HAJJ ou UMRAH' });
     }
 
+    if (status && !['PLANIFIE', 'EN_COURS', 'TERMINE', 'ANNULE'].includes(status)) {
+      return res.status(400).json({ message: 'status invalide' });
+    }
+
     const result = await groupesService.createGroupe(req.user!.agenceId!, {
-      nom, annee: Number(annee), typeVoyage, description, guideId,
+      nom,
+      annee: Number(annee),
+      typeVoyage,
+      description,
+      guideId,
+      status,
+      dateDepart,
+      dateRetour,
     });
     return res.status(201).json(result);
   } catch (error: any) {
@@ -50,6 +61,11 @@ router.get('/:id', async (req: AuthRequest, res: Response) => {
 // PATCH /agence/groupes/:id
 router.patch('/:id', async (req: AuthRequest, res: Response) => {
   try {
+    const { status } = req.body;
+    if (status && !['PLANIFIE', 'EN_COURS', 'TERMINE', 'ANNULE'].includes(status)) {
+      return res.status(400).json({ message: 'status invalide' });
+    }
+
     const result = await groupesService.updateGroupe(
       req.user!.agenceId!,
       String(req.params.id),

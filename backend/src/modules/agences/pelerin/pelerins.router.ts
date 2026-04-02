@@ -47,6 +47,16 @@ router.get('/:id', async (req: AuthRequest, res: Response) => {
   }
 });
 
+// POST /agence/pelerins/:id/resend-activation
+router.post('/:id/resend-activation', async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await pelerinsService.resendActivationEmail(String(req.params.id), req.user!.agenceId!);
+    return res.status(200).json(result);
+  } catch (error: any) {
+    return res.status(400).json({ message: error.message });
+  }
+});
+
 // PATCH /agence/pelerins/:id
 router.patch('/:id', async (req: AuthRequest, res: Response) => {
   try {

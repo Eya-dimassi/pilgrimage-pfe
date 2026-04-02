@@ -103,6 +103,7 @@ router.post('/verify-activation-token', async (req: Request, res: Response) => {
   }
 });
 // GET /auth/me — protected route
+// GET /auth/me 
 router.get('/me', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const user = await authService.getMe(req.user!.id);
@@ -112,4 +113,73 @@ router.get('/me', authenticate, async (req: AuthRequest, res: Response) => {
   }
 });
 
+// PATCH /auth/me — protected route
+router.patch('/me', authenticate, async (req: AuthRequest, res: Response) => {
+  try {
+    const {
+      nom,
+      prenom,
+      email,
+      telephone,
+      lienParente,
+      specialite,
+      dateNaissance,
+      nationalite,
+      numeroPasseport,
+      photoUrl,
+    } = req.body;
+
+    const user = await authService.updateMe(req.user!.id, {
+      nom,
+      prenom,
+      email,
+      telephone,
+      lienParente,
+      specialite,
+      dateNaissance,
+      nationalite,
+      numeroPasseport,
+      photoUrl,
+    });
+
+    return res.status(200).json(user);
+  } catch (error: any) {
+    return res.status(400).json({ message: error.message });
+  }
+});
+// POST /auth/family-signup
+router.post('/family-signup', async (req: Request, res: Response) => {
+  try {
+    const {
+      nom,
+      prenom,
+      email,
+      telephone,
+      motDePasse,
+      lienParente,
+      codeUnique,
+    } = req.body;
+
+    if (!nom || !prenom || !email || !motDePasse || !codeUnique) {
+      return res.status(400).json({
+        message:
+          'Nom, prenom, email, mot de passe et code unique requis',
+      });
+    }
+
+    const result = await authService.familySignup({
+      nom,
+      prenom,
+      email,
+      telephone,
+      motDePasse,
+      lienParente,
+      codeUnique,
+    });
+
+    return res.status(201).json(result);
+  } catch (error: any) {
+    return res.status(400).json({ message: error.message });
+  }
+});
 export default router;

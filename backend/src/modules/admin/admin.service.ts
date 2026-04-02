@@ -17,6 +17,13 @@ export const getAgences = async (status?: string) => {
           createdAt: true,
         },
       },
+      _count: {
+        select: {
+          guides: true,
+          pelerins: true,
+          groupes: true,
+        },
+      },
     },
     orderBy: { createdAt: 'desc' },
   });
