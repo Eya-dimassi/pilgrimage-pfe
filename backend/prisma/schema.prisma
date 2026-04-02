@@ -80,6 +80,7 @@ model AgenceVoyage {
   groupes     Groupe[]
   guides      Guide[]
   pelerins    Pelerin[]
+  familles    Famille[]
 
   @@index([status])
 }
@@ -197,12 +198,16 @@ model Pelerin {
 model Famille {
   id            String   @id @default(uuid())
   utilisateurId String   @unique
+  agenceId      String
   lienParente   String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
   utilisateur  Utilisateur      @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
+  agence       AgenceVoyage     @relation(fields: [agenceId], references: [id])
   associations FamillePelerin[]
+
+  @@index([agenceId])
 }
 
 model FamillePelerin {
