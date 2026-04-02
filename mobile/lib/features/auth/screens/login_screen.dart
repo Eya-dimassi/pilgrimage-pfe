@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../domain/auth_exception.dart';
+import '../domain/auth_validators.dart';
 import '../providers/auth_provider.dart';
+import '../widgets/auth_feedback.dart';
 import '../widgets/auth_shell.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -15,6 +18,7 @@ class LoginScreen extends ConsumerStatefulWidget {
 }
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
+  final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
@@ -28,15 +32,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _login() async {
-    final email = _emailController.text.trim();
-    final password = _passwordController.text.trim();
-
-    if (email.isEmpty || password.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Email et mot de passe requis'),
-        ),
-      );
+    final form = _formKey.currentState;
+    if (form == null || !form.validate()) {
       return;
     }
 
@@ -46,25 +43,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     try {
       await ref.read(authProvider.notifier).login(
-            email: email,
-            password: password,
+            email: _emailController.text,
+            password: _passwordController.text,
           );
     } on AuthException catch (error) {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.message)),
-      );
+      showAuthSnackBar(context, error.message);
     } catch (_) {
       if (!mounted) {
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Une erreur est survenue'),
-        ),
-      );
+      showAuthSnackBar(context, 'Une erreur est survenue');
     } finally {
       if (mounted) {
         setState(() {
@@ -81,18 +72,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         _isSubmitting || (authState.isLoading && authState.valueOrNull == null);
 
     return AuthShell(
-      eyebrow: 'Acces mobile SmartHajj',
-      title: 'Coordonnez.\nSuivez.\nGuidez, partout.',
-      subtitle:
-          'La version mobile reprend les reperes de la plateforme web pour garder une experience claire, elegante et familiere sur tous les ecrans.',
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
           const Center(child: _LoginLogoSeal()),
-          const SizedBox(height: 18),
+          const SizedBox(height: 12),
           Center(
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
                 color: AppColors.goldSoft,
                 borderRadius: BorderRadius.circular(999),
@@ -109,42 +98,47 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               ),
             ),
           ),
-          const SizedBox(height: 18),
-          const Text(
+          const SizedBox(height: 14),
+          Text(
             'Connexion',
             textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 24,
+            style: GoogleFonts.syne(
+              fontSize: 22,
               fontWeight: FontWeight.w700,
-              letterSpacing: -0.6,
+              letterSpacing: -0.4,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           const Text(
-            'Utilisez les identifiants fournis par votre agence pour acceder a votre espace securise.',
+            'Accedez a votre espace mobile avec les identifiants qui vous ont ete communiques.',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 14,
-              height: 1.5,
+              fontSize: 13,
+              height: 1.45,
               color: AppColors.textMuted,
             ),
           ),
-          const SizedBox(height: 24),
-          TextField(
+          const SizedBox(height: 18),
+          TextFormField(
             controller: _emailController,
             keyboardType: TextInputType.emailAddress,
             textInputAction: TextInputAction.next,
+            validator: AuthValidators.email,
             decoration: const InputDecoration(
               labelText: 'Email',
-              hintText: 'nom@agence.com',
+              hintText: 'nom@test.com',
               prefixIcon: Icon(Icons.alternate_email_rounded),
             ),
           ),
-          const SizedBox(height: 16),
-          TextField(
+          const SizedBox(height: 12),
+          TextFormField(
             controller: _passwordController,
             obscureText: _obscurePassword,
-            onSubmitted: (_) {
+            validator: (value) => AuthValidators.required(
+              value,
+              message: 'Veuillez entrer votre mot de passe',
+            ),
+            onFieldSubmitted: (_) {
               if (!isLoading) {
                 _login();
               }
@@ -167,7 +161,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               ),
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 4),
           Center(
             child: TextButton(
               onPressed:
@@ -175,7 +169,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               child: const Text('Mot de passe oublie ?'),
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
@@ -202,26 +196,24 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   : const Text('Se connecter'),
             ),
           ),
-          const SizedBox(height: 14),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: AppColors.goldSoft,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: AppColors.border),
-            ),
-            child: const Text(
-              'Astuce: le meme compte garde votre environnement coherent entre l espace web agence et l application mobile.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 13,
-                height: 1.45,
-                color: AppColors.textMuted,
+          const SizedBox(height: 8),
+          Center(
+            child: TextButton.icon(
+              onPressed: isLoading ? null : () => context.push('/family-signup'),
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.gold,
+                backgroundColor: AppColors.goldSoft,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(999),
+                ),
               ),
+              icon: const Icon(Icons.family_restroom_outlined, size: 18),
+              label: const Text('Creer un compte famille'),
             ),
           ),
         ],
+        ),
       ),
     );
   }
@@ -233,8 +225,8 @@ class _LoginLogoSeal extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 110,
-      height: 110,
+      width: 96,
+      height: 96,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         gradient: const LinearGradient(
@@ -256,8 +248,8 @@ class _LoginLogoSeal extends StatelessWidget {
       ),
       child: Center(
         child: Container(
-          width: 76,
-          height: 76,
+          width: 66,
+          height: 66,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: AppColors.text,
@@ -274,15 +266,15 @@ class _LoginLogoSeal extends StatelessWidget {
             children: [
               Icon(
                 Icons.mosque_rounded,
-                size: 34,
+                size: 30,
                 color: AppColors.goldBright,
               ),
               Positioned(
-                top: 18,
-                right: 18,
+                top: 15,
+                right: 15,
                 child: Container(
-                  width: 10,
-                  height: 10,
+                  width: 9,
+                  height: 9,
                   decoration: const BoxDecoration(
                     color: AppColors.goldBright,
                     shape: BoxShape.circle,
