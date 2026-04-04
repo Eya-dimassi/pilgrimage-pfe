@@ -27,6 +27,7 @@ import { logout } from '@/services/auth.service'
 export const pelerins = ref([])
 export const guides = ref([])
 export const groupes = ref([])
+export const agenceProfile = ref({})
 export const loading = ref(true)
 export const fetchError = ref('')
 
@@ -163,13 +164,26 @@ export function useAgenceData() {
   }
 
   async function getProfile() {
-    return fetchAgenceProfile()
+    const data = await fetchAgenceProfile()
+    agenceProfile.value = data ?? {}
+    return data
   }
 
   async function updateProfile(form) {
     const data = await saveAgenceProfile(form)
+    agenceProfile.value = {
+      ...(agenceProfile.value ?? {}),
+      ...(data ?? {}),
+      nomAgence: form.nomAgence ?? agenceProfile.value?.nomAgence,
+      siteWeb: form.siteWeb ?? agenceProfile.value?.siteWeb,
+      adresse: form.adresse ?? agenceProfile.value?.adresse,
+      logo: data?.logo ?? agenceProfile.value?.logo ?? null,
+    }
     if (form.nomAgence) user.value.nom = form.nomAgence
     if (form.telephone) user.value.telephone = form.telephone
+    try {
+      localStorage.setItem('user', JSON.stringify(user.value))
+    } catch {}
     return data
   }
 
@@ -179,6 +193,7 @@ export function useAgenceData() {
     pelerins,
     guides,
     groupes,
+    agenceProfile,
     loading,
     fetchError,
     loadAll,

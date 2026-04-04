@@ -418,6 +418,11 @@ export const familySignup = async (data: {
   const famille = await prisma.famille.create({
     data: {
       lienParente: data.lienParente?.trim() || null,
+      agence: {
+        connect: {
+          id: pelerin.agenceId,
+        },
+      },
       utilisateur: {
         create: {
           email: normalizedEmail,

@@ -12,7 +12,7 @@
 
     <template v-else>
       <div class="stats-grid">
-        <div class="stat-card">
+        <div class="stat-card stat-card--overview">
           <div class="stat-icon stat-icon--blue">
             <AppIcon name="building" :size="20" :stroke-width="2" />
           </div>
@@ -21,7 +21,7 @@
           <p class="stat-sub stat-sub--green">{{ approvedCount }} approuvees</p>
         </div>
 
-        <div class="stat-card">
+        <div class="stat-card" :class="{ 'stat-card--attention': pendingCount > 0 }">
           <div class="stat-icon stat-icon--orange">
             <AppIcon name="alert" :size="20" :stroke-width="2" />
           </div>
@@ -51,10 +51,10 @@
       </div>
 
       <div class="dash-grid">
-        <div class="ad-card">
+        <div class="ad-card ad-card--feature">
           <div class="ad-card-header">
             <h3 class="ad-card-title">Dernieres inscriptions</h3>
-            <button class="ad-card-link" @click="$emit('go-agences')">Voir tout -></button>
+            <button class="ad-card-link" @click="$emit('go-agences')">Voir tout</button>
           </div>
 
           <div class="recent-list">
@@ -70,7 +70,7 @@
           </div>
         </div>
 
-        <div class="ad-card">
+        <div class="ad-card ad-card--action-panel">
           <div class="ad-card-header">
             <h3 class="ad-card-title">Actions rapides</h3>
           </div>

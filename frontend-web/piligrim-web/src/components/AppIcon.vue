@@ -93,6 +93,10 @@ const icons = {
     viewBox: '0 0 24 24',
     body: '<rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" />',
   },
+  layers: {
+    viewBox: '0 0 24 24',
+    body: '<polygon points="12 2 3 7 12 12 21 7 12 2" /><polyline points="3 12 12 17 21 12" /><polyline points="3 17 12 22 21 17" />',
+  },
   home: {
     viewBox: '0 0 24 24',
     body: '<path d="M3 12l2-2 7-7 7 7 2 2" /><path d="M5 10v10a1 1 0 0 0 1 1h3m10-11v10a1 1 0 0 1-1 1h-3" /><path d="M9 21v-6a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v6" />',
@@ -108,6 +112,10 @@ const icons = {
   mail: {
     viewBox: '0 0 24 24',
     body: '<path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" />',
+  },
+  menu: {
+    viewBox: '0 0 24 24',
+    body: '<line x1="4" y1="7" x2="20" y2="7" /><line x1="4" y1="12" x2="20" y2="12" /><line x1="4" y1="17" x2="20" y2="17" />',
   },
   moon: {
     viewBox: '0 0 24 24',
@@ -148,6 +156,10 @@ const icons = {
   user: {
     viewBox: '0 0 24 24',
     body: '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />',
+  },
+  'user-check': {
+    viewBox: '0 0 24 24',
+    body: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><polyline points="16 11 18 13 22 9" />',
   },
   users: {
     viewBox: '0 0 24 24',

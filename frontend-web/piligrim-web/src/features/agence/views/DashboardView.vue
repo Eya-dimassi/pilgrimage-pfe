@@ -4,27 +4,34 @@
       :nav-items="navItems"
       :current-view="currentView"
       :get-badge="getBadge"
+      :collapsed="sidebarCollapsed"
       :user-initials="userInitials"
       :user="sidebarUser"
-      header-title="Bienvenue"
-      :header-subtitle="welcomeSubtitle"
-      profile-position="bottom"
-      footer-variant="profile"
+      :header-title="agencyName"
+      header-subtitle="Espace agence"
+      profile-position="none"
+      footer-variant="card"
       logout-position="bottom"
-      user-role="Agence"
-      profile-clickable
+      user-role=""
       @navigate="currentView = $event"
-      @open-profile="openProfile"
       @logout="handleLogout"
     />
 
-    <div class="main-area">
+    <div :class="['main-area', { 'main-area--sidebar-collapsed': sidebarCollapsed }]">
       <AppTopbar
         :view-title="viewTitle"
         root-label="Agence"
         :is-dark="isDark"
+        :avatar-text="userInitials"
+        :avatar-src="agencyLogoSrc"
+        :user="topbarUser"
+        user-role="Agence"
         @refresh="loadAll"
         @toggle-theme="toggleTheme"
+        @toggle-sidebar="sidebarCollapsed = !sidebarCollapsed"
+        @open-profile="openProfile"
+        @edit-profile="openProfile"
+        @logout="handleLogout"
       />
 
       <div class="content">
@@ -41,6 +48,7 @@
         <template v-else>
           <DashboardHome
             v-if="currentView === 'dashboard'"
+            :agency-name="agencyName"
             :pelerins="pelerins"
             :guides="guides"
             :groupes="groupes"
@@ -263,6 +271,7 @@ const {
   pelerins,
   guides,
   groupes,
+  agenceProfile,
   loading,
   fetchError,
   loadAll,
@@ -309,6 +318,7 @@ const {
 
 const THEME_STORAGE_KEY = 'agence-dark'
 const isDark = ref(true)
+const sidebarCollapsed = ref(false)
 const currentView = ref('dashboard')
 const showProfile = ref(false)
 const profileForm = ref({})
@@ -341,8 +351,16 @@ const sidebarUser = computed(() => {
 })
 
 const agencyName = computed(() => sidebarUser.value?.nom || 'Agence')
-const welcomeSubtitle = computed(() => `Agence ${agencyName.value}`.trim())
-
+const agencyLogoSrc = computed(() => {
+  const rawLogo = agenceProfile.value?.logo ?? user.value?.logo ?? ''
+  return typeof rawLogo === 'string' ? rawLogo.trim() : ''
+})
+const topbarUser = computed(() => ({
+  ...sidebarUser.value,
+  prenom: agencyName.value,
+  nom: '',
+  email: user.value?.email ?? '',
+}))
 const { guideStatusClass, guideStatusLabel } = useGuideStatus()
 
 const {
@@ -430,8 +448,8 @@ watch(modal, (value) => {
 const navItems = [
   { view: 'dashboard', label: "Vue d'ensemble", badge: null, iconName: 'grid' },
   { view: 'pelerins', label: 'Pelerins', badge: 'pelerins', iconName: 'users' },
-  { view: 'guides', label: 'Guides', badge: 'guides', iconName: 'user' },
-  { view: 'groupes', label: 'Groupes', badge: 'groupes', iconName: 'home' },
+  { view: 'guides', label: 'Guides', badge: 'guides', iconName: 'user-check' },
+  { view: 'groupes', label: 'Groupes', badge: 'groupes', iconName: 'layers' },
 ]
 
 function getGroupSymbol(typeVoyage) {
@@ -529,5 +547,6 @@ onMounted(() => {
   } catch {}
 
   loadAll()
+  getProfile().catch(() => {})
 })
 </script>

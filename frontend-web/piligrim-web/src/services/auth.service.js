@@ -39,6 +39,12 @@ export async function getMe() {
   return data
 }
 
+export async function updateMe(payload) {
+  const { data } = await api.patch('/auth/me', payload)
+  localStorage.setItem('user', JSON.stringify(data))
+  return data
+}
+
 export async function forgotPassword(email) {
   const { data } = await api.post('/auth/forgot-password', { email })
   return data

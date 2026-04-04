@@ -1,9 +1,14 @@
 <template>
   <div class="view-dashboard">
+    <div class="dashboard-hero">
+      <p class="dashboard-hero-kicker">Bienvenue</p>
+      <h1 class="dashboard-hero-title">{{ agencyName }}</h1>
+    </div>
+
     <div class="stats-grid">
       <DashboardStatCard
         tone="gold"
-        icon-name="home"
+        icon-name="layers"
         :value="groupes.length"
         label="Groupes"
         clickable
@@ -29,7 +34,7 @@
 
       <DashboardStatCard
         tone="green"
-        icon-name="user"
+        icon-name="user-check"
         :value="guides.length"
         label="Guides"
         clickable
@@ -94,7 +99,7 @@
       <DashboardMiniListCard
         title="Derniers guides"
         :is-empty="guides.length === 0"
-        empty-icon-name="user"
+        empty-icon-name="user-check"
         empty-text="Aucun guide"
         empty-action-text="+ Ajouter le premier"
         view-all-text="Voir tout ->"
@@ -114,7 +119,7 @@
       <DashboardMiniListCard
         title="Groupes"
         :is-empty="groupes.length === 0"
-        empty-icon-name="home"
+        empty-icon-name="layers"
         empty-text="Aucun groupe"
         empty-action-text="+ Creer le premier"
         view-all-text="Voir tout ->"
@@ -144,6 +149,10 @@ import DashboardStatCard from '@/features/agence/components/dashboard/DashboardS
 import StatusPill from '@/features/agence/components/dashboard/StatusPill.vue'
 
 defineProps({
+  agencyName: {
+    type: String,
+    required: true,
+  },
   pelerins: {
     type: Array,
     required: true,
