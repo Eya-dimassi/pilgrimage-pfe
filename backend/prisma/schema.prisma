@@ -116,6 +116,7 @@ model Groupe {
   nbMax       Int?
   dateDepart  DateTime?
   dateRetour  DateTime?
+  hajjStartDate DateTime?
   status      StatutGroupe @default(PLANIFIE)
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
@@ -415,6 +416,7 @@ enum StatutGroupe {
 enum EtapeVoyage {
   IHRAM
   TAWAF_AL_QUDUM
+  TAWAF_UMRAH
   SAI
   ARAFAT
   MUZDALIFAH
@@ -428,6 +430,7 @@ enum EtapeVoyage {
 enum TypeEvenement {
   PRIERE
   TRANSPORT
+  VISITE
   REPAS
   RITE
   REPOS
