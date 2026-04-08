@@ -12,7 +12,7 @@
       </button>
     </div>
 
-    <div class="ad-card">
+    <div class="ad-card ad-card--table-shell">
       <div v-if="loading" class="state-center">
         <AppIcon class="ad-spinner" name="spinner" :size="24" :stroke-width="3" spin />
       </div>

@@ -1,5 +1,5 @@
 <template>
-  <aside class="sidebar">
+  <aside :class="['sidebar', { 'sidebar--collapsed': collapsed }]">
     <div v-if="!hideHeader" class="sidebar-logo">
       <div class="sidebar-header-row">
         <template v-if="headerShowLogo">
@@ -14,7 +14,7 @@
           </template>
         </template>
 
-        <div>
+        <div v-if="!collapsed">
           <div class="logo-name">{{ headerTitle || brand.name }}</div>
           <div v-if="headerSubtitle || logoSubtitle" class="logo-sub">{{ headerSubtitle || logoSubtitle }}</div>
         </div>
@@ -27,34 +27,35 @@
         @click="handleProfileClick"
       >
         <div :class="avatarClass">{{ userInitials }}</div>
-        <div :class="infoClass">
+        <div v-if="!collapsed" :class="infoClass">
           <div :class="nameClass">{{ displayUserName }}</div>
-          <div :class="roleClass">{{ userRole }}</div>
+          <div v-if="showUserRole" :class="roleClass">{{ userRole }}</div>
         </div>
       </div>
     </div>
 
     <nav class="sidebar-nav">
-      <p class="nav-section-label">Navigation</p>
+      <p v-if="!collapsed" class="nav-section-label">Navigation</p>
       <a
         v-for="item in navItems"
         :key="item.view"
         href="#"
         :class="['nav-item', { active: currentView === item.view }]"
+        :title="collapsed ? item.label : ''"
         @click.prevent="$emit('navigate', item.view)"
       >
         <AppIcon class="nav-icon" :name="item.iconName" :size="18" />
-        <span>{{ item.label }}</span>
+        <span v-if="!collapsed">{{ item.label }}</span>
         <span v-if="item.badge && getBadge(item.badge) > 0" class="nav-badge">
           {{ getBadge(item.badge) }}
         </span>
       </a>
 
-      <p v-if="accountSectionLabel" class="nav-section-label nav-section-account">{{ accountSectionLabel }}</p>
+      <p v-if="accountSectionLabel && !collapsed" class="nav-section-label nav-section-account">{{ accountSectionLabel }}</p>
 
       <button v-if="logoutPosition !== 'bottom'" class="nav-item nav-logout" @click="$emit('logout')">
         <AppIcon class="nav-icon" name="logout" :size="18" />
-        {{ logoutLabel }}
+        <span v-if="!collapsed">{{ logoutLabel }}</span>
       </button>
     </nav>
 
@@ -71,9 +72,9 @@
           @click="handleProfileClick"
         >
           <div :class="avatarClass">{{ userInitials }}</div>
-          <div :class="infoClass">
+          <div v-if="!collapsed" :class="infoClass">
             <div :class="nameClass">{{ displayUserName }}</div>
-            <div :class="roleClass">{{ userRole }}</div>
+            <div v-if="showUserRole" :class="roleClass">{{ userRole }}</div>
           </div>
         </div>
       </div>
@@ -84,7 +85,7 @@
         @click="$emit('logout')"
       >
         <AppIcon class="nav-icon" name="logout" :size="18" />
-        {{ logoutLabel }}
+        <span v-if="!collapsed">{{ logoutLabel }}</span>
       </button>
     </div>
   </aside>
@@ -181,6 +182,10 @@ const props = defineProps({
     type: String,
     default: 'bottom',
   },
+  collapsed: {
+    type: Boolean,
+    default: false,
+  },
 })
 
 const emit = defineEmits(['navigate', 'open-profile', 'logout'])
@@ -204,8 +209,10 @@ const displayUserName = computed(() => {
   const prenom = rawPrenom === '-' || rawPrenom === '—' || rawPrenom === 'â€”' ? '' : rawPrenom
   const nom = rawNom === '-' || rawNom === '—' || rawNom === 'â€”' ? '' : rawNom
 
-  return `${prenom} ${nom}`.trim() || '-'
+  return `${prenom} ${nom}`.trim() 
 })
+
+const showUserRole = computed(() => Boolean(displayUserName.value && props.userRole))
 
 function handleProfileClick() {
   if (props.profileClickable) {
@@ -213,3 +220,4 @@ function handleProfileClick() {
   }
 }
 </script>
+
