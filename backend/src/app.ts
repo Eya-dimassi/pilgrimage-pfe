@@ -6,8 +6,10 @@ import adminRouter from './modules/admin/admin.router';
 
 import pelerinsRouter from './modules/agences/pelerin/pelerins.router';
 import groupesRouter from './modules/agences/groupes/groupes.router';
+import planningRouter from './modules/agences/planning/planning.router';
 
 import guideRouter from './modules/agences/guide/guide.router';
+import mobilePlanningRouter from './modules/mobile/planning/planning.router';
 
 const app=express();
 
@@ -24,8 +26,10 @@ app.use('/admin', adminRouter);
 
 app.use('/agence/pelerins', pelerinsRouter);
 app.use('/agence/groupes', groupesRouter);
+app.use('/agence/groupes', planningRouter);
 
 app.use('/agence/guides', guideRouter);
 app.use('/agence', agencesRouter);
+app.use('/mobile/planning', mobilePlanningRouter);
 
 export default app;

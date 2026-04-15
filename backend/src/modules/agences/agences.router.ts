@@ -63,9 +63,9 @@ router.get('/profile', authenticate, requireRole('AGENCE'), async (req: AuthRequ
 router.patch('/profile', authenticate, requireRole('AGENCE'), async (req: AuthRequest, res: Response) => {
   try {
     const agenceId = req.user!.agenceId!
-    const { nomAgence, adresse, siteWeb, telephone } = req.body
+    const { nomAgence, adresse, siteWeb, telephone, logo } = req.body
     const result = await agencesService.updateAgenceProfile(agenceId, {
-      nomAgence, adresse, siteWeb, telephone,
+      nomAgence, adresse, siteWeb, telephone, logo,
     })
     return res.json(result)
   } catch (error: any) {

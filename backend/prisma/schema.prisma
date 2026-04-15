@@ -101,7 +101,6 @@ model Guide {
   appelsPresence  AppelPresence[]
   incidents       Incident[]
   alertesResolues AlerteSOS[]          @relation("GuideResolutionSOS")
-  evenementsMaj   EvenementPlanning[]  @relation("GuideEvenementMaj")
 
   @@index([agenceId])
 }
@@ -273,22 +272,13 @@ model EvenementPlanning {
   titre               String
   description         String?
   lieu                String?
-  heureDebutPrevue    DateTime
-  heureFinPrevue      DateTime?
-  heureDebutReelle    DateTime?
-  heureFinReelle      DateTime?
-  statut              StatutEvenement @default(PLANIFIE)
-  noteChangement      String?
-  updatedByGuideId    String?
+  heureDebutPrevue    DateTime?
   createdAt           DateTime        @default(now())
   updatedAt           DateTime        @updatedAt
 
   planningQuotidien PlanningQuotidien @relation(fields: [planningQuotidienId], references: [id], onDelete: Cascade)
-  updatedByGuide    Guide?            @relation("GuideEvenementMaj", fields: [updatedByGuideId], references: [id])
 
   @@index([planningQuotidienId])
-  @@index([statut])
-  @@index([updatedByGuideId])
 }
 
 // ======================================================
@@ -435,14 +425,6 @@ enum TypeEvenement {
   RITE
   REPOS
   AUTRE
-}
-
-enum StatutEvenement {
-  PLANIFIE
-  EN_COURS
-  TERMINE
-  RETARDE
-  ANNULE
 }
 
 enum StatutAgence {

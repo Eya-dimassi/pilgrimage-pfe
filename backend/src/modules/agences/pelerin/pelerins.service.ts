@@ -1,7 +1,54 @@
 import prisma from '../../../config/prisma';
 import { createPasswordToken } from '../../../utils/token.utils';
 import { sendActivationEmail } from '../../../utils/mailer.utils';
-import { v4 as uuidv4 } from 'uuid';
+import crypto from 'crypto';
+
+// Generates a short uppercase unique code for family linking and pilgrim lookup.
+async function generateUniquePelerinCode() {
+  while (true) {
+    const code = crypto.randomBytes(4).toString('hex').toUpperCase();
+
+    const existing = await prisma.pelerin.findUnique({
+      where: { codeUnique: code },
+      select: { id: true },
+    });
+
+    if (!existing) {
+      return code;
+    }
+  }
+}
+
+type PelerinImportRow = {
+  nom: string;
+  prenom: string;
+  email: string;
+  telephone?: string;
+  dateNaissance?: string;
+  numeroPasseport?: string;
+  nationalite?: string;
+}
+
+function normalizeImportValue(value: unknown) {
+  return String(value ?? '').trim();
+}
+
+function normalizeImportRow(row: Partial<PelerinImportRow>): PelerinImportRow {
+  return {
+    nom: normalizeImportValue(row.nom),
+    prenom: normalizeImportValue(row.prenom),
+    email: normalizeImportValue(row.email).toLowerCase(),
+    telephone: normalizeImportValue(row.telephone) || undefined,
+    dateNaissance: normalizeImportValue(row.dateNaissance) || undefined,
+    numeroPasseport: normalizeImportValue(row.numeroPasseport) || undefined,
+    nationalite: normalizeImportValue(row.nationalite) || undefined,
+  };
+}
+
+function isValidImportDate(value?: string) {
+  if (!value) return true;
+  return !Number.isNaN(new Date(value).getTime());
+}
 
 // ── CREATE ────────────────────────────────────────────────────────────────────
 export const createPelerin = async (
@@ -19,6 +66,7 @@ export const createPelerin = async (
 ) => {
   const existing = await prisma.utilisateur.findUnique({ where: { email: data.email } });
   if (existing) throw new Error('Un compte avec cet email existe déjà');
+  const codeUnique = await generateUniquePelerinCode();
 
   const utilisateur = await prisma.utilisateur.create({
     data: {
@@ -33,7 +81,7 @@ export const createPelerin = async (
       pelerin: {
         create: {
           agenceId,
-          codeUnique: uuidv4(),
+          codeUnique,
           nationalite: data.nationalite,
           numeroPasseport: data.numeroPasseport,
           dateNaissance: data.dateNaissance ? new Date(data.dateNaissance) : undefined,
@@ -54,6 +102,93 @@ export const createPelerin = async (
     telephone: utilisateur.telephone,
     pelerinId: utilisateur.pelerin!.id,
     agenceId,
+  };
+};
+export const importPelerins = async (
+  agenceId: string,
+  createdById: string,
+  rows: Partial<PelerinImportRow>[],
+) => {
+  if (!Array.isArray(rows) || rows.length === 0) {
+    throw new Error('Aucune ligne a importer');
+  }
+
+  if (rows.length > 500) {
+    throw new Error('Le fichier depasse la limite de 500 pelerins par import');
+  }
+
+  const normalizedRows = rows.map(normalizeImportRow);
+  const errors: string[] = [];
+  const emailOccurrences = new Map<string, number[]>();
+
+  normalizedRows.forEach((row, index) => {
+    const lineNumber = index + 2;
+
+    if (!row.nom || !row.prenom || !row.email) {
+      errors.push(`Ligne ${lineNumber}: nom, prenom et email sont requis`);
+    }
+
+    if (row.email && !row.email.includes('@')) {
+      errors.push(`Ligne ${lineNumber}: email invalide`);
+    }
+
+    if (!isValidImportDate(row.dateNaissance)) {
+      errors.push(`Ligne ${lineNumber}: date de naissance invalide`);
+    }
+
+    if (row.email) {
+      const existing = emailOccurrences.get(row.email) ?? [];
+      existing.push(lineNumber);
+      emailOccurrences.set(row.email, existing);
+    }
+  });
+
+  for (const [email, lineNumbers] of emailOccurrences.entries()) {
+    if (lineNumbers.length > 1) {
+      errors.push(`Email en doublon dans le fichier: ${email} (lignes ${lineNumbers.join(', ')})`);
+    }
+  }
+
+  const emails = normalizedRows
+    .map((row) => row.email)
+    .filter(Boolean);
+
+  if (emails.length > 0) {
+    const existingUsers = await prisma.utilisateur.findMany({
+      where: {
+        email: { in: emails },
+      },
+      select: {
+        email: true,
+      },
+    });
+
+    existingUsers.forEach((user) => {
+      errors.push(`Email deja utilise: ${user.email}`);
+    });
+  }
+
+  if (errors.length > 0) {
+    const error = new Error('Le fichier contient des erreurs');
+    (error as Error & { details?: string[] }).details = errors;
+    throw error;
+  }
+
+  const imported: Array<{ email: string; nom: string; prenom: string }> = [];
+
+  for (const row of normalizedRows) {
+    await createPelerin(agenceId, createdById, row);
+    imported.push({
+      email: row.email,
+      nom: row.nom,
+      prenom: row.prenom,
+    });
+  }
+
+  return {
+    message: `${imported.length} pelerin(s) importe(s) avec succes`,
+    importedCount: imported.length,
+    imported,
   };
 };
 
@@ -235,3 +370,5 @@ export const resendActivationEmail = async (pelerinId: string, agenceId: string)
 
   return { message: "Email d'activation renvoyé avec succès" };
 };
+
+

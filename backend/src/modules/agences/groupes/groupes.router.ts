@@ -1,4 +1,4 @@
-import { Router, Response } from 'express';
+﻿import { Router, Response } from 'express';
 import { authenticate, requireRole, AuthRequest } from '../../auth/auth.middleware';
 import * as groupesService from './groupes.service';
 
@@ -9,13 +9,13 @@ router.use(authenticate, requireRole('AGENCE'));
 // POST /agence/groupes
 router.post('/', async (req: AuthRequest, res: Response) => {
   try {
-    const { nom, annee, typeVoyage, description, guideId, dateDepart, dateRetour, status } = req.body;
+    const { nom, annee, typeVoyage, description, guideId, guideIds, dateDepart, dateRetour, hajjStartDate, status } = req.body;
 
     if (!nom || !annee || !typeVoyage) {
-      return res.status(400).json({ message: 'Nom, année et type de voyage sont requis' });
+      return res.status(400).json({ message: 'Nom, annÃ©e et type de voyage sont requis' });
     }
     if (!['HAJJ', 'UMRAH'].includes(typeVoyage)) {
-      return res.status(400).json({ message: 'typeVoyage doit être HAJJ ou UMRAH' });
+      return res.status(400).json({ message: 'typeVoyage doit Ãªtre HAJJ ou UMRAH' });
     }
 
     if (status && !['PLANIFIE', 'EN_COURS', 'TERMINE', 'ANNULE'].includes(status)) {
@@ -28,9 +28,11 @@ router.post('/', async (req: AuthRequest, res: Response) => {
       typeVoyage,
       description,
       guideId,
+      guideIds,
       status,
       dateDepart,
       dateRetour,
+      hajjStartDate,
     });
     return res.status(201).json(result);
   } catch (error: any) {
@@ -87,7 +89,7 @@ router.delete('/:id', async (req: AuthRequest, res: Response) => {
   }
 });
 
-// POST /agence/groupes/:id/pelerins  — assign a pelerin
+// POST /agence/groupes/:id/pelerins  â€” assign a pelerin
 router.post('/:id/pelerins', async (req: AuthRequest, res: Response) => {
   try {
     const { pelerinId } = req.body;
@@ -104,7 +106,7 @@ router.post('/:id/pelerins', async (req: AuthRequest, res: Response) => {
   }
 });
 
-// DELETE /agence/groupes/:id/pelerins/:pelerinId  — remove a pelerin
+// DELETE /agence/groupes/:id/pelerins/:pelerinId  â€” remove a pelerin
 router.delete('/:id/pelerins/:pelerinId', async (req: AuthRequest, res: Response) => {
   try {
     const result = await groupesService.retirerPelerin(
@@ -119,3 +121,4 @@ router.delete('/:id/pelerins/:pelerinId', async (req: AuthRequest, res: Response
 });
 
 export default router;
+

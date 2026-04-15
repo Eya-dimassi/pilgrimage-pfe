@@ -1,5 +1,6 @@
-// backend/src/modules/agence/groupes/groupes.service.ts
+﻿// backend/src/modules/agence/groupes/groupes.service.ts
 
+import { addDays, startOfDay } from 'date-fns';
 import prisma from '../../../config/prisma';
 
 function mapGroupeForAgenceDashboard(groupe: any) {
@@ -23,9 +24,9 @@ function mapGroupeForAgenceDashboard(groupe: any) {
   };
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // CREATE
-// ══════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 export const createGroupe = async (
   agenceId: string,
   data: {
@@ -38,6 +39,7 @@ export const createGroupe = async (
     status?: 'PLANIFIE' | 'EN_COURS' | 'TERMINE' | 'ANNULE';
     dateDepart?: string | Date;
     dateRetour?: string | Date;
+    hajjStartDate?: string | Date;
   }
 ) => {
   const guideIds = Array.isArray(data.guideIds)
@@ -53,17 +55,18 @@ export const createGroupe = async (
     });
 
     if (guides.length !== guideIds.length) {
-      throw new Error("Guide introuvable ou n'appartient pas à votre agence");
+      throw new Error("Guide introuvable ou n'appartient pas Ã  votre agence");
     }
 
     const inactiveGuide = guides.find((g) => !g.utilisateur.actif);
     if (inactiveGuide) {
-      throw new Error("Ce guide n'a pas encore activé son compte");
+      throw new Error("Ce guide n'a pas encore activÃ© son compte");
     }
   }
 
   const parsedDateDepart = data.dateDepart ? new Date(data.dateDepart) : undefined;
   const parsedDateRetour = data.dateRetour ? new Date(data.dateRetour) : undefined;
+  const parsedHajjStartDate = data.hajjStartDate ? new Date(data.hajjStartDate) : undefined;
 
   if (parsedDateDepart && Number.isNaN(parsedDateDepart.getTime())) {
     throw new Error('dateDepart invalide');
@@ -73,11 +76,28 @@ export const createGroupe = async (
     throw new Error('dateRetour invalide');
   }
 
+  if (parsedHajjStartDate && Number.isNaN(parsedHajjStartDate.getTime())) {
+    throw new Error('hajjStartDate invalide');
+  }
+
   if (parsedDateDepart && parsedDateRetour && parsedDateRetour < parsedDateDepart) {
     throw new Error('dateRetour doit etre >= dateDepart');
   }
 
-  // Empêcher les doublons de nom (même agence + même année)
+  if (data.typeVoyage === 'HAJJ' && parsedHajjStartDate) {
+    const anchorDate = startOfDay(parsedHajjStartDate);
+    const fixedEndDate = addDays(anchorDate, 5);
+
+    if (parsedDateDepart && anchorDate < startOfDay(parsedDateDepart)) {
+      throw new Error('La date du 8 Dhul Hijja doit Ãªtre comprise dans la durÃ©e du voyage');
+    }
+
+    if (parsedDateRetour && fixedEndDate > startOfDay(parsedDateRetour)) {
+      throw new Error('Le voyage Hajj doit couvrir au moins du 8 au 13 Dhul Hijja');
+    }
+  }
+
+  // EmpÃªcher les doublons de nom (mÃªme agence + mÃªme annÃ©e)
   const existingByName = await prisma.groupe.findFirst({
     where: {
       agenceId,
@@ -91,7 +111,7 @@ export const createGroupe = async (
     throw new Error('Un groupe avec ce nom existe deja pour cette annee')
   }
 
-  // Créer le groupe
+  // CrÃ©er le groupe
   const groupe = await prisma.groupe.create({
     data: {
       nom: data.nom,
@@ -101,12 +121,13 @@ export const createGroupe = async (
       status: data.status,
       dateDepart: parsedDateDepart,
       dateRetour: parsedDateRetour,
+      hajjStartDate: data.typeVoyage === 'HAJJ' ? parsedHajjStartDate ?? null : null,
       agenceId,
     },
     include: {
       _count: { 
         select: { 
-          membres: { where: { actif: true } }  // ⭐ Compter seulement les actifs
+          membres: { where: { actif: true } }  // â­ Compter seulement les actifs
         } 
       },
     },
@@ -123,7 +144,7 @@ export const createGroupe = async (
     });
   }
 
-  // Récupérer le groupe complet avec le guide
+  // RÃ©cupÃ©rer le groupe complet avec le guide
   const full = await prisma.groupe.findUnique({
     where: { id: groupe.id },
     include: {
@@ -160,15 +181,15 @@ export const createGroupe = async (
   return full ? mapGroupeForAgenceDashboard(full) : full;
 };
 
-// ══════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // GET ALL
-// ══════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 export const getGroupes = async (agenceId: string) => {
   const list = await prisma.groupe.findMany({
     where: { agenceId },
     include: {
       guides: {
-        where: { actif: true },  // ⭐ Seulement le guide actif
+        where: { actif: true },  // â­ Seulement le guide actif
         include: {
           guide: {
             include: {
@@ -178,7 +199,7 @@ export const getGroupes = async (agenceId: string) => {
         },
       },
       membres: {
-        where: { actif: true },  // ⭐ Seulement les membres actifs
+        where: { actif: true },  // â­ Seulement les membres actifs
         include: {
           pelerin: {
             include: {
@@ -201,9 +222,9 @@ export const getGroupes = async (agenceId: string) => {
   return list.map(mapGroupeForAgenceDashboard);
 };
 
-// ══════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // GET ONE
-// ══════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 export const getGroupeById = async (agenceId: string, groupeId: string) => {
   const groupe = await prisma.groupe.findFirst({
     where: { id: groupeId, agenceId },
@@ -247,9 +268,9 @@ export const getGroupeById = async (agenceId: string, groupeId: string) => {
   return mapGroupeForAgenceDashboard(groupe);
 };
 
-// ══════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // UPDATE
-// ══════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 export const updateGroupe = async (
   agenceId: string,
   groupeId: string,
@@ -263,9 +284,10 @@ export const updateGroupe = async (
     status?: 'PLANIFIE' | 'EN_COURS' | 'TERMINE' | 'ANNULE';
     dateDepart?: string | Date | null;
     dateRetour?: string | Date | null;
+    hajjStartDate?: string | Date | null;
   }
 ) => {
-  // Vérifier que le groupe existe et appartient à l'agence
+  // VÃ©rifier que le groupe existe et appartient Ã  l'agence
   const groupe = await prisma.groupe.findFirst({ 
     where: { id: groupeId, agenceId } 
   });
@@ -310,17 +332,18 @@ export const updateGroupe = async (
     });
 
     if (guides.length !== requestedGuideIds.length) {
-      throw new Error("Guide introuvable ou n'appartient pas à votre agence");
+      throw new Error("Guide introuvable ou n'appartient pas Ã  votre agence");
     }
 
     const inactiveGuide = guides.find((g) => !g.utilisateur.actif);
     if (inactiveGuide) {
-      throw new Error("Ce guide n'a pas encore activé son compte");
+      throw new Error("Ce guide n'a pas encore activÃ© son compte");
     }
   }
 
   const parsedDateDepart = data.dateDepart === null ? null : (data.dateDepart ? new Date(data.dateDepart) : undefined);
   const parsedDateRetour = data.dateRetour === null ? null : (data.dateRetour ? new Date(data.dateRetour) : undefined);
+  const parsedHajjStartDate = data.hajjStartDate === null ? null : (data.hajjStartDate ? new Date(data.hajjStartDate) : undefined);
 
   if (parsedDateDepart instanceof Date && Number.isNaN(parsedDateDepart.getTime())) {
     throw new Error('dateDepart invalide');
@@ -330,11 +353,30 @@ export const updateGroupe = async (
     throw new Error('dateRetour invalide');
   }
 
+  if (parsedHajjStartDate instanceof Date && Number.isNaN(parsedHajjStartDate.getTime())) {
+    throw new Error('hajjStartDate invalide');
+  }
+
   const finalDateDepart = parsedDateDepart === undefined ? groupe.dateDepart : parsedDateDepart;
   const finalDateRetour = parsedDateRetour === undefined ? groupe.dateRetour : parsedDateRetour;
+  const finalTypeVoyage = data.typeVoyage ?? groupe.typeVoyage;
+  const finalHajjStartDate = parsedHajjStartDate === undefined ? groupe.hajjStartDate : parsedHajjStartDate;
 
   if (finalDateDepart && finalDateRetour && finalDateRetour < finalDateDepart) {
     throw new Error('dateRetour doit etre >= dateDepart');
+  }
+
+  if (finalTypeVoyage === 'HAJJ' && finalHajjStartDate) {
+    const anchorDate = startOfDay(finalHajjStartDate);
+    const fixedEndDate = addDays(anchorDate, 5);
+
+    if (finalDateDepart && anchorDate < startOfDay(finalDateDepart)) {
+      throw new Error('La date du 8 Dhul Hijja doit Ãªtre comprise dans la durÃ©e du voyage');
+    }
+
+    if (finalDateRetour && fixedEndDate > startOfDay(finalDateRetour)) {
+      throw new Error('Le voyage Hajj doit couvrir au moins du 8 au 13 Dhul Hijja');
+    }
   }
 
   if (requestedGuideIds !== null) {
@@ -374,7 +416,14 @@ export const updateGroupe = async (
     }
   }
 
-  // Mettre à jour le groupe
+  const hajjStartDateUpdate =
+    finalTypeVoyage !== 'HAJJ'
+      ? { hajjStartDate: null }
+      : parsedHajjStartDate !== undefined
+        ? { hajjStartDate: parsedHajjStartDate }
+        : {};
+
+  // Mettre Ã  jour le groupe
   const updated = await prisma.groupe.update({
     where: { id: groupeId },
     data: {
@@ -385,6 +434,7 @@ export const updateGroupe = async (
       ...(data.status !== undefined && { status: data.status }),
       ...(parsedDateDepart !== undefined && { dateDepart: parsedDateDepart }),
       ...(parsedDateRetour !== undefined && { dateRetour: parsedDateRetour }),
+      ...hajjStartDateUpdate,
     },
     include: {
       guides: {
@@ -420,36 +470,36 @@ export const updateGroupe = async (
   return mapGroupeForAgenceDashboard(updated);
 };
 
-// ══════════════════════════════════════════════════════════════════════════════
-// DELETE ⭐ CORRIGÉ
-// ══════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// DELETE â­ CORRIGÃ‰
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 export const deleteGroupe = async (agenceId: string, groupeId: string) => {
-  // 1. Vérifier que le groupe existe et appartient à l'agence
+  // 1. VÃ©rifier que le groupe existe et appartient Ã  l'agence
   const groupe = await prisma.groupe.findFirst({ 
     where: { id: groupeId, agenceId },
     include: {
       _count: {
         select: {
-          membres: { where: { actif: true } }  // ⭐ Compter membres actifs
+          membres: { where: { actif: true } }  // â­ Compter membres actifs
         }
       }
     }
   });
   
   if (!groupe) {
-    // Vérifier si le groupe existe mais appartient à une autre agence
+    // VÃ©rifier si le groupe existe mais appartient Ã  une autre agence
     const groupeExists = await prisma.groupe.findUnique({
       where: { id: groupeId },
     });
 
     if (groupeExists) {
-      throw new Error('Accès refusé : ce groupe appartient à une autre agence');
+      throw new Error('AccÃ¨s refusÃ© : ce groupe appartient Ã  une autre agence');
     } else {
       throw new Error('Groupe introuvable');
     }
   }
 
-  // 2. ⭐ VÉRIFIER QUE LE GROUPE EST VIDE
+  // 2. â­ VÃ‰RIFIER QUE LE GROUPE EST VIDE
   const nombreMembresActifs = groupe._count.membres;
 
   if (nombreMembresActifs > 0) {
@@ -489,7 +539,7 @@ export const deleteGroupe = async (agenceId: string, groupeId: string) => {
 
     return {
       action: 'status_changed',
-      message: `Le groupe contient ${nombreMembresActifs} pèlerin(s) actif(s) : suppression interdite`,
+      message: `Le groupe contient ${nombreMembresActifs} pÃ¨lerin(s) actif(s) : suppression interdite`,
       groupe: mapGroupeForAgenceDashboard(updated),
     }
   }
@@ -501,21 +551,21 @@ export const deleteGroupe = async (agenceId: string, groupeId: string) => {
 
   return { 
     action: 'deleted',
-    message: 'Groupe supprimé avec succès',
+    message: 'Groupe supprimÃ© avec succÃ¨s',
     groupeId: groupe.id,
     groupeNom: groupe.nom,
   };
 };
 
-// ══════════════════════════════════════════════════════════════════════════════
-// ASSIGN PELERIN ⭐ CORRIGÉ
-// ══════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ASSIGN PELERIN â­ CORRIGÃ‰
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 export const assignerPelerin = async (
   agenceId: string,
   groupeId: string,
   pelerinId: string
 ) => {
-  // Vérifier que le groupe existe et appartient à l'agence
+  // VÃ©rifier que le groupe existe et appartient Ã  l'agence
   const groupe = await prisma.groupe.findFirst({ 
     where: { id: groupeId, agenceId } 
   });
@@ -532,7 +582,7 @@ export const assignerPelerin = async (
   const groupeEnd = groupe.dateRetour ?? groupe.dateDepart ?? null
   const groupeMax = Math.min((groupe.nbMax ?? 40), 40)
 
-  // Vérifier que le pèlerin existe et appartient à l'agence
+  // VÃ©rifier que le pÃ¨lerin existe et appartient Ã  l'agence
   const pelerin = await prisma.pelerin.findFirst({
     where: { id: pelerinId, agenceId },
     include: { 
@@ -541,14 +591,14 @@ export const assignerPelerin = async (
   });
   
   if (!pelerin) {
-    throw new Error("Pèlerin introuvable ou n'appartient pas à votre agence");
+    throw new Error("PÃ¨lerin introuvable ou n'appartient pas Ã  votre agence");
   }
   
   if (!pelerin.utilisateur.actif) {
-    throw new Error("Ce pèlerin n'a pas encore activé son compte");
+    throw new Error("Ce pÃ¨lerin n'a pas encore activÃ© son compte");
   }
 
-  // ⭐ Vérifier si le pèlerin est déjà dans ce groupe (relation actif)
+  // Verify whether the pilgrim is already an active member of this group.
   const existingMembre = await prisma.groupePelerin.findFirst({
     where: {
       groupeId,
@@ -561,8 +611,8 @@ export const assignerPelerin = async (
     throw new Error('Ce pèlerin est déjà membre actif de ce groupe');
   }
 
-  // ⭐ Interdire chevauchement de période (groupes PLANIFIE/EN_COURS)
-  // Règle: un pèlerin peut appartenir à plusieurs groupes, mais pas à deux groupes qui se chevauchent en dates.
+  // Prevent overlapping active trip periods (PLANIFIE / EN_COURS).
+  // A pilgrim may belong to multiple groups over time, but not two overlapping trips.
   if (groupeStart && groupeEnd && ['PLANIFIE', 'EN_COURS'].includes(groupe.status)) {
     const activeMemberships = await prisma.groupePelerin.findMany({
       where: {
@@ -596,7 +646,7 @@ export const assignerPelerin = async (
     }
   }
 
-  // ⭐ Capacité max (nbMax) : ne pas dépasser le nombre de pèlerins autorisé
+  // Max capacity guard (nbMax): do not exceed the allowed pilgrim count.
   if (groupeMax > 0) {
     const activeCount = await prisma.groupePelerin.count({
       where: {
@@ -610,7 +660,7 @@ export const assignerPelerin = async (
     }
   }
 
-  // ⭐ Créer la nouvelle relation GroupePelerin
+  // â­ CrÃ©er la nouvelle relation GroupePelerin
   await prisma.groupePelerin.create({
     data: {
       groupeId,
@@ -620,30 +670,30 @@ export const assignerPelerin = async (
   });
 
   return { 
-    message: 'Pèlerin ajouté au groupe avec succès',
+    message: 'PÃ¨lerin ajoutÃ© au groupe avec succÃ¨s',
     groupeId,
     pelerinId,
   };
 };
 
-// ══════════════════════════════════════════════════════════════════════════════
-// REMOVE PELERIN ⭐ CORRIGÉ
-// ══════════════════════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// REMOVE PELERIN â­ CORRIGÃ‰
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 export const retirerPelerin = async (
   agenceId: string,
   groupeId: string,
   pelerinId: string
 ) => {
-  // Vérifier que le pèlerin appartient à l'agence
+  // VÃ©rifier que le pÃ¨lerin appartient Ã  l'agence
   const pelerin = await prisma.pelerin.findFirst({ 
     where: { id: pelerinId, agenceId } 
   });
   
   if (!pelerin) {
-    throw new Error('Pèlerin introuvable');
+    throw new Error('PÃ¨lerin introuvable');
   }
 
-  // ⭐ Vérifier que le pèlerin est membre actif de ce groupe
+  // â­ VÃ©rifier que le pÃ¨lerin est membre actif de ce groupe
   const membre = await prisma.groupePelerin.findFirst({
     where: {
       groupeId,
@@ -653,10 +703,10 @@ export const retirerPelerin = async (
   });
 
   if (!membre) {
-    throw new Error("Ce pèlerin n'est pas membre actif de ce groupe");
+    throw new Error("Ce pÃ¨lerin n'est pas membre actif de ce groupe");
   }
 
-  // ⭐ Désactiver la relation (soft delete)
+  // â­ DÃ©sactiver la relation (soft delete)
   await prisma.groupePelerin.update({
     where: { id: membre.id },
     data: {
@@ -666,8 +716,11 @@ export const retirerPelerin = async (
   });
 
   return { 
-    message: 'Pèlerin retiré du groupe avec succès',
+    message: 'PÃ¨lerin retirÃ© du groupe avec succÃ¨s',
     groupeId,
     pelerinId,
   };
 };
+
+
+
