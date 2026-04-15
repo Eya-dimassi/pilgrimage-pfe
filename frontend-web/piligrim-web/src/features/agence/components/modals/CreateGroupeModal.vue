@@ -1,8 +1,8 @@
 <template>
   <DashboardModalShell title="Nouveau groupe" :error="error" @close="$emit('close')">
     <div class="form-grid">
-      <div class="form-field full"><label>Nom *</label><input v-model="form.nom" placeholder="Groupe Hajj 2025" /></div>
-      <div class="form-field"><label>Annee *</label><input v-model="form.annee" type="number" placeholder="2025" /></div>
+      <div class="form-field full"><label>Nom *</label><input v-model="form.nom" placeholder="Groupe Hajj 2026" /></div>
+      <div class="form-field"><label>Annee *</label><input v-model="form.annee" type="number" placeholder="2026" /></div>
       <div class="form-field">
         <label>Type *</label>
         <select v-model="form.typeVoyage">
