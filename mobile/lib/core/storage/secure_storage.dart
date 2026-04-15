@@ -44,6 +44,29 @@ class SecureStorageService {
     return _storage.read(key: _accessTokenKey);
   }
 
+  Future<String?> readRefreshToken() {
+    return _storage.read(key: _refreshTokenKey);
+  }
+
+  Future<void> updateSessionTokens({
+    required String accessToken,
+    required String refreshToken,
+  }) async {
+    await _storage.write(key: _accessTokenKey, value: accessToken);
+    await _storage.write(key: _refreshTokenKey, value: refreshToken);
+
+    final session = await readSession();
+    if (session == null) {
+      return;
+    }
+
+    final updatedSession = session.copyWith(
+      accessToken: accessToken,
+      refreshToken: refreshToken,
+    );
+    await _storage.write(key: _sessionKey, value: jsonEncode(updatedSession.toJson()));
+  }
+
   Future<void> markIntroSeen() {
     return _storage.write(key: _introSeenKey, value: 'true');
   }

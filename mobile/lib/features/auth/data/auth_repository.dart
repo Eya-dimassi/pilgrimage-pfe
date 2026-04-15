@@ -6,6 +6,7 @@ import '../../../core/network/dio_client.dart';
 import '../domain/auth_exception.dart';
 import '../domain/auth_session.dart';
 import '../domain/auth_user.dart';
+import '../../famille/domain/family_link.dart';
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
   final dio = ref.watch(dioProvider);
@@ -130,6 +131,35 @@ class AuthRepository {
 
       return response.data?['message'] as String? ??
           'Compte famille cree avec succes';
+    } on DioException catch (error) {
+      throw AuthException.fromDio(error);
+    }
+  }
+
+  Future<String> addFamilyLink({
+    required String codeUnique,
+  }) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        ApiEndpoints.familyLinks,
+        data: {
+          'codeUnique': codeUnique,
+        },
+      );
+
+      return response.data?['message'] as String? ?? 'Proche ajoute avec succes';
+    } on DioException catch (error) {
+      throw AuthException.fromDio(error);
+    }
+  }
+
+  Future<List<FamilyLink>> fetchFamilyLinks() async {
+    try {
+      final response = await _dio.get<List<dynamic>>(ApiEndpoints.familyLinks);
+      return (response.data ?? const [])
+          .whereType<Map<String, dynamic>>()
+          .map(FamilyLink.fromJson)
+          .toList();
     } on DioException catch (error) {
       throw AuthException.fromDio(error);
     }

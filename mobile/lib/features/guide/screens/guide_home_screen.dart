@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/widgets/adhan_panel.dart';
 import '../../../core/widgets/role_home_template.dart';
 import '../../../core/widgets/role_profile_template.dart';
 import '../../../core/widgets/role_shell.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../../planning/screens/role_planning_pages.dart';
 
 class GuideHomeScreen extends ConsumerWidget {
   const GuideHomeScreen({
@@ -33,6 +35,11 @@ class GuideHomeScreen extends ConsumerWidget {
         roleLabel: 'Guide · Mobile',
         accentColor: Color(0xFF67C9B7),
         icon: Icons.map_outlined,
+        headerExtra: AdhanPanel(
+          accentColor: Color(0xFF67C9B7),
+          roleToneLabel:
+              'Un rappel spirituel discret pour guider avec calme et presence.',
+        ),
         stats: [
           HomeStatData(value: 'GPS', label: 'suivi live'),
           HomeStatData(value: 'Groupe', label: 'coordination'),
@@ -40,30 +47,31 @@ class GuideHomeScreen extends ConsumerWidget {
         ],
         cards: [
           InfoCardData(
-            title: 'Groupe du jour',
+            title: 'Vue complete',
             description:
-                'La liste de vos pelerins et leur etat de presence seront visibles ici avec une lecture plus immediate.',
-            icon: Icons.groups_outlined,
-            tag: 'Coordination',
+                'Gardez le fil de tout le voyage pour anticiper les deplacements et briefer votre groupe.',
+            icon: Icons.route_outlined,
+            tag: 'Lecture',
           ),
           InfoCardData(
-            title: 'Etape actuelle',
+            title: 'Journee actuelle',
             description:
-                'Vous pourrez mettre a jour l etape du groupe pour les familles et l agence sans quitter votre ecran principal.',
-            icon: Icons.flag_outlined,
-            tag: 'Progression',
+                'Retrouvez les rendez-vous du jour dans l ordre, sans action d edition depuis le mobile.',
+            icon: Icons.calendar_month_outlined,
+            tag: 'Planning',
             toneColor: Color(0xFF6B7FD7),
           ),
           InfoCardData(
-            title: 'Incidents et SOS',
+            title: 'Coordination',
             description:
-                'Les alertes et signalements arriveront ici avec les actions a mener en priorite.',
-            icon: Icons.emergency_outlined,
-            tag: 'Urgence',
+                'Le mobile vous aide a informer le groupe, pas a modifier le planning de l agence.',
+            icon: Icons.groups_outlined,
+            tag: 'Groupe',
             toneColor: Color(0xFFB8962E),
           ),
         ],
       ),
+      planningChild: const GuidePlanningPage(),
       profileChild: RoleProfileTemplate(
         user: user,
         roleLabel: 'Guide',

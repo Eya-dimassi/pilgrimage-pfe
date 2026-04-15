@@ -13,6 +13,8 @@ class RoleHomeTemplate extends StatelessWidget {
     required this.icon,
     required this.cards,
     required this.stats,
+    this.headerExtra,
+    this.footer,
   });
 
   final String title;
@@ -22,6 +24,8 @@ class RoleHomeTemplate extends StatelessWidget {
   final IconData icon;
   final List<InfoCardData> cards;
   final List<HomeStatData> stats;
+  final Widget? headerExtra;
+  final Widget? footer;
 
   @override
   Widget build(BuildContext context) {
@@ -95,45 +99,57 @@ class RoleHomeTemplate extends StatelessWidget {
                   color: AppColors.textMuted,
                 ),
               ),
-              const SizedBox(height: 18),
-              Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                children: stats
-                    .map((stat) => _StatCard(stat: stat))
-                    .toList(),
-              ),
+              if (headerExtra != null) ...[
+                const SizedBox(height: 18),
+                headerExtra!,
+              ],
+              if (stats.isNotEmpty) ...[
+                const SizedBox(height: 18),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: stats
+                      .map((stat) => _StatCard(stat: stat))
+                      .toList(),
+                ),
+              ],
             ],
           ),
         ),
-        const SizedBox(height: 22),
-        const Text(
-          'Fonctionnalites clefs',
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.w700,
-            letterSpacing: -0.6,
-          ),
-        ),
-        const SizedBox(height: 8),
-        const Text(
-          'Des cartes plus claires, une palette plus douce et un langage visuel plus coherent sur mobile.',
-          style: TextStyle(
-            fontSize: 13,
-            height: 1.5,
-            color: AppColors.textMuted,
-          ),
-        ),
-        const SizedBox(height: 16),
-        ...cards.map(
-          (card) => Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: InfoCard(
-              card: card,
-              accentColor: accentColor,
+        if (cards.isNotEmpty) ...[
+          const SizedBox(height: 22),
+          const Text(
+            'Fonctionnalites clefs',
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.6,
             ),
           ),
-        ),
+          const SizedBox(height: 8),
+          const Text(
+            'Des cartes plus claires, une palette plus douce et un langage visuel plus coherent sur mobile.',
+            style: TextStyle(
+              fontSize: 13,
+              height: 1.5,
+              color: AppColors.textMuted,
+            ),
+          ),
+          const SizedBox(height: 16),
+          ...cards.map(
+            (card) => Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: InfoCard(
+                card: card,
+                accentColor: accentColor,
+              ),
+            ),
+          ),
+        ],
+        if (footer != null) ...[
+          const SizedBox(height: 4),
+          footer!,
+        ],
       ],
     );
   }
