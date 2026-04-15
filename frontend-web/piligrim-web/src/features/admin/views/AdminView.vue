@@ -13,7 +13,7 @@
       profile-position="none"
       footer-variant="card"
       logout-position="bottom"
-      @navigate="currentView = $event"
+      @navigate="navigateToView($event)"
       @logout="handleLogout"
     />
 
@@ -39,7 +39,7 @@
           <h1 class="page-title">{{ currentView === 'dashboard' ? "Vue d'ensemble" : 'Gestion des Agences' }}</h1>
         </div>
 
-        <AdminDashboard v-if="currentView === 'dashboard'" @go-agences="currentView = 'agences'" />
+        <AdminDashboard v-if="currentView === 'dashboard'" @go-agences="navigateToView('agences')" />
         <AdminAgences v-if="currentView === 'agences'" :search="searchQuery" />
       </main>
     </div>
@@ -66,8 +66,8 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import AppIcon from '@/components/AppIcon.vue'
 import AppSidebar from '@/components/layout/AppSidebar.vue'
 import AppTopbar from '@/components/layout/AppTopbar.vue'
@@ -80,7 +80,9 @@ import { getMe, logout, updateMe } from '@/services/auth.service'
 import '@/assets/styles/admin.css'
 
 const router = useRouter()
+const route = useRoute()
 const user = ref(JSON.parse(localStorage.getItem('user') || '{}'))
+const VALID_VIEWS = ['dashboard', 'agences']
 
 const { pendingCount, loadAgences, isDark, toggleDark, applyDark } = useAdmin()
 const { showToast, toastMessage, toastType } = useAdminToast()
@@ -111,11 +113,25 @@ function getAdminBadge(type) {
   return type === 'agences' ? pendingCount.value : 0
 }
 
+function normalizeView(value) {
+  return VALID_VIEWS.includes(value) ? value : 'dashboard'
+}
+
+function navigateToView(view) {
+  router.push({
+    path: route.path,
+    query: {
+      ...route.query,
+      view: normalizeView(view),
+    },
+  })
+}
+
 async function handleLogout() {
   try {
     await logout()
   } finally {
-    router.push('/')
+    router.replace('/')
   }
 }
 
@@ -161,4 +177,12 @@ onMounted(() => {
   applyDark(localStorage.getItem('admin-dark') === 'true')
   loadAgences()
 })
+
+watch(
+  () => route.query.view,
+  (value) => {
+    currentView.value = normalizeView(String(value ?? 'dashboard'))
+  },
+  { immediate: true },
+)
 </script>

@@ -5,6 +5,7 @@ import {
   createAgenceGuide,
   createAgenceGroupe,
   createAgencePelerin,
+  importAgencePelerins,
   deleteAgenceGuide,
   deleteAgenceGroupe,
   deleteAgencePelerin,
@@ -69,7 +70,7 @@ export function useAgenceData() {
 
   async function handleLogout() {
     await logout()
-    router.push('/')
+    router.replace('/')
   }
 
   async function loadAll() {
@@ -101,6 +102,10 @@ export function useAgenceData() {
 
   async function createPelerin(form) {
     return createAgencePelerin(form)
+  }
+
+  async function importPelerins(rows) {
+    return importAgencePelerins(rows)
   }
 
   async function updatePelerin(id, form) {
@@ -200,6 +205,7 @@ export function useAgenceData() {
     getBadge,
     initials,
     createPelerin,
+    importPelerins,
     updatePelerin,
     deletePelerin,
     createGuide,

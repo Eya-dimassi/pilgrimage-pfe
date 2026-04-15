@@ -108,6 +108,10 @@
               <AppIcon name="download" :size="14" />
             </button>
 
+            <button @click="$emit('planning', groupe)" class="act-btn" title="Ouvrir le planning">
+              <AppIcon name="calendar" :size="14" />
+            </button>
+
             <button @click="$emit('edit', groupe)" class="act-btn" title="Modifier">
               <AppIcon name="edit" :size="14" />
             </button>
@@ -252,7 +256,7 @@ const props = defineProps({
   },
 })
 
-defineEmits(['create', 'edit', 'delete', 'assign', 'remove-pelerin', 'remove-guide'])
+defineEmits(['create', 'edit', 'delete', 'assign', 'remove-pelerin', 'remove-guide', 'planning'])
 
 const search = ref('')
 const activeFilter = ref('all')

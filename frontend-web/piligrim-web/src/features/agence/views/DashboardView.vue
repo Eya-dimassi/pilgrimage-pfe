@@ -13,7 +13,7 @@
       footer-variant="card"
       logout-position="bottom"
       user-role=""
-      @navigate="currentView = $event"
+      @navigate="navigateToView($event)"
       @logout="handleLogout"
     />
 
@@ -61,7 +61,7 @@
             :guide-status-class="guideStatusClass"
             :guide-status-label="guideStatusLabel"
             :get-group-symbol="getGroupSymbol"
-            @navigate="currentView = $event"
+            @navigate="navigateToView($event)"
             @open-modal="openModal($event)"
           />
 
@@ -72,6 +72,7 @@
             :bulk-assign-loading="bulkAssignLoading"
             :resending-id="resendingPelerinId"
             @create="openModal('createPelerin')"
+            @import="openImportPelerins"
             @detail="openPelerinDetail($event)"
             @edit="openEdit('pelerin', $event)"
             @delete="confirmDelete('pelerin', $event)"
@@ -103,6 +104,13 @@
             @assign="openAssign($event)"
             @remove-pelerin="doRetirerPelerin($event)"
             @remove-guide="doRetirerGuide($event)"
+            @planning="openPlanningForGroup($event)"
+          />
+
+          <DashPlanning
+            v-if="currentView === 'planning'"
+            :groupes="groupes"
+            :preselected-group-id="planningGroupId"
           />
         </template>
       </div>
@@ -115,6 +123,15 @@
       :loading="actionLoading"
       @close="closeModal"
       @submit="doCreatePelerin"
+    />
+
+    <ImportPelerinsModal
+      v-if="showImportPelerins"
+      :error="importModalError"
+      :loading="importLoading"
+      :import-errors="importErrors"
+      @close="closeImportPelerins"
+      @submit="doImportPelerins"
     />
 
     <CreateGuideModal
@@ -243,6 +260,7 @@
 
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import DashboardHome from '@/features/agence/components/dashboard/DashboardHome.vue'
 import DashboardModalShell from '@/features/agence/components/dashboard/DashboardModalShell.vue'
 import AppIcon from '@/components/AppIcon.vue'
@@ -250,6 +268,7 @@ import AppSidebar from '@/components/layout/AppSidebar.vue'
 import AppTopbar from '@/components/layout/AppTopbar.vue'
 import CreateGroupeModal from '@/features/agence/components/modals/CreateGroupeModal.vue'
 import CreateGuideModal from '@/features/agence/components/modals/CreateGuideModal.vue'
+import ImportPelerinsModal from '@/features/agence/components/modals/ImportPelerinsModal.vue'
 import CreatePelerinModal from '@/features/agence/components/modals/CreatePelerinModal.vue'
 import EditModal from '@/features/agence/components/modals/EditModal.vue'
 import GuideDetailModal from '@/features/agence/components/modals/GuideDetailModal.vue'
@@ -261,9 +280,15 @@ import { useGuideStatus } from '@/features/agence/composables/useGuideStatus'
 import { useModal } from '@/features/agence/composables/useModal'
 import DashGroupes from '@/features/agence/views/Dashgroupes.vue'
 import DashGuides from '@/features/agence/views/Dashguides.vue'
+import DashPlanning from '@/features/agence/views/Dashplanning.vue'
 import DashPelerins from '@/features/agence/views/Dashpelerins.vue'
 
 import '@/assets/styles/dashboard.css'
+
+const VALID_VIEWS = ['dashboard', 'pelerins', 'guides', 'groupes', 'planning']
+
+const route = useRoute()
+const router = useRouter()
 
 const {
   user,
@@ -277,6 +302,7 @@ const {
   loadAll,
   getBadge,
   initials,
+  importPelerins,
   getGuideStats,
   getPelerinDetails,
   getProfile,
@@ -320,6 +346,7 @@ const THEME_STORAGE_KEY = 'agence-dark'
 const isDark = ref(true)
 const sidebarCollapsed = ref(false)
 const currentView = ref('dashboard')
+const planningGroupId = ref('')
 const showProfile = ref(false)
 const profileForm = ref({})
 const profileLoading = ref(false)
@@ -331,6 +358,10 @@ const guideDetailError = ref('')
 const selectedPelerinDetail = ref(null)
 const pelerinDetailLoading = ref(false)
 const pelerinDetailError = ref('')
+const showImportPelerins = ref(false)
+const importLoading = ref(false)
+const importModalError = ref('')
+const importErrors = ref([])
 
 const userInitials = computed(() =>
   ((sidebarUser.value?.prenom?.[0] ?? '') + (sidebarUser.value?.nom?.[0] ?? '')).toUpperCase() || 'AG'
@@ -376,6 +407,7 @@ const viewTitle = computed(() => ({
   pelerins: 'Pelerins',
   guides: 'Guides',
   groupes: 'Groupes',
+  planning: 'Planning',
 }[currentView.value]))
 
 const isGroupeCancelDelete = computed(() => {
@@ -450,10 +482,41 @@ const navItems = [
   { view: 'pelerins', label: 'Pelerins', badge: 'pelerins', iconName: 'users' },
   { view: 'guides', label: 'Guides', badge: 'guides', iconName: 'user-check' },
   { view: 'groupes', label: 'Groupes', badge: 'groupes', iconName: 'layers' },
+  { view: 'planning', label: 'Planning', badge: null, iconName: 'calendar' },
 ]
 
 function getGroupSymbol(typeVoyage) {
   return typeVoyage === 'HAJJ' ? 'HJ' : 'UM'
+}
+
+function normalizeView(value) {
+  return VALID_VIEWS.includes(value) ? value : 'dashboard'
+}
+
+function syncStateFromRoute() {
+  currentView.value = normalizeView(String(route.query.view ?? 'dashboard'))
+  planningGroupId.value = currentView.value === 'planning'
+    ? String(route.query.group ?? '').trim()
+    : ''
+}
+
+function navigateToView(view, options = {}) {
+  const nextView = normalizeView(view)
+  const nextQuery = { ...route.query, view: nextView }
+
+  if (nextView === 'planning') {
+    const nextGroupId = String(options.groupId ?? planningGroupId.value ?? '').trim()
+    if (nextGroupId) nextQuery.group = nextGroupId
+    else delete nextQuery.group
+  } else {
+    delete nextQuery.group
+  }
+
+  router.push({ path: route.path, query: nextQuery })
+}
+
+function openPlanningForGroup(groupe) {
+  navigateToView('planning', { groupId: groupe?.id ?? '' })
 }
 
 function toggleTheme() {
@@ -469,11 +532,45 @@ async function openProfile() {
       nomAgence: data.nomAgence,
       adresse: data.adresse || '',
       siteWeb: data.siteWeb || '',
+      logo: data.logo || '',
       telephone: data.utilisateur?.telephone || '',
     }
     showProfile.value = true
   } catch (error) {
     showToast('Impossible de charger le profil', 'error')
+  }
+}
+
+function openImportPelerins() {
+  importModalError.value = ''
+  importErrors.value = []
+  showImportPelerins.value = true
+}
+
+function closeImportPelerins() {
+  showImportPelerins.value = false
+  importLoading.value = false
+  importModalError.value = ''
+  importErrors.value = []
+}
+
+async function doImportPelerins(rows) {
+  importLoading.value = true
+  importModalError.value = ''
+  importErrors.value = []
+
+  try {
+    const result = await importPelerins(rows)
+    closeImportPelerins()
+    showToast(result?.message || 'Import termine avec succes')
+    await loadAll()
+  } catch (error) {
+    importModalError.value = error.response?.data?.message || error.message
+    importErrors.value = Array.isArray(error.response?.data?.errors)
+      ? error.response.data.errors
+      : []
+  } finally {
+    importLoading.value = false
   }
 }
 
@@ -537,6 +634,14 @@ watch(isDark, (value) => {
     localStorage.setItem(THEME_STORAGE_KEY, String(value))
   } catch {}
 })
+
+watch(
+  () => [route.query.view, route.query.group],
+  () => {
+    syncStateFromRoute()
+  },
+  { immediate: true },
+)
 
 onMounted(() => {
   try {

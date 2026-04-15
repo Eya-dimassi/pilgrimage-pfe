@@ -17,6 +17,10 @@
         <label>Site web</label>
         <input v-model="form.siteWeb" placeholder="https://..." />
       </div>
+      <div class="form-field full">
+        <label>Logo</label>
+        <input v-model="form.logo" placeholder="https://.../logo.png" />
+      </div>
     </div>
     <template #actions>
       <button class="btn-secondary" @click="$emit('close')">Annuler</button>

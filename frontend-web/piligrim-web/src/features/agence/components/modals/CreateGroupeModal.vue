@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <DashboardModalShell title="Nouveau groupe" :error="error" @close="$emit('close')">
     <div class="form-grid">
       <div class="form-field full"><label>Nom *</label><input v-model="form.nom" placeholder="Groupe Hajj 2025" /></div>
@@ -21,6 +21,10 @@
       </div>
       <div class="form-field"><label>Date depart</label><input v-model="form.dateDepart" type="date" /></div>
       <div class="form-field"><label>Date retour</label><input v-model="form.dateRetour" type="date" /></div>
+      <div v-if="form.typeVoyage === 'HAJJ'" class="form-field full">
+        <label>Début du Hajj (8 Dhul Hijja)</label>
+        <input v-model="form.hajjStartDate" type="date" />
+      </div>
       <div class="form-field full"><label>Description</label><input v-model="form.description" placeholder="Description optionnelle" /></div>
       <div class="form-field full">
         <label>Guides (optionnel)</label>
@@ -98,3 +102,4 @@ const guideSelectedLabel = computed(() => {
   return `${count} guides selectionnes`
 })
 </script>
+

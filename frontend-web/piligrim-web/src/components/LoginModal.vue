@@ -116,8 +116,8 @@ const handleLogin = async () => {
     saveSession(data)
     emit('close')
 
-    if (role === 'AGENCE') router.push('/dashboard')
-    else if (role === 'SUPER_ADMIN') router.push('/admin')
+    if (role === 'AGENCE') router.replace('/dashboard')
+    else if (role === 'SUPER_ADMIN') router.replace('/admin')
   } catch (error) {
     errorMessage.value = error?.response?.data?.message || 'Email ou mot de passe incorrect'
   } finally {
