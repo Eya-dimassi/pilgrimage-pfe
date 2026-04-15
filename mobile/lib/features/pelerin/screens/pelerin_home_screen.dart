@@ -6,6 +6,7 @@ import '../../../core/widgets/role_home_template.dart';
 import '../../../core/widgets/role_profile_template.dart';
 import '../../../core/widgets/role_shell.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../widgets/pelerin_parcours.dart';
 
 class PelerinHomeScreen extends ConsumerWidget {
   const PelerinHomeScreen({
@@ -27,6 +28,15 @@ class PelerinHomeScreen extends ConsumerWidget {
 
     final name = user.fullName.isNotEmpty ? user.fullName : user.email;
 
+    void openParcoursSheet() {
+      showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) => const PelerinParcoursSheet(),
+      );
+    }
+
     return RoleShell(
       initialIndex: initialTabIndex,
       homeChild: RoleHomeTemplate(
@@ -42,15 +52,16 @@ class PelerinHomeScreen extends ConsumerWidget {
           HomeStatData(value: 'Live', label: 'infos groupe'),
           HomeStatData(value: '24/7', label: 'assistance'),
         ],
-        cards: const [
+        cards: [
           InfoCardData(
             title: 'Mon parcours',
             description:
                 'Les etapes du Hajj seront affichees ici avec un fil simple a suivre et des reperes clairs comme sur le web.',
             icon: Icons.route_outlined,
             tag: 'Parcours',
+            onTap: openParcoursSheet,
           ),
-          InfoCardData(
+          const InfoCardData(
             title: 'Planning du jour',
             description:
                 'Les horaires, points de rendez-vous et rappels de la journee apparaitront dans une carte plus lisible et structuree.',
@@ -58,7 +69,7 @@ class PelerinHomeScreen extends ConsumerWidget {
             tag: 'Agenda',
             toneColor: Color(0xFF6B7FD7),
           ),
-          InfoCardData(
+          const InfoCardData(
             title: 'Mon statut',
             description:
                 'Vous pourrez bientot declarer present, en deplacement ou besoin d aide avec un statut partage a votre guide.',

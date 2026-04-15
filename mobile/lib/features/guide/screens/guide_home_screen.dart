@@ -6,6 +6,7 @@ import '../../../core/widgets/role_home_template.dart';
 import '../../../core/widgets/role_profile_template.dart';
 import '../../../core/widgets/role_shell.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../widgets/guide_groupes_sheet.dart';
 
 class GuideHomeScreen extends ConsumerWidget {
   const GuideHomeScreen({
@@ -24,16 +25,36 @@ class GuideHomeScreen extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
+    void openParcoursSheet() {
+      showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) => const GuideGroupesSheet(
+          openPelerinsOnTap: false,
+        ),
+      );
+    }
+
+    void openGroupesSheet() {
+      showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) => const GuideGroupesSheet(),
+      );
+    }
+
     return RoleShell(
       initialIndex: initialTabIndex,
-      homeChild: const RoleHomeTemplate(
+      homeChild: RoleHomeTemplate(
         title: 'Le terrain, coordonne depuis le mobile.',
         subtitle:
             'Retrouvez votre groupe, la localisation live et les actions prioritaires dans une interface plus proche du web.',
         roleLabel: 'Guide · Mobile',
         accentColor: Color(0xFF67C9B7),
         icon: Icons.map_outlined,
-        stats: [
+        stats: const [
           HomeStatData(value: 'GPS', label: 'suivi live'),
           HomeStatData(value: 'Groupe', label: 'coordination'),
           HomeStatData(value: 'SOS', label: 'actions rapides'),
@@ -42,9 +63,10 @@ class GuideHomeScreen extends ConsumerWidget {
           InfoCardData(
             title: 'Groupe du jour',
             description:
-                'La liste de vos pelerins et leur etat de presence seront visibles ici avec une lecture plus immediate.',
+                'Consultez la liste de vos pelerins pour chaque groupe.',
             icon: Icons.groups_outlined,
             tag: 'Coordination',
+            onTap: openGroupesSheet,
           ),
           InfoCardData(
             title: 'Etape actuelle',
@@ -53,8 +75,9 @@ class GuideHomeScreen extends ConsumerWidget {
             icon: Icons.flag_outlined,
             tag: 'Progression',
             toneColor: Color(0xFF6B7FD7),
+            onTap: openParcoursSheet,
           ),
-          InfoCardData(
+          const InfoCardData(
             title: 'Incidents et SOS',
             description:
                 'Les alertes et signalements arriveront ici avec les actions a mener en priorite.',
