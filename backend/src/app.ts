@@ -9,6 +9,9 @@ import groupesRouter from './modules/agences/groupes/groupes.router';
 
 import guideRouter from './modules/agences/guide/guide.router';
 
+import guideParcoursRoutes from './modules/agences/guide/parcours/parcours.router';
+import pelerinParcoursRoutes from './modules/agences/pelerin/parcours/parcours.router';
+import familleParcoursRoutes from './modules/agences/famille/parcours/parcours.router';
 const app=express();
 
 app.use(cors());
@@ -27,5 +30,8 @@ app.use('/agence/groupes', groupesRouter);
 
 app.use('/agence/guides', guideRouter);
 app.use('/agence', agencesRouter);
+app.use('/guide', guideParcoursRoutes);
+app.use('/pelerin', pelerinParcoursRoutes);
+app.use('/famille', familleParcoursRoutes);
 
 export default app;
