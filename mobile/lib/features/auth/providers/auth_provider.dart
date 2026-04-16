@@ -131,6 +131,12 @@ class AuthController extends AsyncNotifier<AuthSession?> {
     }
   }
 
+  Future<void> expireSession() async {
+    final storage = ref.read(secureStorageProvider);
+    await storage.clearSession();
+    state = const AsyncData(null);
+  }
+
   Future<String> forgotPassword(String email) async {
     final repository = ref.read(authRepositoryProvider);
     final request = ForgotPasswordRequest.fromRaw(email);
@@ -166,6 +172,19 @@ class AuthController extends AsyncNotifier<AuthSession?> {
       telephone: request.telephone,
       lienParente: request.lienParente,
     );
+  }
+
+  Future<String> addFamilyLink({
+    required String codeUnique,
+  }) async {
+    final repository = ref.read(authRepositoryProvider);
+    final normalizedCode = codeUnique.trim();
+
+    if (normalizedCode.isEmpty) {
+      throw const AuthException('Veuillez entrer le code unique du pelerin');
+    }
+
+    return repository.addFamilyLink(codeUnique: normalizedCode);
   }
 
   Future<void> refreshProfile() async {

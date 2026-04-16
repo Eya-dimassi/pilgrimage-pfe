@@ -72,7 +72,7 @@ api.interceptors.response.use(
         return api(originalRequest)
       } catch (refreshError) {
         clearSession()
-        window.location.href = '/'
+        window.location.replace('/')
         return Promise.reject(refreshError)
       }
     }

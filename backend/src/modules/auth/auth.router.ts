@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import * as authService from './auth.service';
-import { authenticate, AuthRequest } from './auth.middleware';
+import { authenticate, AuthRequest, requireRole } from './auth.middleware';
 
 const router = Router();
 
@@ -113,6 +113,15 @@ router.get('/me', authenticate, async (req: AuthRequest, res: Response) => {
   }
 });
 
+router.get('/family-links', authenticate, requireRole('FAMILLE'), async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await authService.getFamilyAssociations(req.user!.id);
+    return res.status(200).json(result);
+  } catch (error: any) {
+    return res.status(400).json({ message: error.message });
+  }
+});
+
 // PATCH /auth/me — protected route
 router.patch('/me', authenticate, async (req: AuthRequest, res: Response) => {
   try {
@@ -177,6 +186,21 @@ router.post('/family-signup', async (req: Request, res: Response) => {
       codeUnique,
     });
 
+    return res.status(201).json(result);
+  } catch (error: any) {
+    return res.status(400).json({ message: error.message });
+  }
+});
+
+router.post('/family-links', authenticate, requireRole('FAMILLE'), async (req: AuthRequest, res: Response) => {
+  try {
+    const { codeUnique } = req.body;
+
+    if (!codeUnique) {
+      return res.status(400).json({ message: 'Code unique requis' });
+    }
+
+    const result = await authService.addFamilyAssociation(req.user!.id, codeUnique);
     return res.status(201).json(result);
   } catch (error: any) {
     return res.status(400).json({ message: error.message });

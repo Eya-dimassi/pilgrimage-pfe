@@ -8,11 +8,13 @@ class RoleShell extends StatefulWidget {
     super.key,
     required this.homeChild,
     required this.profileChild,
+    this.planningChild,
     this.initialIndex = 0,
   });
 
   final Widget homeChild;
   final Widget profileChild;
+  final Widget? planningChild;
   final int initialIndex;
 
   @override
@@ -42,12 +44,13 @@ class _RoleShellState extends State<RoleShell> {
   Widget build(BuildContext context) {
     final pages = [
       widget.homeChild,
-      const _FeaturePlaceholder(
-        icon: Icons.calendar_month_outlined,
-        title: 'Planning',
-        description:
-            'Le planning quotidien, les reperes du groupe et les prochaines etapes apparaitront ici.',
-      ),
+      widget.planningChild ??
+          const _FeaturePlaceholder(
+            icon: Icons.calendar_month_outlined,
+            title: 'Planning',
+            description:
+                'Le planning quotidien, les reperes du groupe et les prochaines etapes apparaitront ici.',
+          ),
       const _FeaturePlaceholder(
         icon: Icons.notifications_none_rounded,
         title: 'Alertes',

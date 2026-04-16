@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+﻿import { ref } from 'vue'
 import { groupes, guides, pelerins, useAgenceData } from './useAgenceData'
 
 const TOAST_DURATION_MS = 8500
@@ -91,6 +91,7 @@ export function useModal() {
         status: 'PLANIFIE',
         dateDepart: '',
         dateRetour: '',
+        hajjStartDate: '',
       }
     }
 
@@ -135,6 +136,7 @@ export function useModal() {
         status: target.status ?? 'PLANIFIE',
         dateDepart: dateToInput(target.dateDepart),
         dateRetour: dateToInput(target.dateRetour),
+        hajjStartDate: dateToInput(target.hajjStartDate),
       }
     }
 
@@ -203,6 +205,11 @@ export function useModal() {
   async function doCreateGroupe() {
     if (!form.value.nom || !form.value.annee || !form.value.typeVoyage) {
       modalError.value = 'Nom, annee et type sont requis'
+      return
+    }
+
+    if (form.value.typeVoyage === 'HAJJ' && form.value.hajjStartDate && form.value.dateDepart && form.value.hajjStartDate < form.value.dateDepart) {
+      modalError.value = 'La date du 8 Dhul Hijja doit Ãªtre comprise dans la durÃ©e du voyage'
       return
     }
 
@@ -559,3 +566,4 @@ export function useModal() {
     doRetirerGuide,
   }
 }
+

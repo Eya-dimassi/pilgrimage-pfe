@@ -72,6 +72,7 @@ export const updateAgenceProfile = async (
     adresse?: string
     siteWeb?: string
     telephone?: string
+    logo?: string
   }
 ) => {
   const agence = await prisma.agenceVoyage.findUnique({
@@ -98,6 +99,7 @@ export const updateAgenceProfile = async (
       ...(data.nomAgence !== undefined && { nomAgence: data.nomAgence }),
       ...(data.adresse   !== undefined && { adresse: data.adresse }),
       ...(data.siteWeb   !== undefined && { siteWeb: data.siteWeb }),
+      ...(data.logo      !== undefined && { logo: data.logo }),
     },
     include: {
       utilisateur: {

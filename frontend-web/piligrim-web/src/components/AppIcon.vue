@@ -49,6 +49,14 @@ const icons = {
     viewBox: '0 0 24 24',
     body: '<path d="M19 21V5a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v16" /><path d="M3 21h18" /><path d="M9 7h1" /><path d="M14 7h1" /><path d="M9 11h1" /><path d="M14 11h1" /><path d="M10 21v-4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v4" />',
   },
+  'calendar-plus': {
+    viewBox: '0 0 24 24',
+    body: '<rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /><line x1="12" y1="13.5" x2="12" y2="18.5" /><line x1="9.5" y1="16" x2="14.5" y2="16" />',
+  },
+  calendar: {
+    viewBox: '0 0 24 24',
+    body: '<rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />',
+  },
   check: {
     viewBox: '0 0 24 24',
     body: '<path d="M5 13l4 4L19 7" />',
@@ -132,6 +140,14 @@ const icons = {
   plus: {
     viewBox: '0 0 24 24',
     body: '<line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />',
+  },
+  sparkles: {
+    viewBox: '0 0 24 24',
+    body: '<path d="M12 3l1.6 4.4L18 9l-4.4 1.6L12 15l-1.6-4.4L6 9l4.4-1.6L12 3z" /><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8L19 15z" /><path d="M5 14l.9 2.1L8 17l-2.1.9L5 20l-.9-2.1L2 17l2.1-.9L5 14z" />',
+  },
+  'arrow-right-left': {
+    viewBox: '0 0 24 24',
+    body: '<path d="M4 7h12" /><polyline points="13 4 16 7 13 10" /><path d="M20 17H8" /><polyline points="11 14 8 17 11 20" />',
   },
   refresh: {
     viewBox: '0 0 24 24',

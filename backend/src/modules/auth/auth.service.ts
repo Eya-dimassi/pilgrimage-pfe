@@ -471,6 +471,134 @@ export const familySignup = async (data: {
     },
   };
 };
+
+export const addFamilyAssociation = async (userId: string, codeUnique: string) => {
+  const normalizedCode = codeUnique.trim();
+  if (!normalizedCode) {
+    throw new Error('Code unique requis');
+  }
+
+  const utilisateur = await prisma.utilisateur.findUnique({
+    where: { id: userId },
+    include: {
+      famille: {
+        include: {
+          associations: {
+            where: { actif: true },
+            select: {
+              pelerinId: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!utilisateur || utilisateur.role !== 'FAMILLE' || !utilisateur.famille) {
+    throw new Error('Compte famille introuvable');
+  }
+
+  const pelerin = await prisma.pelerin.findUnique({
+    where: { codeUnique: normalizedCode },
+    include: {
+      utilisateur: {
+        select: {
+          nom: true,
+          prenom: true,
+        },
+      },
+    },
+  });
+
+  if (!pelerin) {
+    throw new Error('Aucun pelerin correspondant a ce code unique');
+  }
+
+  if (pelerin.agenceId !== utilisateur.famille.agenceId) {
+    throw new Error('Ce pelerin n appartient pas a la meme agence');
+  }
+
+  const alreadyLinked = utilisateur.famille.associations.some(
+    (association) => association.pelerinId === pelerin.id,
+  );
+
+  if (alreadyLinked) {
+    throw new Error('Ce proche est deja lie a votre compte');
+  }
+
+  await prisma.famillePelerin.create({
+    data: {
+      familleId: utilisateur.famille.id,
+      pelerinId: pelerin.id,
+    },
+  });
+
+  return {
+    message: 'Proche ajoute avec succes',
+    pelerin: {
+      id: pelerin.id,
+      codeUnique: pelerin.codeUnique,
+      nom: pelerin.utilisateur.nom,
+      prenom: pelerin.utilisateur.prenom,
+    },
+  };
+};
+
+export const getFamilyAssociations = async (userId: string) => {
+  const utilisateur = await prisma.utilisateur.findUnique({
+    where: { id: userId },
+    include: {
+      famille: {
+        include: {
+          associations: {
+            where: { actif: true },
+            orderBy: { createdAt: 'desc' },
+            include: {
+              pelerin: {
+                include: {
+                  utilisateur: {
+                    select: {
+                      nom: true,
+                      prenom: true,
+                    },
+                  },
+                  groupes: {
+                    where: { actif: true },
+                    take: 1,
+                    orderBy: { dateDebut: 'desc' },
+                    include: {
+                      groupe: {
+                        select: {
+                          id: true,
+                          nom: true,
+                          typeVoyage: true,
+                          annee: true,
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!utilisateur || utilisateur.role !== 'FAMILLE' || !utilisateur.famille) {
+    throw new Error('Compte famille introuvable');
+  }
+
+  return utilisateur.famille.associations.map((association) => ({
+    id: association.id,
+    pelerinId: association.pelerin.id,
+    codeUnique: association.pelerin.codeUnique,
+    nom: association.pelerin.utilisateur.nom,
+    prenom: association.pelerin.utilisateur.prenom,
+    groupe: association.pelerin.groupes[0]?.groupe ?? null,
+  }));
+};
 export const updateMe = async (
   userId: string,
   data: {

@@ -27,6 +27,26 @@ router.post('/', async (req: AuthRequest, res: Response) => {
   }
 });
 
+// POST /agence/pelerins/import
+router.post('/import', async (req: AuthRequest, res: Response) => {
+  try {
+    const { rows } = req.body;
+
+    const result = await pelerinsService.importPelerins(
+      req.user!.agenceId!,
+      req.user!.id,
+      rows,
+    );
+
+    return res.status(201).json(result);
+  } catch (error: any) {
+    return res.status(400).json({
+      message: error.message,
+      errors: error.details ?? [],
+    });
+  }
+});
+
 // GET /agence/pelerins
 router.get('/', async (req: AuthRequest, res: Response) => {
   try {

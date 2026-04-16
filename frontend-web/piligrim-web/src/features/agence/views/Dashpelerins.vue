@@ -31,6 +31,10 @@
           <AppIcon name="plus" :size="15" :stroke-width="2" style="margin-right: 6px" />
           Nouveau pelerin
         </button>
+        <button @click="$emit('import')" class="btn-secondary">
+          <AppIcon name="upload" :size="15" :stroke-width="2" style="margin-right: 6px" />
+          Importer Excel
+        </button>
       </div>
     </div>
 
@@ -250,7 +254,7 @@ const props = defineProps({
   },
 })
 
-const emit = defineEmits(['create', 'detail', 'edit', 'delete', 'resend', 'assign', 'bulk-assign', 'unassign'])
+const emit = defineEmits(['create', 'import', 'detail', 'edit', 'delete', 'resend', 'assign', 'bulk-assign', 'unassign'])
 
 const assigningId = ref(null)
 const assignLoadingId = ref(null)
