@@ -97,7 +97,7 @@ model Guide {
   agence      AgenceVoyage @relation(fields: [agenceId], references: [id])
 
   groupes         GroupeGuide[]
-  etapesValidees  EtapeValideeGroupe[]
+  evenementsValides EvenementPlanning[]
   appelsPresence  AppelPresence[]
   incidents       Incident[]
   alertesResolues AlerteSOS[]          @relation("GuideResolutionSOS")
@@ -125,9 +125,7 @@ model Groupe {
   membres GroupePelerin[]
   guides  GroupeGuide[]
 
-  etapeActuelle  EtapeVoyage?
   plannings      PlanningQuotidien[]
-  etapesValidees EtapeValideeGroupe[]
   appelsPresence AppelPresence[]
   incidents      Incident[]
 
@@ -189,6 +187,7 @@ model Pelerin {
   alertesSOS    AlerteSOS[]
 
   @@index([agenceId])
+  @@index([statut])
 }
 
 // ======================================================
@@ -226,25 +225,6 @@ model FamillePelerin {
   @@index([pelerinId])
 }
 
-// ======================================================
-// SPRINT 2 — PARCOURS
-// ======================================================
-
-model EtapeValideeGroupe {
-  id               String      @id @default(uuid())
-  groupeId         String
-  etape            EtapeVoyage
-  valideeAt        DateTime    @default(now())
-  valideParGuideId String?
-  note             String?
-
-  groupe         Groupe @relation(fields: [groupeId], references: [id], onDelete: Cascade)
-  valideParGuide Guide? @relation(fields: [valideParGuideId], references: [id])
-
-  @@unique([groupeId, etape])
-  @@index([groupeId])
-  @@index([valideParGuideId])
-}
 
 // ======================================================
 // SPRINT 2 — PLANNING QUOTIDIEN
@@ -270,15 +250,21 @@ model EvenementPlanning {
   planningQuotidienId String
   type                TypeEvenement
   titre               String
+  etape               EtapeVoyage? 
   description         String?
   lieu                String?
   heureDebutPrevue    DateTime?
+  estValide        Boolean   @default(false)
+  valideParGuideId String?
+  valideeAt        DateTime?
   createdAt           DateTime        @default(now())
   updatedAt           DateTime        @updatedAt
 
   planningQuotidien PlanningQuotidien @relation(fields: [planningQuotidienId], references: [id], onDelete: Cascade)
-
+  validePar         Guide?            @relation(fields: [valideParGuideId], references: [id])
   @@index([planningQuotidienId])
+  @@index([valideParGuideId])
+  @@index([etape])
 }
 
 // ======================================================
@@ -334,7 +320,7 @@ model Position {
 
   pelerin Pelerin @relation(fields: [pelerinId], references: [id], onDelete: Cascade)
 
-  @@index([pelerinId, createdAt])
+  @@index([pelerinId, createdAt(sort: Desc)])
 }
 
 model AlerteSOS {
