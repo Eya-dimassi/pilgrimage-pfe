@@ -15,7 +15,16 @@ class ApiEndpoints {
   static const String me = '/auth/me';
   static const String updateMe = '/auth/me';
   static const String mobilePlanningGroups = '/mobile/planning/groupes';
+  static const String mobileNotifications = '/mobile/notifications';
+  static const String mobileNotificationToken =
+      '/mobile/notifications/device-token';
 
   static String mobilePlanningGroup(String groupeId) =>
       '/mobile/planning/groupes/$groupeId';
+
+  static String mobileNotificationRead(String notificationId) =>
+      '/mobile/notifications/$notificationId/read';
+
+  static const String mobileNotificationsReadAll =
+      '/mobile/notifications/read-all';
 }

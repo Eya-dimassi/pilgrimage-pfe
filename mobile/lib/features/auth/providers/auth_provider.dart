@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/storage/secure_storage.dart';
+import '../../../services/fcm_service.dart';
 import '../data/auth_repository.dart';
 import '../domain/auth_exception.dart';
 import '../domain/auth_requests.dart';
@@ -49,6 +50,7 @@ class AuthController extends AsyncNotifier<AuthSession?> {
       }
 
       await storage.saveSession(hydratedSession);
+      await FCMService().syncTokenIfLoggedIn();
       return hydratedSession;
     } catch (_) {
       await storage.clearSession();
@@ -104,6 +106,7 @@ class AuthController extends AsyncNotifier<AuthSession?> {
       );
 
       await storage.saveSession(hydratedSession);
+      await FCMService().syncTokenIfLoggedIn();
       state = AsyncData(hydratedSession);
     } on AuthException {
       rethrow;
@@ -120,6 +123,7 @@ class AuthController extends AsyncNotifier<AuthSession?> {
     state = const AsyncLoading();
 
     try {
+      await FCMService().unregisterCurrentDevice();
       if (refreshToken != null && refreshToken.isNotEmpty) {
         await repository.logout(refreshToken);
       }

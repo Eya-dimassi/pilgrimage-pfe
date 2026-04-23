@@ -13,12 +13,14 @@ import '../features/auth/screens/login_screen.dart';
 import '../features/famille/screens/famille_home_screen.dart';
 import '../features/guide/screens/guide_home_screen.dart';
 import '../features/pelerin/screens/pelerin_home_screen.dart';
+import '../services/notification_navigation_service.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   final routerRefreshNotifier = ref.watch(routerRefreshNotifierProvider);
 
   return GoRouter(
     initialLocation: '/splash',
+    navigatorKey: NotificationNavigationService.navigatorKey,
     refreshListenable: routerRefreshNotifier,
     routes: [
       GoRoute(

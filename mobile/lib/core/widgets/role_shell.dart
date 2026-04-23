@@ -1,27 +1,31 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../features/notifications/providers/mobile_notifications_provider.dart';
 import '../theme/app_theme.dart';
 import 'brand_frame.dart';
 
-class RoleShell extends StatefulWidget {
+class RoleShell extends ConsumerStatefulWidget {
   const RoleShell({
     super.key,
     required this.homeChild,
     required this.profileChild,
     this.planningChild,
+    this.alertsChild,
     this.initialIndex = 0,
   });
 
   final Widget homeChild;
   final Widget profileChild;
   final Widget? planningChild;
+  final Widget? alertsChild;
   final int initialIndex;
 
   @override
-  State<RoleShell> createState() => _RoleShellState();
+  ConsumerState<RoleShell> createState() => _RoleShellState();
 }
 
-class _RoleShellState extends State<RoleShell> {
+class _RoleShellState extends ConsumerState<RoleShell> {
   late int _currentIndex;
 
   @override
@@ -42,6 +46,7 @@ class _RoleShellState extends State<RoleShell> {
 
   @override
   Widget build(BuildContext context) {
+    final unreadCount = ref.watch(unreadNotificationsCountProvider);
     final pages = [
       widget.homeChild,
       widget.planningChild ??
@@ -51,12 +56,13 @@ class _RoleShellState extends State<RoleShell> {
             description:
                 'Le planning quotidien, les reperes du groupe et les prochaines etapes apparaitront ici.',
           ),
-      const _FeaturePlaceholder(
-        icon: Icons.notifications_none_rounded,
-        title: 'Alertes',
-        description:
-            'Les notifications importantes, rappels et alertes de suivi seront centralisees dans cet espace.',
-      ),
+      widget.alertsChild ??
+          const _FeaturePlaceholder(
+            icon: Icons.notifications_none_rounded,
+            title: 'Alertes',
+            description:
+                'Les notifications importantes, rappels et alertes de suivi seront centralisees dans cet espace.',
+          ),
       widget.profileChild,
     ];
 
@@ -104,6 +110,7 @@ class _RoleShellState extends State<RoleShell> {
                 icon: Icons.notifications_none_rounded,
                 label: 'Alertes',
                 active: _currentIndex == 2,
+                badgeCount: unreadCount,
                 onTap: () => setState(() => _currentIndex = 2),
               ),
               _BottomNavItem(
@@ -126,12 +133,14 @@ class _BottomNavItem extends StatelessWidget {
     required this.label,
     required this.active,
     required this.onTap,
+    this.badgeCount = 0,
   });
 
   final IconData icon;
   final String label;
   final bool active;
   final VoidCallback onTap;
+  final int badgeCount;
 
   @override
   Widget build(BuildContext context) {
@@ -158,10 +167,41 @@ class _BottomNavItem extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                icon,
-                size: 21,
-                color: color,
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Icon(
+                    icon,
+                    size: 21,
+                    color: color,
+                  ),
+                  if (badgeCount > 0)
+                    Positioned(
+                      right: -8,
+                      top: -6,
+                      child: Container(
+                        constraints: const BoxConstraints(
+                          minWidth: 16,
+                          minHeight: 16,
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE58E73),
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(color: AppColors.card, width: 1.4),
+                        ),
+                        child: Text(
+                          badgeCount > 99 ? '99+' : '$badgeCount',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
               ),
               const SizedBox(height: 2),
               Text(

@@ -7,6 +7,7 @@ import '../../../core/widgets/adhan_panel.dart';
 import '../../../core/widgets/role_profile_template.dart';
 import '../../../core/widgets/role_shell.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../../notifications/screens/mobile_alerts_screen.dart';
 import '../../planning/domain/mobile_planning_models.dart';
 import '../../planning/providers/mobile_planning_provider.dart';
 import '../../planning/screens/role_planning_pages.dart';
@@ -42,6 +43,7 @@ class PelerinHomeScreen extends ConsumerWidget {
         groupsAsync: planningGroupsAsync,
       ),
       planningChild: const PelerinPlanningPage(),
+      alertsChild: const MobileAlertsScreen(),
       profileChild: RoleProfileTemplate(
         user: user,
         roleLabel: 'Pelerin',
