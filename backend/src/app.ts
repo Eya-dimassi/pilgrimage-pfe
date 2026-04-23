@@ -10,6 +10,7 @@ import planningRouter from './modules/agences/planning/planning.router';
 
 import guideRouter from './modules/agences/guide/guide.router';
 import mobilePlanningRouter from './modules/mobile/planning/planning.router';
+import mobileNotificationsRouter from './modules/mobile/notifications/notifications.router';
 
 const app=express();
 
@@ -31,5 +32,6 @@ app.use('/agence/groupes', planningRouter);
 app.use('/agence/guides', guideRouter);
 app.use('/agence', agencesRouter);
 app.use('/mobile/planning', mobilePlanningRouter);
+app.use('/mobile/notifications', mobileNotificationsRouter);
 
 export default app;

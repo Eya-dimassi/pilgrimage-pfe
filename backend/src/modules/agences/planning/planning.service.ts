@@ -2,6 +2,7 @@ import { addDays, isWithinInterval, parseISO } from 'date-fns'
 import prisma from '../../../config/prisma'
 import { buildHajjPlan, buildUmrahPlan, type TemplateDay } from './planning.templates'
 import { diffInASTDays, formatASTDateKey, isSameASTDay, startOfASTDay } from './date.utils'
+import { sendPushToUsers } from '../../../utils/push-notifications.utils'
 
 const PLANNING_WINDOW_MARGIN_DAYS = 1
 
@@ -85,14 +86,13 @@ function normalizeLieu(value?: string | string[] | null) {
   return items.length ? items.join(' • ') : null
 }
 
-function buildTemplateEventData(
-  event: TemplateDay['events'][number],
-) {
+function buildTemplateEventData(event: TemplateDay['events'][number]) {
   return {
     titre: event.titre,
     type: event.type,
     description: event.description ?? null,
     lieu: normalizeLieu(event.lieu),
+    etape: event.etape ?? null, // ← new
   }
 }
 
@@ -126,12 +126,16 @@ function buildTripDays(groupe: Awaited<ReturnType<typeof getOwnedGroupe>>) {
       : `Jour ${dayNumber} du voyage`
 
     return {
-      dateKey: formatASTDateKey(currentDate),
-      dayNumber,
-      date: currentDate,
-      primaryDayLabel,
-      secondaryDayLabel,
-    }
+  dateKey: formatASTDateKey(currentDate),
+  dayNumber,
+  date: currentDate,
+  primaryDayLabel,
+  secondaryDayLabel,
+  label: currentDate.toLocaleDateString('fr-FR', { weekday: 'long', day: '2-digit', month: 'long' }),
+  calendarDay: String(currentDate.getUTCDate()).padStart(2, '0'),
+  monthShort: currentDate.toLocaleDateString('fr-FR', { month: 'short' }),
+  locationLabel: '',
+}
   })
 }
 
@@ -228,6 +232,7 @@ function buildTemplateDayCreateOperation(groupeId: string, templateDay: Template
               description: event.description,
               lieu: event.lieu,
               heureDebutPrevue: null,
+              etape: event.etape ?? null,
             })),
           }
         : undefined,
@@ -604,5 +609,142 @@ export async function generatePlanningTemplate(agenceId: string, groupeId: strin
     createdDays,
     skippedDays,
     createdEvents,
+  }
+}
+// Validates one event as a guide. Only assigned active guides can validate.
+// Prayers are never validated.
+export async function validerEvenement(utilisateurId: string, eventId: string) {
+  const guide = await prisma.guide.findUnique({
+    where: { utilisateurId },
+    select: { id: true },
+  })
+
+  if (!guide) throw new Error('Guide introuvable')
+
+  const evenement = await prisma.evenementPlanning.findFirst({
+    where: {
+      id: eventId,
+      planningQuotidien: {
+        groupe: {
+          guides: { some: { guideId: guide.id, actif: true } },
+        },
+      },
+    },
+    select: {
+      id: true,
+      type: true,
+      titre: true,
+      etape: true,
+      estValide: true,
+      planningQuotidien: {
+        select: {
+          groupeId: true,
+          groupe: {
+            select: {
+              nom: true,
+              membres: {
+                where: { actif: true },
+                select: {
+                  pelerin: {
+                    select: {
+                      utilisateurId: true,
+                      familles: {
+                        where: { actif: true },
+                        select: {
+                          famille: {
+                            select: {
+                              utilisateurId: true,
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+
+  if (!evenement) throw new Error('Evenement introuvable ou acces non autorise')
+  if (evenement.type === 'PRIERE') throw new Error('Les prieres ne sont pas soumises a validation')
+  if (evenement.estValide) return evenement
+
+  const updatedEvent = await prisma.evenementPlanning.update({
+    where: { id: eventId },
+    data: {
+      estValide: true,
+      valideeAt: new Date(),
+      valideParGuideId: guide.id,
+    },
+  })
+
+  const familleUserIds = Array.from(
+    new Set(
+      evenement.planningQuotidien.groupe.membres
+        .flatMap((membership) => membership.pelerin.familles)
+        .map((association) => association.famille.utilisateurId)
+        .filter(Boolean),
+    ),
+  )
+
+  if (familleUserIds.length) {
+    const etapeLabel = evenement.etape ?? evenement.titre
+    await sendPushToUsers({
+      userIds: familleUserIds,
+      role: 'FAMILLE',
+      title: 'Nouvelle étape validée',
+      body: `${evenement.planningQuotidien.groupe.nom} est passé à ${etapeLabel}.`,
+      data: {
+        type: 'alert',
+        tab: 'alerts',
+        groupeId: evenement.planningQuotidien.groupeId,
+        eventId: evenement.id,
+        etape: String(etapeLabel),
+      },
+    })
+  }
+
+  return updatedEvent
+}
+// ======================================================
+// PROGRESSION RITUELS
+// ======================================================
+
+// Returns ritual milestone progress for a group based on etape-tagged events.
+export async function getProgressionRituels(agenceId: string, groupeId: string) {
+  await getOwnedGroupe(agenceId, groupeId)
+
+  const evenements = await prisma.evenementPlanning.findMany({
+    where: {
+      planningQuotidien: { groupeId },
+      etape: { not: null },
+    },
+    select: {
+      etape: true,
+      estValide: true,
+      valideeAt: true,
+    },
+    orderBy: [
+      { planningQuotidien: { date: 'asc' } },
+      { heureDebutPrevue: 'asc' },
+    ],
+  })
+
+  const total = evenements.length
+  const valides = evenements.filter((e) => e.estValide).length
+
+  return {
+    total,
+    valides,
+    pourcentage: total === 0 ? 0 : Math.round((valides / total) * 100),
+    etapes: evenements.map((e) => ({
+      etape: e.etape,
+      estValide: e.estValide,
+      valideeAt: e.valideeAt,
+    })),
   }
 }

@@ -1,3 +1,5 @@
+﻿import type { EtapeVoyage } from "../../../../generated/prisma/enums"
+
 export type PlanningEventType = 'PRIERE' | 'TRANSPORT' | 'VISITE' | 'REPAS' | 'RITE' | 'REPOS' | 'AUTRE'
 export type TemplateLocationKey = 'MAKKAH' | 'MINA' | 'ARAFAT' | 'MUZDALIFAH' | 'MEDINA'
 export type TemplateDayType = 'HAJJ_FIXED'
@@ -8,6 +10,7 @@ export type TemplateEvent = {
   titre: string
   description?: string
   lieu?: string | string[]
+  etape?: EtapeVoyage // ← new
 }
 
 export type TemplateDay = {
@@ -41,10 +44,10 @@ const UMRAH_RITES_DAY: TemplateDay = {
   locationKey: 'MAKKAH',
   events: [
     { type: 'TRANSPORT', key: 'TRANSFERT_MAKKAH', titre: 'Transfert vers La Mecque', lieu: ['Miqat', 'La Mecque'] },
-    { type: 'RITE', key: 'IHRAM', titre: "Entree en etat d'ihram", lieu: 'Miqat' },
-    { type: 'RITE', key: 'TAWAF', titre: 'Tawaf autour de la Kaaba', lieu: 'Masjid Al Haram' },
-    { type: 'RITE', key: 'SAI', titre: "Sa'i entre Safa et Marwa", lieu: ['Safa', 'Marwa'] },
-    { type: 'RITE', key: 'TAHALLUL', titre: 'Tahallul - fin de la Omra', lieu: 'Masjid Al Haram' },
+    { type: 'RITE', key: 'IHRAM',    titre: "Entree en etat d'ihram",    lieu: 'Miqat',           etape: 'IHRAM' },
+    { type: 'RITE', key: 'TAWAF',    titre: 'Tawaf autour de la Kaaba',  lieu: 'Masjid Al Haram', etape: 'TAWAF_UMRAH' },
+    { type: 'RITE', key: 'SAI',      titre: "Sa'i entre Safa et Marwa",  lieu: ['Safa', 'Marwa'], etape: 'SAI' },
+    { type: 'RITE', key: 'TAHALLUL', titre: 'Tahallul - fin de la Omra', lieu: 'Masjid Al Haram', etape: 'TAHALLUL' },
   ],
 }
 
@@ -120,9 +123,9 @@ export const HAJJ_TEMPLATE: TemplateDay[] = [
     type: 'HAJJ_FIXED',
     hijriDay: 8,
     events: [
-      { type: 'RITE', key: 'IHRAM', titre: "Entree en etat d'ihram", lieu: 'Miqat / Hotel' },
-      { type: 'TRANSPORT', key: 'GO_TO_MINA', titre: 'Depart vers Mina', lieu: 'Makkah -> Mina' },
-      { type: 'RITE', key: 'SEJOUR_MINA', titre: 'Sejour a Mina', lieu: 'Mina' },
+      { type: 'RITE',      key: 'IHRAM',       titre: "Entree en etat d'ihram", lieu: 'Miqat / Hotel',  etape: 'IHRAM' },
+      { type: 'TRANSPORT', key: 'GO_TO_MINA',  titre: 'Depart vers Mina',       lieu: 'Makkah -> Mina' },
+      { type: 'RITE',      key: 'SEJOUR_MINA', titre: 'Sejour a Mina',           lieu: 'Mina',           etape: 'MINA' },
     ],
   },
   {
@@ -131,11 +134,11 @@ export const HAJJ_TEMPLATE: TemplateDay[] = [
     type: 'HAJJ_FIXED',
     hijriDay: 9,
     events: [
-      { type: 'TRANSPORT', key: 'GO_TO_ARAFAT', titre: 'Depart vers Arafat', lieu: 'Mina -> Arafat' },
-      { type: 'RITE', key: 'WUQUF', titre: 'Wuquf - station a Arafat', lieu: 'Arafat' },
-      { type: 'PRIERE', key: 'SALAT_ARAFAT', titre: 'Priere et invocations a Arafat', lieu: 'Arafat' },
-      { type: 'TRANSPORT', key: 'GO_TO_MUZDALIFAH', titre: 'Depart vers Muzdalifah', lieu: 'Arafat -> Muzdalifah' },
-      { type: 'RITE', key: 'SEJOUR_MUZDALIFAH', titre: 'Sejour a Muzdalifah et collecte des cailloux', lieu: 'Muzdalifah' },
+      { type: 'TRANSPORT', key: 'GO_TO_ARAFAT',      titre: 'Depart vers Arafat',                           lieu: 'Mina -> Arafat' },
+      { type: 'RITE',      key: 'WUQUF',             titre: 'Wuquf - station a Arafat',                     lieu: 'Arafat',              etape: 'ARAFAT' },
+      { type: 'PRIERE',    key: 'SALAT_ARAFAT',      titre: 'Priere et invocations a Arafat',               lieu: 'Arafat' },
+      { type: 'TRANSPORT', key: 'GO_TO_MUZDALIFAH',  titre: 'Depart vers Muzdalifah',                       lieu: 'Arafat -> Muzdalifah' },
+      { type: 'RITE',      key: 'SEJOUR_MUZDALIFAH', titre: 'Sejour a Muzdalifah et collecte des cailloux', lieu: 'Muzdalifah',          etape: 'MUZDALIFAH' },
     ],
   },
   {
@@ -144,14 +147,14 @@ export const HAJJ_TEMPLATE: TemplateDay[] = [
     type: 'HAJJ_FIXED',
     hijriDay: 10,
     events: [
-      { type: 'TRANSPORT', key: 'RETURN_TO_MINA', titre: 'Retour vers Mina', lieu: 'Muzdalifah -> Mina' },
-      { type: 'RITE', key: 'RAMI_AQABA', titre: 'Rami Jamarat al-Aqaba', lieu: 'Jamarat - Mina' },
-      { type: 'RITE', key: 'NAHR', titre: 'Nahr - sacrifice', lieu: 'Mina' },
-      { type: 'RITE', key: 'TAHALLUL_AWWAL', titre: 'Tahallul awwal', lieu: 'Mina' },
-      { type: 'TRANSPORT', key: 'GO_TO_HARAM_IFADA', titre: 'Depart vers Masjid Al Haram', lieu: 'Mina -> Makkah' },
-      { type: 'RITE', key: 'TAWAF_IFADA', titre: 'Tawaf al-Ifada', lieu: 'Masjid Al Haram' },
-      { type: 'RITE', key: 'SAI_HAJJ', titre: "Sa'i", lieu: 'Safa / Marwa' },
-      { type: 'TRANSPORT', key: 'RETURN_TO_MINA_EID', titre: 'Retour vers Mina', lieu: 'Makkah -> Mina' },
+      { type: 'TRANSPORT', key: 'RETURN_TO_MINA',     titre: 'Retour vers Mina',            lieu: 'Muzdalifah -> Mina' },
+      { type: 'RITE',      key: 'RAMI_AQABA',         titre: 'Rami Jamarat al-Aqaba',       lieu: 'Jamarat - Mina',  etape: 'RAMI_JAMARAT' },
+      { type: 'RITE',      key: 'NAHR',               titre: 'Nahr - sacrifice',             lieu: 'Mina' },
+      { type: 'RITE',      key: 'TAHALLUL_AWWAL',     titre: 'Tahallul awwal',               lieu: 'Mina',            etape: 'TAHALLUL' },
+      { type: 'TRANSPORT', key: 'GO_TO_HARAM_IFADA',  titre: 'Depart vers Masjid Al Haram', lieu: 'Mina -> Makkah' },
+      { type: 'RITE',      key: 'TAWAF_IFADA',        titre: 'Tawaf al-Ifada',               lieu: 'Masjid Al Haram', etape: 'TAWAF_AL_IFADA' },
+      { type: 'RITE',      key: 'SAI_HAJJ',           titre: "Sa'i",                         lieu: 'Safa / Marwa',    etape: 'SAI' },
+      { type: 'TRANSPORT', key: 'RETURN_TO_MINA_EID', titre: 'Retour vers Mina',             lieu: 'Makkah -> Mina' },
     ],
   },
   {
@@ -160,8 +163,8 @@ export const HAJJ_TEMPLATE: TemplateDay[] = [
     type: 'HAJJ_FIXED',
     hijriDay: 11,
     events: [
-      { type: 'RITE', key: 'RAMI_3_JAMARAT_1', titre: 'Rami des 3 Jamarat', lieu: 'Jamarat - Mina' },
-      { type: 'RITE', key: 'SEJOUR_MINA_1', titre: 'Sejour a Mina', lieu: 'Mina' },
+      { type: 'RITE', key: 'RAMI_3_JAMARAT_1', titre: 'Rami des 3 Jamarat', lieu: 'Jamarat - Mina', etape: 'RAMI_JAMARAT' },
+      { type: 'RITE', key: 'SEJOUR_MINA_1',    titre: 'Sejour a Mina',       lieu: 'Mina',           etape: 'MINA' },
     ],
   },
   {
@@ -170,8 +173,8 @@ export const HAJJ_TEMPLATE: TemplateDay[] = [
     type: 'HAJJ_FIXED',
     hijriDay: 12,
     events: [
-      { type: 'RITE', key: 'RAMI_3_JAMARAT_2', titre: 'Rami des 3 Jamarat', lieu: 'Jamarat - Mina' },
-      { type: 'RITE', key: 'NAFAR_AWWAL', titre: 'Nafar awwal possible', lieu: ['Mina'] },
+      { type: 'RITE', key: 'RAMI_3_JAMARAT_2', titre: 'Rami des 3 Jamarat', lieu: 'Jamarat - Mina', etape: 'RAMI_JAMARAT' },
+      { type: 'RITE', key: 'NAFAR_AWWAL',       titre: 'Nafar awwal possible', lieu: 'Mina' },
     ],
   },
   {
@@ -180,9 +183,9 @@ export const HAJJ_TEMPLATE: TemplateDay[] = [
     type: 'HAJJ_FIXED',
     hijriDay: 13,
     events: [
-      { type: 'RITE', key: 'RAMI_3_JAMARAT_3', titre: 'Rami des 3 Jamarat', lieu: 'Jamarat - Mina' },
-      { type: 'TRANSPORT', key: 'RETURN_TO_MAKKAH', titre: 'Retour vers Makkah', lieu: 'Mina -> Makkah' },
-      { type: 'RITE', key: 'TAWAF_WADA', titre: 'Tawaf al-Wada avant le depart', lieu: 'Masjid Al Haram' },
+      { type: 'RITE',      key: 'RAMI_3_JAMARAT_3', titre: 'Rami des 3 Jamarat',           lieu: 'Jamarat - Mina',  etape: 'RAMI_JAMARAT' },
+      { type: 'TRANSPORT', key: 'RETURN_TO_MAKKAH',  titre: 'Retour vers Makkah',            lieu: 'Mina -> Makkah' },
+      { type: 'RITE',      key: 'TAWAF_WADA',        titre: 'Tawaf al-Wada avant le depart', lieu: 'Masjid Al Haram', etape: 'TAWAF_AL_WADA' },
     ],
   },
 ]

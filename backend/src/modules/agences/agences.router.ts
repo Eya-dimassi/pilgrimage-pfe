@@ -72,4 +72,5 @@ router.patch('/profile', authenticate, requireRole('AGENCE'), async (req: AuthRe
     return res.status(400).json({ message: error.message })
   }
 })
+
 export default router;

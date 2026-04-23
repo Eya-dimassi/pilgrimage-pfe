@@ -24,6 +24,8 @@ model Utilisateur {
   guide          Guide?
   pelerin        Pelerin?
   famille        Famille?
+  deviceTokens   DeviceToken[]
+  notifications  Notification[]
   refreshTokens  RefreshToken[]
   passwordTokens PasswordToken[]
 
@@ -54,6 +56,41 @@ model PasswordToken {
   utilisateur Utilisateur @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
 
   @@index([utilisateurId])
+}
+
+model DeviceToken {
+  id            String   @id @default(uuid())
+  utilisateurId String
+  token         String   @unique
+  platform      String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  lastSeenAt    DateTime @default(now())
+
+  utilisateur Utilisateur @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
+
+  @@index([utilisateurId])
+  @@index([platform])
+}
+
+model Notification {
+  id            String   @id @default(uuid())
+  utilisateurId String
+  title         String
+  body          String
+  type          String?
+  tab           String?
+  groupeId      String?
+  eventId       String?
+  etape         String?
+  isRead        Boolean  @default(false)
+  readAt        DateTime?
+  createdAt     DateTime @default(now())
+
+  utilisateur Utilisateur @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
+
+  @@index([utilisateurId, createdAt(sort: Desc)])
+  @@index([utilisateurId, isRead])
 }
 
 // ======================================================
