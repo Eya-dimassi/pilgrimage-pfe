@@ -1,27 +1,31 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../features/notifications/providers/mobile_notifications_provider.dart';
 import '../theme/app_theme.dart';
 import 'brand_frame.dart';
 
-class RoleShell extends StatefulWidget {
+class RoleShell extends ConsumerStatefulWidget {
   const RoleShell({
     super.key,
     required this.homeChild,
     required this.profileChild,
     this.planningChild,
+    this.alertsChild,
     this.initialIndex = 0,
   });
 
   final Widget homeChild;
   final Widget profileChild;
   final Widget? planningChild;
+  final Widget? alertsChild;
   final int initialIndex;
 
   @override
-  State<RoleShell> createState() => _RoleShellState();
+  ConsumerState<RoleShell> createState() => _RoleShellState();
 }
 
-class _RoleShellState extends State<RoleShell> {
+class _RoleShellState extends ConsumerState<RoleShell> {
   late int _currentIndex;
 
   @override
@@ -42,13 +46,14 @@ class _RoleShellState extends State<RoleShell> {
 
   @override
   Widget build(BuildContext context) {
-    const destinations = [
-      _ShellDestination(
+    final unreadCount = ref.watch(unreadNotificationsCountProvider);
+    final destinations = [
+      const _ShellDestination(
         label: 'Accueil',
         icon: Icons.home_outlined,
         activeIcon: Icons.home_rounded,
       ),
-      _ShellDestination(
+      const _ShellDestination(
         label: 'Planning',
         icon: Icons.calendar_today_outlined,
         activeIcon: Icons.calendar_month_rounded,
@@ -57,8 +62,9 @@ class _RoleShellState extends State<RoleShell> {
         label: 'Alertes',
         icon: Icons.notifications_none_rounded,
         activeIcon: Icons.notifications_rounded,
+        badgeCount: unreadCount,
       ),
-      _ShellDestination(
+      const _ShellDestination(
         label: 'Profil',
         icon: Icons.person_outline_rounded,
         activeIcon: Icons.person_rounded,
@@ -74,12 +80,13 @@ class _RoleShellState extends State<RoleShell> {
             description:
                 'Le planning quotidien, les reperes du groupe et les prochaines etapes apparaitront ici.',
           ),
-      const _FeaturePlaceholder(
-        icon: Icons.notifications_none_rounded,
-        title: 'Alertes',
-        description:
-            'Les notifications importantes, rappels et alertes de suivi seront centralisees dans cet espace.',
-      ),
+      widget.alertsChild ??
+          const _FeaturePlaceholder(
+            icon: Icons.notifications_none_rounded,
+            title: 'Alertes',
+            description:
+                'Les notifications importantes, rappels et alertes de suivi seront centralisees dans cet espace.',
+          ),
       widget.profileChild,
     ];
 
@@ -168,10 +175,23 @@ class _MagicBottomNavigation extends StatelessWidget {
                                     duration: const Duration(milliseconds: 180),
                                     curve: Curves.easeOut,
                                     opacity: active ? 0.0 : 1.0,
-                                    child: Icon(
-                                      destination.icon,
-                                      size: 22,
-                                      color: AppColors.textMuted,
+                                    child: Stack(
+                                      clipBehavior: Clip.none,
+                                      children: [
+                                        Icon(
+                                          destination.icon,
+                                          size: 22,
+                                          color: AppColors.textMuted,
+                                        ),
+                                        if (destination.badgeCount > 0)
+                                          Positioned(
+                                            right: -8,
+                                            top: -7,
+                                            child: _UnreadBadge(
+                                              count: destination.badgeCount,
+                                            ),
+                                          ),
+                                      ],
                                     ),
                                   ),
                                 ),
@@ -190,6 +210,7 @@ class _MagicBottomNavigation extends StatelessWidget {
                   top: 0,
                   child: _ActiveNavBubble(
                     icon: items[currentIndex].activeIcon,
+                    badgeCount: items[currentIndex].badgeCount,
                   ),
                 ),
               ],
@@ -204,40 +225,90 @@ class _MagicBottomNavigation extends StatelessWidget {
 class _ActiveNavBubble extends StatelessWidget {
   const _ActiveNavBubble({
     required this.icon,
+    this.badgeCount = 0,
   });
 
   final IconData icon;
+  final int badgeCount;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 56,
+      height: 56,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: const Color(0xFF69B8EA),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x32000000),
+                  blurRadius: 16,
+                  offset: Offset(0, 8),
+                ),
+              ],
+            ),
+            padding: const EdgeInsets.all(4),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white,
+                border: Border.all(
+                  color: const Color(0xFFB9E4FF),
+                  width: 1.6,
+                ),
+              ),
+              child: Icon(
+                icon,
+                color: AppColors.text,
+                size: 24,
+              ),
+            ),
+          ),
+          if (badgeCount > 0)
+            Positioned(
+              right: -4,
+              top: -3,
+              child: _UnreadBadge(count: badgeCount),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _UnreadBadge extends StatelessWidget {
+  const _UnreadBadge({
+    required this.count,
+  });
+
+  final int count;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 56,
-      height: 56,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: const Color.fromARGB(255, 0, 0, 0),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x32000000),
-            blurRadius: 16,
-            offset: Offset(0, 8),
-          ),
-        ],
+      constraints: const BoxConstraints(
+        minWidth: 16,
+        minHeight: 16,
       ),
-      padding: const EdgeInsets.all(4),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE58E73),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: AppColors.card, width: 1.4),
+      ),
+      child: Text(
+        count > 99 ? '99+' : '$count',
+        textAlign: TextAlign.center,
+        style: const TextStyle(
+          fontSize: 9,
+          fontWeight: FontWeight.w800,
           color: Colors.white,
-          border: Border.all(
-            color: const Color.fromARGB(255, 0, 0, 0),
-            width: 1.6,
-          ),
-        ),
-        child: Icon(
-          icon,
-          color: AppColors.text,
-          size: 24,
         ),
       ),
     );
@@ -249,11 +320,13 @@ class _ShellDestination {
     required this.label,
     required this.icon,
     required this.activeIcon,
+    this.badgeCount = 0,
   });
 
   final String label;
   final IconData icon;
   final IconData activeIcon;
+  final int badgeCount;
 }
 
 class _FeaturePlaceholder extends StatelessWidget {

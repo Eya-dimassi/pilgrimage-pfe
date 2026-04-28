@@ -15,10 +15,18 @@ class ApiEndpoints {
   static const String me = '/auth/me';
   static const String updateMe = '/auth/me';
   static const String mobilePlanningGroups = '/mobile/planning/groupes';
+  static const String mobileNotifications = '/mobile/notifications';
+  static const String mobileNotificationToken =
+      '/mobile/notifications/device-token';
 
   static String mobilePlanningGroup(String groupeId) =>
       '/mobile/planning/groupes/$groupeId';
 
   static String mobilePlanningValidateEvent(String groupeId, String eventId) =>
       '/mobile/planning/groupes/$groupeId/evenements/$eventId/valider';
+  static String mobileNotificationRead(String notificationId) =>
+      '/mobile/notifications/$notificationId/read';
+
+  static const String mobileNotificationsReadAll =
+      '/mobile/notifications/read-all';
 }

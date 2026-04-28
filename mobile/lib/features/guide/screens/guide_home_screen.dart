@@ -7,6 +7,7 @@ import '../../../core/widgets/role_profile_template.dart';
 import '../../../core/widgets/role_shell.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../planning/providers/mobile_planning_provider.dart';
+import '../../notifications/screens/mobile_alerts_screen.dart';
 import '../../planning/screens/role_planning_pages.dart';
 import '../widgets/guide_groupes_sheet.dart';
 
@@ -62,6 +63,7 @@ class GuideHomeScreen extends ConsumerWidget {
         ],
       ),
       planningChild: const GuidePlanningPage(),
+      alertsChild: const MobileAlertsScreen(),
       profileChild: RoleProfileTemplate(
         user: user,
         roleLabel: 'Guide',

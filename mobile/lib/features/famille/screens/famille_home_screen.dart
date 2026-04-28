@@ -9,6 +9,7 @@ import '../../../core/widgets/role_shell.dart';
 import '../../auth/domain/auth_exception.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../auth/widgets/auth_feedback.dart';
+import '../../notifications/screens/mobile_alerts_screen.dart';
 import '../domain/family_link.dart';
 import '../providers/family_links_provider.dart';
 import '../../planning/screens/role_planning_pages.dart';
@@ -170,6 +171,7 @@ class _FamilleHomeScreenState extends ConsumerState<FamilleHomeScreen> {
       planningChild: FamillePlanningPage(
         preferredGroupId: _selectedFamilyGroupId,
       ),
+      alertsChild: const MobileAlertsScreen(),
       profileChild: RoleProfileTemplate(
         user: user,
         roleLabel: 'Famille',
