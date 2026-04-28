@@ -1,73 +1,44 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
-import '../../../core/theme/app_theme.dart';
-import '../../../core/widgets/adhan_panel.dart';
-import '../../../core/widgets/role_profile_template.dart';
-import '../../../core/widgets/role_shell.dart';
-import '../../auth/providers/auth_provider.dart';
-import '../../planning/domain/mobile_planning_models.dart';
-import '../../planning/providers/mobile_planning_provider.dart';
-import '../../planning/screens/role_planning_pages.dart';
+import '../theme/app_theme.dart';
+import '../../features/planning/domain/mobile_planning_models.dart';
+import '../../features/planning/providers/mobile_planning_provider.dart';
+import 'adhan_panel.dart';
 
-class PelerinHomeScreen extends ConsumerWidget {
-  const PelerinHomeScreen({
-    super.key,
-    this.initialTabIndex = 0,
+class HomeQuickAction {
+  const HomeQuickAction({
+    required this.label,
+    required this.icon,
+    required this.toneColor,
+    required this.onTap,
+    this.description,
   });
 
-  final int initialTabIndex;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final authState = ref.watch(authProvider);
-    final user = authState.valueOrNull?.user;
-
-    if (user == null) {
-      return const SizedBox.shrink();
-    }
-
-    final fullName = user.fullName.trim();
-    final firstName = user.prenom.trim().isNotEmpty
-        ? user.prenom.trim()
-        : (fullName.isNotEmpty ? fullName.split(' ').first : user.email);
-    final planningGroupsAsync = ref.watch(mobilePlanningGroupsProvider);
-
-    return RoleShell(
-      initialIndex: initialTabIndex,
-      homeChild: _PelerinHomeContent(
-        firstName: firstName,
-        groupeNom: user.groupeNom,
-        groupsAsync: planningGroupsAsync,
-      ),
-      planningChild: const PelerinPlanningPage(),
-      profileChild: RoleProfileTemplate(
-        user: user,
-        roleLabel: 'Pelerin',
-        accentColor: const Color(0xFFD4AF37),
-        onEdit: () => context.push('/profile-edit'),
-        onLogout: () async {
-          await ref.read(authProvider.notifier).logout();
-          if (context.mounted) {
-            context.go('/login');
-          }
-        },
-      ),
-    );
-  }
+  final String label;
+  final String? description;
+  final IconData icon;
+  final Color toneColor;
+  final VoidCallback onTap;
 }
 
-class _PelerinHomeContent extends ConsumerWidget {
-  const _PelerinHomeContent({
+class RoleJourneyHomeContent extends ConsumerWidget {
+  const RoleJourneyHomeContent({
+    super.key,
     required this.firstName,
     required this.groupeNom,
     required this.groupsAsync,
+    required this.accentColor,
+    this.roleToneLabel = '',
+    this.quickActions = const [],
   });
 
   final String firstName;
   final String? groupeNom;
   final AsyncValue<List<MobilePlanningGroup>> groupsAsync;
+  final Color accentColor;
+  final String roleToneLabel;
+  final List<HomeQuickAction> quickActions;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -83,27 +54,127 @@ class _PelerinHomeContent extends ConsumerWidget {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 18),
       children: [
-        _PelerinHero(
+        _RoleHero(
           firstName: firstName,
           fallbackGroupName: groupeNom,
           group: selectedGroup,
           planningAsync: planningAsync,
         ),
         const SizedBox(height: 14),
-        const AdhanPanel(
-          accentColor: Color(0xFFD4AF37),
-          roleToneLabel: '',
+        AdhanPanel(
+          accentColor: accentColor,
+          roleToneLabel: roleToneLabel,
           compact: true,
         ),
+        if (quickActions.isNotEmpty) ...[
+          const SizedBox(height: 14),
+          _QuickActionsRow(actions: quickActions),
+        ],
         const SizedBox(height: 14),
-        _DailyFlowPanel(planningAsync: planningAsync),
+        _DailyFlowPanel(
+          planningAsync: planningAsync,
+          accentColor: accentColor,
+        ),
       ],
     );
   }
 }
 
-class _PelerinHero extends StatelessWidget {
-  const _PelerinHero({
+class _QuickActionsRow extends StatelessWidget {
+  const _QuickActionsRow({required this.actions});
+
+  final List<HomeQuickAction> actions;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: actions.asMap().entries.map((entry) {
+        final index = entry.key;
+        final action = entry.value;
+        return Expanded(
+          child: Padding(
+            padding: EdgeInsets.only(
+              right: index == actions.length - 1 ? 0 : 10,
+            ),
+            child: _QuickActionCard(action: action),
+          ),
+        );
+      }).toList(growable: false),
+    );
+  }
+}
+
+class _QuickActionCard extends StatelessWidget {
+  const _QuickActionCard({required this.action});
+
+  final HomeQuickAction action;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppColors.card,
+      borderRadius: BorderRadius.circular(22),
+      child: InkWell(
+        onTap: action.onTap,
+        borderRadius: BorderRadius.circular(22),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: AppColors.borderSoft),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: action.toneColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Icon(action.icon, color: action.toneColor),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      action.label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    if (action.description != null &&
+                        action.description!.trim().isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        action.description!,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 11.5,
+                          color: AppColors.textMuted,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _RoleHero extends StatelessWidget {
+  const _RoleHero({
     required this.firstName,
     required this.fallbackGroupName,
     required this.group,
@@ -320,9 +391,11 @@ class _StageCard extends StatelessWidget {
 class _DailyFlowPanel extends StatelessWidget {
   const _DailyFlowPanel({
     required this.planningAsync,
+    required this.accentColor,
   });
 
   final AsyncValue<MobilePlanningData?> planningAsync;
+  final Color accentColor;
 
   @override
   Widget build(BuildContext context) {
@@ -353,7 +426,7 @@ class _DailyFlowPanel extends StatelessWidget {
               title: currentEvent?.titre ?? 'Rien de partage pour aujourd hui',
               meta: _eventMeta(currentEvent),
               icon: Icons.route_outlined,
-              toneColor: const Color(0xFFD4AF37),
+              toneColor: accentColor,
             ),
             const SizedBox(height: 12),
             if (nextEvent != null)
@@ -481,12 +554,13 @@ String? _primaryLocation(List<MobilePlanningEvent> events) {
 
 String? _eventMeta(MobilePlanningEvent? event) {
   if (event == null) return null;
+  final location = _primaryLocation([event]);
   final parts = <String>[
-    if (_primaryLocation([event]) != null) _primaryLocation([event])!,
+    if (location != null) location,
     if (event.heureDebutPrevue != null) _formatHour(event.heureDebutPrevue!),
   ];
   if (parts.isEmpty) return null;
-  return parts.join(' · ');
+  return parts.join(' - ');
 }
 
 double _tripProgress(DateTime? start, DateTime? end, DateTime? currentDay) {

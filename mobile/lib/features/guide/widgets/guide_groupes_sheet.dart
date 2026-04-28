@@ -1,22 +1,14 @@
-// ignore_for_file: unused_element
-
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/network/dio_client.dart';
 import '../../../core/network/api_error_message.dart';
+import '../../../core/network/dio_client.dart';
 import '../../../core/theme/app_theme.dart';
 import 'guide_groupe_pelerins_sheet.dart';
-import 'guide_parcours.dart';
 
 class GuideGroupesSheet extends ConsumerStatefulWidget {
-  const GuideGroupesSheet({
-    super.key,
-    this.openPelerinsOnTap = true,
-  });
-
-  final bool openPelerinsOnTap;
+  const GuideGroupesSheet({super.key});
 
   @override
   ConsumerState<GuideGroupesSheet> createState() => _GuideGroupesSheetState();
@@ -50,7 +42,7 @@ class _GuideGroupesSheetState extends ConsumerState<GuideGroupesSheet> {
 
     final dio = ref.read(dioProvider);
     try {
-      final response = await dio.get('/guide/groupes');
+      final response = await dio.get('/mobile/planning/groupes');
       final raw = response.data;
       final list = raw is List ? raw : const [];
       setState(() {
@@ -61,8 +53,8 @@ class _GuideGroupesSheetState extends ConsumerState<GuideGroupesSheet> {
       });
     } on DioException catch (error) {
       setState(() => _error = apiErrorMessage(error));
-    } catch (error) {
-      setState(() => _error = 'Une erreur est survenue. Réessayez.');
+    } catch (_) {
+      setState(() => _error = 'Une erreur est survenue. Reessayez.');
     } finally {
       if (mounted) {
         setState(() => _loading = false);
@@ -71,24 +63,11 @@ class _GuideGroupesSheetState extends ConsumerState<GuideGroupesSheet> {
   }
 
   void _openGroupe(GuideGroupeItem group) {
-    if (widget.openPelerinsOnTap) {
-      showModalBottomSheet<void>(
-        context: context,
-        isScrollControlled: true,
-        backgroundColor: Colors.transparent,
-        builder: (context) => GuideGroupePelerinsSheet(
-          groupeId: group.id,
-          groupeNom: group.nom,
-        ),
-      );
-      return;
-    }
-
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => GuideParcoursGroupeSheet(
+      builder: (context) => GuideGroupePelerinsSheet(
         groupeId: group.id,
         groupeNom: group.nom,
       ),
@@ -104,7 +83,6 @@ class _GuideGroupesSheetState extends ConsumerState<GuideGroupesSheet> {
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
     final height = MediaQuery.of(context).size.height;
-
     final query = _searchController.text.trim().toLowerCase();
 
     final baseGroups = switch (_filter) {
@@ -113,138 +91,108 @@ class _GuideGroupesSheetState extends ConsumerState<GuideGroupesSheet> {
         _groups.where((g) => g.status == 'EN_COURS').toList(),
       _GroupFilter.planifie =>
         _groups.where((g) => g.status == 'PLANIFIE').toList(),
-      _GroupFilter.termine => _groups
-          .where(
-            (g) => g.status == 'TERMINE' || g.progression.pourcentage >= 100,
-          )
-          .toList(),
+      _GroupFilter.termine =>
+        _groups.where((g) => g.status == 'TERMINE').toList(),
     };
 
     final visibleGroups = query.isEmpty
         ? baseGroups
         : baseGroups.where((g) => g.nom.toLowerCase().contains(query)).toList();
 
+    Widget stateChild;
+    if (_loading) {
+      stateChild = const _LoadingView(key: ValueKey('loading'));
+    } else if (_error != null) {
+      stateChild = Padding(
+        key: const ValueKey('error'),
+        padding: const EdgeInsets.all(16),
+        child: _ErrorView(message: _error!, onRetry: _load),
+      );
+    } else {
+      stateChild = RefreshIndicator(
+        key: ValueKey('list_${_filter.name}_${query}_${visibleGroups.length}'),
+        onRefresh: _load,
+        color: AppColors.gold,
+        child: ListView(
+          physics: const BouncingScrollPhysics(
+            parent: AlwaysScrollableScrollPhysics(),
+          ),
+          padding: const EdgeInsets.fromLTRB(0, 0, 0, 18),
+          children: [
+            const SizedBox(height: 10),
+            const Center(child: _Handle()),
+            const SizedBox(height: 14),
+            _Header(
+              searchController: _searchController,
+              visibleCount: visibleGroups.length,
+              filter: _filter,
+              onSearchChanged: (_) => setState(() {}),
+              onFilterChanged: (next) => setState(() => _filter = next),
+            ),
+            const SizedBox(height: 14),
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 260),
+              switchInCurve: Curves.easeOutCubic,
+              switchOutCurve: Curves.easeInCubic,
+              child: visibleGroups.isEmpty
+                  ? Padding(
+                      key: ValueKey('empty_$query'),
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: _EmptyState(isSearch: query.isNotEmpty),
+                    )
+                  : Column(
+                      key: ValueKey('groups_${visibleGroups.length}_$query'),
+                      children: [
+                        for (int index = 0; index < visibleGroups.length; index++)
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                            child: _AppearIn(
+                              index: index,
+                              child: _GroupCard(
+                                group: visibleGroups[index],
+                                onOpen: () => _openGroupe(visibleGroups[index]),
+                                formatDate: _formatDate,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return SafeArea(
       child: Padding(
         padding: EdgeInsets.fromLTRB(16, 12, 16, 16 + bottomInset),
-        child: Material(
-          color: AppColors.card,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
-            side: const BorderSide(color: AppColors.borderSoft),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(28),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 18,
+                offset: const Offset(0, 10),
+              ),
+            ],
           ),
-          child: SizedBox(
-            height: height * 0.92,
-            child: _loading
-                ? const _LoadingView()
-                : _error != null
-                    ? Padding(
-                        padding: const EdgeInsets.all(18),
-                        child: _ErrorView(message: _error!, onRetry: _load),
-                      )
-                    : RefreshIndicator(
-                        onRefresh: _load,
-                        color: AppColors.gold,
-                        child: ListView(
-                          padding: const EdgeInsets.fromLTRB(0, 0, 0, 18),
-                          children: [
-                            const SizedBox(height: 10),
-                            Center(
-                              child: Container(
-                                width: 44,
-                                height: 4,
-                                decoration: BoxDecoration(
-                                  color: AppColors.border,
-                                  borderRadius: BorderRadius.circular(999),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 14),
-                            Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 16),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                          widget.openPelerinsOnTap
-                                              ? 'Groupes - Guide'
-                                              : 'Parcours - Guide',
-                                          style: const TextStyle(
-                                            fontSize: 22,
-                                            fontWeight: FontWeight.w900,
-                                            letterSpacing: -0.6,
-                                          ),
-                                        ),
-                                      ),
-                                      IconButton(
-                                        onPressed: () =>
-                                            Navigator.of(context).pop(),
-                                        icon: const Icon(Icons.close_rounded),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    widget.openPelerinsOnTap
-                                        ? 'Consultez vos groupes et la liste des pelerins.'
-                                        : 'Suivez vos groupes et validez les etapes du parcours.',
-                                    style: const TextStyle(
-                                      fontSize: 13,
-                                      height: 1.35,
-                                      color: AppColors.textMuted,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 12),
-                                  _SearchField(
-                                    controller: _searchController,
-                                    onChanged: (_) => setState(() {}),
-                                  ),
-                                  const SizedBox(height: 10),
-                                  _FilterRow(
-                                    value: _filter,
-                                    onChanged: (next) =>
-                                        setState(() => _filter = next),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Text(
-                                    '${visibleGroups.length} groupe(s)',
-                                    style: const TextStyle(
-                                      fontSize: 12.5,
-                                      color: AppColors.textMuted,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 14),
-                            if (visibleGroups.isEmpty)
-                              Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 16),
-                                child: _EmptyState(isSearch: query.isNotEmpty),
-                              )
-                            else
-                              ...visibleGroups.map(
-                                (group) => Padding(
-                                  padding:
-                                      const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                                  child: _GroupCard(
-                                    group: group,
-                                    onOpen: () => _openGroupe(group),
-                                    formatDate: _formatDate,
-                                    openPelerinsOnTap: widget.openPelerinsOnTap,
-                                  ),
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
+          child: Material(
+            color: AppColors.card,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(28),
+              side: const BorderSide(color: AppColors.borderSoft),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: SizedBox(
+              height: height * 0.91,
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 280),
+                switchInCurve: Curves.easeOutCubic,
+                switchOutCurve: Curves.easeInCubic,
+                child: stateChild,
+              ),
+            ),
           ),
         ),
       ),
@@ -267,8 +215,6 @@ class GuideGroupeItem {
     required this.status,
     required this.nbPelerins,
     required this.dateDepart,
-    required this.progression,
-    required this.etapeActuelleDetails,
   });
 
   final String id;
@@ -277,8 +223,6 @@ class GuideGroupeItem {
   final String status;
   final int nbPelerins;
   final DateTime? dateDepart;
-  final ParcoursProgression progression;
-  final EtapeDetails? etapeActuelleDetails;
 
   factory GuideGroupeItem.fromJson(Map<String, dynamic> json) {
     DateTime? parseDate(dynamic value) {
@@ -286,319 +230,140 @@ class GuideGroupeItem {
       return null;
     }
 
+    final countFromNested =
+        json['_count'] is Map ? (json['_count'] as Map)['membres'] : null;
+    final rawCount = json['nbPelerins'] ?? countFromNested;
+
     return GuideGroupeItem(
       id: (json['id'] as String?) ?? '',
       nom: (json['nom'] as String?) ?? '',
       typeVoyage: (json['typeVoyage'] as String?) ?? '',
       status: (json['status'] as String?) ?? '',
-      nbPelerins: json['nbPelerins'] is int
-          ? (json['nbPelerins'] as int)
-          : int.tryParse('${json['nbPelerins']}') ?? 0,
+      nbPelerins: rawCount is int ? rawCount : int.tryParse('$rawCount') ?? 0,
       dateDepart: parseDate(json['dateDepart']),
-      progression: ParcoursProgression.fromJson(
-        (json['progression'] as Map?)?.cast<String, dynamic>() ??
-            const <String, dynamic>{},
-      ),
-      etapeActuelleDetails: json['etapeActuelleDetails'] is Map
-          ? EtapeDetails.fromJson(
-              (json['etapeActuelleDetails'] as Map).cast<String, dynamic>(),
-            )
-          : null,
     );
   }
 }
 
-class ParcoursProgression {
-  ParcoursProgression({
-    required this.etapesValidees,
-    required this.total,
-    required this.pourcentage,
+class _Header extends StatelessWidget {
+  const _Header({
+    required this.searchController,
+    required this.visibleCount,
+    required this.filter,
+    required this.onSearchChanged,
+    required this.onFilterChanged,
   });
 
-  final int etapesValidees;
-  final int total;
-  final int pourcentage;
-
-  factory ParcoursProgression.fromJson(Map<String, dynamic> json) {
-    int asInt(dynamic v) => v is int ? v : int.tryParse('$v') ?? 0;
-
-    return ParcoursProgression(
-      etapesValidees: asInt(json['etapesValidees']),
-      total: asInt(json['total']),
-      pourcentage: asInt(json['pourcentage']),
-    );
-  }
-}
-
-class EtapeDetails {
-  EtapeDetails({
-    required this.code,
-    required this.ordre,
-    required this.nom,
-    required this.nomArabe,
-  });
-
-  final String code;
-  final int ordre;
-  final String nom;
-  final String nomArabe;
-
-  factory EtapeDetails.fromJson(Map<String, dynamic> json) {
-    int asInt(dynamic v) => v is int ? v : int.tryParse('$v') ?? 0;
-
-    return EtapeDetails(
-      code: (json['code'] as String?) ?? '',
-      ordre: asInt(json['ordre']),
-      nom: (json['nom'] as String?) ?? '',
-      nomArabe: (json['nomArabe'] as String?) ?? '',
-    );
-  }
-}
-class _GroupCard extends StatelessWidget {
-  const _GroupCard({
-    required this.group,
-    required this.onOpen,
-    required this.formatDate,
-    required this.openPelerinsOnTap,
-  });
-
-  final GuideGroupeItem group;
-  final VoidCallback onOpen;
-  final String Function(DateTime) formatDate;
-  final bool openPelerinsOnTap;
-
-  Color get _accentColor {
-    if (!openPelerinsOnTap &&
-        (group.progression.pourcentage >= 100 || group.status == 'TERMINE')) {
-      return AppColors.green;
-    }
-    if (group.status == 'EN_COURS') return AppColors.blue;
-    if (group.status == 'PLANIFIE') return AppColors.gold;
-    if (group.status == 'TERMINE') return AppColors.green;
-    return AppColors.border;
-  }
-
-  Color get _progressColor {
-    if (group.progression.pourcentage >= 100 || group.status == 'TERMINE') {
-      return AppColors.green;
-    }
-    if (group.status == 'EN_COURS') return AppColors.blue;
-    return AppColors.gold;
-  }
+  final TextEditingController searchController;
+  final int visibleCount;
+  final _GroupFilter filter;
+  final ValueChanged<String> onSearchChanged;
+  final ValueChanged<_GroupFilter> onFilterChanged;
 
   @override
   Widget build(BuildContext context) {
-    final percent = group.progression.pourcentage.clamp(0, 100);
-    final current = group.etapeActuelleDetails;
-    final statusChip = _GroupStatusChip.fromStatus(
-      status: group.status,
-      percent: percent,
-    );
-
-    return Material(
-      color: AppColors.card,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-        side: const BorderSide(color: AppColors.borderSoft, width: 0.5),
-      ),
-      clipBehavior: Clip.hardEdge,
-      child: InkWell(
-        onTap: onOpen,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: AppColors.borderSoft),
+          color: AppColors.card,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.02),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Bande colorée supérieure ──────────────────
-            Container(height: 3, color: _accentColor),
-
-            Padding(
-              padding: const EdgeInsets.all(14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // ── Ligne titre ───────────────────────────
-                  Row(
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _TypeBadge(typeVoyage: group.typeVoyage),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              group.nom,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: -0.3,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              group.dateDepart == null
-                                  ? group.typeVoyage
-                                  : '${group.typeVoyage} · Départ ${formatDate(group.dateDepart!)}',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: AppColors.textMuted,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
+                      const Text(
+                        'Groupes',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: -0.6,
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      statusChip,
+                      const SizedBox(height: 2),
+                      Text(
+                        '$visibleCount groupe(s) disponibles',
+                        style: const TextStyle(
+                          fontSize: 12.5,
+                          color: AppColors.textMuted,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
                     ],
                   ),
-
-                  const SizedBox(height: 12),
-                  if (openPelerinsOnTap)
-                    const Text(
-                      'Touchez pour voir la liste des pelerins.',
-                      style: TextStyle(
-                        fontSize: 12.5,
-                        color: AppColors.textMuted,
-                        fontWeight: FontWeight.w600,
+                ),
+                Material(
+                  color: AppColors.section,
+                  shape: const CircleBorder(),
+                  child: InkWell(
+                    onTap: () => Navigator.of(context).pop(),
+                    customBorder: const CircleBorder(),
+                    child: const SizedBox(
+                      width: 36,
+                      height: 36,
+                      child: Icon(
+                        Icons.close_rounded,
+                        size: 20,
                       ),
-                    )
-                  else
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        '${group.progression.etapesValidees} / ${group.progression.total} etapes',
-                                        style: const TextStyle(
-                                          fontSize: 11.5,
-                                          color: AppColors.textMuted,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                      Text(
-                                        '$percent%',
-                                        style: const TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w800,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 5),
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(99),
-                                    child: LinearProgressIndicator(
-                                      value: percent / 100.0,
-                                      minHeight: 6,
-                                      color: _progressColor,
-                                      backgroundColor: AppColors.section,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-                        if (current != null)
-                          Row(
-                            children: [
-                              const Icon(
-                                Icons.radio_button_checked_rounded,
-                                size: 14,
-                                color: AppColors.textMuted,
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                current.nom,
-                                style: const TextStyle(
-                                  fontSize: 12.5,
-                                  color: AppColors.textMuted,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                current.nomArabe,
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: AppColors.textMuted,
-                                ),
-                                textDirection: TextDirection.rtl,
-                              ),
-                            ],
-                          )
-                        else
-                          const Row(
-                            children: [
-                              Icon(
-                                Icons.hourglass_empty_rounded,
-                                size: 14,
-                                color: AppColors.textMuted,
-                              ),
-                              SizedBox(width: 6),
-                              Text(
-                                'Non demarre',
-                                style: TextStyle(
-                                  fontSize: 12.5,
-                                  color: AppColors.textMuted,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
-                          ),
-                      ],
                     ),
-                ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Consultez vos groupes et accedez rapidement a la liste des pelerins.',
+              style: TextStyle(
+                fontSize: 13,
+                height: 1.35,
+                color: AppColors.textMuted,
+                fontWeight: FontWeight.w600,
               ),
             ),
-
-            // ── Footer pelerins ───────────────────────────
-            Container(
-              decoration: const BoxDecoration(
-                border: Border(
-                  top: BorderSide(color: AppColors.borderSoft, width: 0.5),
+            const SizedBox(height: 12),
+            _SearchField(
+              controller: searchController,
+              onChanged: onSearchChanged,
+            ),
+            const SizedBox(height: 10),
+            _FilterRow(
+              value: filter,
+              onChanged: onFilterChanged,
+            ),
+            const SizedBox(height: 12),
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 220),
+              child: Container(
+                key: ValueKey('count_$visibleCount'),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                decoration: BoxDecoration(
+                  color: AppColors.section,
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: AppColors.borderSoft),
                 ),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-              child: Row(
-                children: [
-                  const Icon(Icons.group_rounded,
-                      size: 14, color: AppColors.textMuted),
-                  const SizedBox(width: 6),
-                  Text(
-                    '${group.nbPelerins} pelerins',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textMuted,
-                      fontWeight: FontWeight.w600,
-                    ),
+                child: Text(
+                  '$visibleCount resultat(s)',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textMuted,
+                    fontWeight: FontWeight.w700,
                   ),
-                  const Spacer(),
-                  Text(
-                    openPelerinsOnTap ? 'Voir la liste' : 'Voir le parcours',
-                    style: TextStyle(
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.blue.withValues(alpha: 0.9),
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  Icon(Icons.arrow_forward_rounded,
-                      size: 13,
-                      color: AppColors.blue.withValues(alpha: 0.9)),
-                ],
+                ),
               ),
             ),
           ],
@@ -608,7 +373,149 @@ class _GroupCard extends StatelessWidget {
   }
 }
 
-// ── Type badge H / U ──────────────────────────────────────────────────────────
+class _AppearIn extends StatelessWidget {
+  const _AppearIn({
+    required this.index,
+    required this.child,
+  });
+
+  final int index;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final safeIndex = index.clamp(0, 8).toInt();
+    final duration = Duration(milliseconds: 210 + (safeIndex * 30));
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: duration,
+      curve: Curves.easeOutCubic,
+      child: child,
+      builder: (context, value, animatedChild) {
+        final offsetY = (1 - value) * 14;
+        final scale = 0.97 + (0.03 * value);
+        return Opacity(
+          opacity: value,
+          child: Transform.translate(
+            offset: Offset(0, offsetY),
+            child: Transform.scale(
+              scale: scale,
+              alignment: Alignment.topCenter,
+              child: animatedChild,
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _GroupCard extends StatelessWidget {
+  const _GroupCard({
+    required this.group,
+    required this.onOpen,
+    required this.formatDate,
+  });
+
+  final GuideGroupeItem group;
+  final VoidCallback onOpen;
+  final String Function(DateTime) formatDate;
+
+  Color get _accentColor {
+    if (group.status == 'EN_COURS') return AppColors.blue;
+    if (group.status == 'PLANIFIE') return AppColors.gold;
+    if (group.status == 'TERMINE') return AppColors.green;
+    return AppColors.border;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppColors.card,
+      borderRadius: BorderRadius.circular(20),
+      elevation: 0,
+      shadowColor: Colors.black,
+      clipBehavior: Clip.antiAlias,
+      child: Ink(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: AppColors.borderSoft),
+          gradient: const LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Colors.white, Color(0xFFFFFEFC)],
+          ),
+        ),
+        child: InkWell(
+          onTap: onOpen,
+          splashColor: _accentColor.withValues(alpha: 0.08),
+          highlightColor: _accentColor.withValues(alpha: 0.04),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(14, 14, 14, 13),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _TypeBadge(typeVoyage: group.typeVoyage),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            group.nom,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 15.5,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -0.2,
+                              height: 1.2,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            group.dateDepart == null
+                                ? group.typeVoyage
+                                : 'Depart ${formatDate(group.dateDepart!)}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 12.5,
+                              color: AppColors.textMuted,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    _ActionBadge(accent: _accentColor),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _GroupStatusChip.fromStatus(status: group.status),
+                    _InfoPill(
+                      icon: Icons.group_rounded,
+                      label: '${group.nbPelerins} pelerins',
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _TypeBadge extends StatelessWidget {
   const _TypeBadge({required this.typeVoyage});
   final String typeVoyage;
@@ -616,14 +523,15 @@ class _TypeBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isHajj = typeVoyage == 'HAJJ';
+    final foreground = isHajj ? const Color(0xFF0C447C) : const Color(0xFF6E4409);
+    final background = isHajj ? const Color(0xFFEAF3FD) : const Color(0xFFFCF1DC);
     return Container(
-      width: 36,
-      height: 36,
+      width: 38,
+      height: 38,
       decoration: BoxDecoration(
-        color: isHajj
-            ? const Color(0xFFE6F1FB)
-            : const Color(0xFFFAEEDA),
-        borderRadius: BorderRadius.circular(10),
+        color: background,
+        borderRadius: BorderRadius.circular(11),
+        border: Border.all(color: Colors.white),
       ),
       alignment: Alignment.center,
       child: Text(
@@ -631,67 +539,78 @@ class _TypeBadge extends StatelessWidget {
         style: TextStyle(
           fontSize: 14,
           fontWeight: FontWeight.w900,
-          color: isHajj
-              ? const Color(0xFF0C447C)
-              : const Color(0xFF633806),
+          letterSpacing: -0.1,
+          color: foreground,
         ),
       ),
     );
   }
 }
 
-class _StepBadge extends StatelessWidget {
-  const _StepBadge({required this.value});
+class _ActionBadge extends StatelessWidget {
+  const _ActionBadge({required this.accent});
 
-  final int value;
+  final Color accent;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 34,
-      height: 34,
+      width: 30,
+      height: 30,
       decoration: BoxDecoration(
-        color: AppColors.section,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.border),
+        color: accent.withValues(alpha: 0.12),
+        shape: BoxShape.circle,
       ),
       alignment: Alignment.center,
-      child: Text(
-        '$value',
-        style: const TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w900,
-          letterSpacing: -0.4,
-        ),
+      child: Icon(
+        Icons.chevron_right_rounded,
+        size: 18,
+        color: accent,
       ),
     );
   }
 }
 
-class _StatusIcon extends StatelessWidget {
-  const _StatusIcon({
-    required this.status,
-    required this.percent,
+class _InfoPill extends StatelessWidget {
+  const _InfoPill({
+    required this.icon,
+    required this.label,
   });
 
-  final String status;
-  final int percent;
+  final IconData icon;
+  final String label;
 
   @override
   Widget build(BuildContext context) {
-    if (percent >= 100 || status == 'TERMINE') {
-      return const Icon(Icons.check_circle_rounded, color: AppColors.green);
-    }
-    if (status == 'PLANIFIE') {
-      return const Icon(Icons.assignment_rounded, color: AppColors.textMuted);
-    }
-    if (status == 'EN_COURS') {
-      return const Icon(
-        Icons.pause_circle_filled_rounded,
-        color: AppColors.gold,
-      );
-    }
-    return const Icon(Icons.info_outline_rounded, color: AppColors.textMuted);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      decoration: BoxDecoration(
+        color: AppColors.section,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: AppColors.borderSoft),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            size: 13,
+            color: AppColors.textFaint,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 11.8,
+              color: AppColors.textMuted,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -703,31 +622,50 @@ class _EmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: AppColors.section,
+        color: AppColors.card,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: AppColors.borderSoft),
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Icon(
-            isSearch ? Icons.search_off_rounded : Icons.groups_rounded,
-            color: AppColors.textMuted,
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: AppColors.section,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.borderSoft),
+            ),
+            child: Icon(
+              isSearch ? Icons.search_off_rounded : Icons.groups_rounded,
+              size: 20,
+              color: AppColors.textMuted,
+            ),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              isSearch
-                  ? 'Aucun groupe ne correspond à la recherche.'
-                  : "Aucun groupe actif n'est pour le moment.",
-              style: const TextStyle(
-                fontSize: 13,
-                height: 1.45,
-                color: AppColors.textMuted,
-                fontWeight: FontWeight.w600,
-              ),
+          const SizedBox(height: 10),
+          Text(
+            isSearch ? 'Aucun resultat' : 'Aucun groupe',
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 14.5,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            isSearch
+                ? 'Essayez un autre mot-cle.'
+                : "Aucun groupe actif n'est disponible pour le moment.",
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 12.8,
+              height: 1.45,
+              color: AppColors.textMuted,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],
@@ -747,34 +685,52 @@ class _ErrorView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const SizedBox(height: 10),
-        const Icon(
-          Icons.warning_amber_rounded,
-          size: 30,
-          color: AppColors.gold,
-        ),
-        const SizedBox(height: 10),
-        Text(
-          message,
-          textAlign: TextAlign.center,
-          style: const TextStyle(
-            fontSize: 13,
-            height: 1.45,
-            color: AppColors.textMuted,
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.card,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AppColors.borderSoft),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Center(
+            child: Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: AppColors.goldSoft,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(
+                Icons.warning_amber_rounded,
+                size: 24,
+                color: AppColors.gold,
+              ),
+            ),
           ),
-        ),
-        const SizedBox(height: 14),
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
-            onPressed: () async => onRetry(),
-            child: const Text('Réessayer'),
+          const SizedBox(height: 10),
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 13,
+              height: 1.45,
+              color: AppColors.textMuted,
+            ),
           ),
-        ),
-      ],
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () async => onRetry(),
+              child: const Text('Recharger'),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -794,18 +750,38 @@ class _SearchField extends StatelessWidget {
       controller: controller,
       onChanged: onChanged,
       textInputAction: TextInputAction.search,
+      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
       decoration: InputDecoration(
         hintText: 'Rechercher un groupe',
-        prefixIcon: const Icon(Icons.search_rounded),
-        suffixIcon: controller.text.trim().isEmpty
-            ? null
-            : IconButton(
-                onPressed: () {
-                  controller.clear();
-                  onChanged('');
-                },
-                icon: const Icon(Icons.close_rounded),
-              ),
+        prefixIcon: const Icon(Icons.search_rounded, size: 20),
+        filled: true,
+        fillColor: AppColors.section,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 13),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: AppColors.borderSoft),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: AppColors.borderSoft),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: AppColors.gold, width: 1.2),
+        ),
+        suffixIcon: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 160),
+          child: controller.text.trim().isEmpty
+              ? const SizedBox.shrink(key: ValueKey('clear_empty'))
+              : IconButton(
+                  key: const ValueKey('clear_button'),
+                  onPressed: () {
+                    controller.clear();
+                    onChanged('');
+                  },
+                  icon: const Icon(Icons.close_rounded, size: 18),
+                ),
+        ),
       ),
     );
   }
@@ -822,67 +798,126 @@ class _FilterRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Widget chip(_GroupFilter v, String label) {
-      final selected = value == v;
-      return ChoiceChip(
-        label: Text(label),
-        selected: selected,
-        onSelected: (_) => onChanged(v),
-        showCheckmark: false,
-        labelStyle: TextStyle(
-          fontSize: 12.5,
-          fontWeight: FontWeight.w800,
-          color: selected ? AppColors.text : AppColors.textMuted,
-        ),
-        selectedColor: AppColors.section,
-        backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(999),
-          side: const BorderSide(color: AppColors.borderSoft),
-        ),
-      );
-    }
-
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
         children: [
-          chip(_GroupFilter.all, 'Tous'),
+          _FilterChip(
+            label: 'Tous',
+            selected: value == _GroupFilter.all,
+            onTap: () => onChanged(_GroupFilter.all),
+          ),
           const SizedBox(width: 8),
-          chip(_GroupFilter.enCours, 'En cours'),
+          _FilterChip(
+            label: 'En cours',
+            selected: value == _GroupFilter.enCours,
+            onTap: () => onChanged(_GroupFilter.enCours),
+          ),
           const SizedBox(width: 8),
-          chip(_GroupFilter.planifie, 'Planifiés'),
+          _FilterChip(
+            label: 'Planifies',
+            selected: value == _GroupFilter.planifie,
+            onTap: () => onChanged(_GroupFilter.planifie),
+          ),
           const SizedBox(width: 8),
-          chip(_GroupFilter.termine, 'Terminés'),
+          _FilterChip(
+            label: 'Termines',
+            selected: value == _GroupFilter.termine,
+            onTap: () => onChanged(_GroupFilter.termine),
+          ),
         ],
       ),
     );
   }
 }
 
+class _FilterChip extends StatelessWidget {
+  const _FilterChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedScale(
+      duration: const Duration(milliseconds: 160),
+      scale: selected ? 1 : 0.98,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(999),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            curve: Curves.easeOutCubic,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: selected ? AppColors.text : AppColors.section,
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(
+                color: selected ? AppColors.text : AppColors.borderSoft,
+              ),
+            ),
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w800,
+                color: selected ? Colors.white : AppColors.textMuted,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _GroupStatusChip extends StatelessWidget {
-  const _GroupStatusChip({required this.label, required this.color});
+  const _GroupStatusChip({
+    required this.label,
+    required this.color,
+    required this.icon,
+  });
 
   final String label;
   final Color color;
+  final IconData icon;
 
   factory _GroupStatusChip.fromStatus({
     required String status,
-    required int percent,
   }) {
-    if (percent >= 100 || status == 'TERMINE') {
-      return const _GroupStatusChip(label: 'TERMINÉ', color: AppColors.green);
+    if (status == 'TERMINE') {
+      return const _GroupStatusChip(
+        label: 'TERMINE',
+        color: AppColors.green,
+        icon: Icons.check_circle_rounded,
+      );
     }
     if (status == 'EN_COURS') {
-      return const _GroupStatusChip(label: 'EN COURS', color: AppColors.blue);
+      return const _GroupStatusChip(
+        label: 'EN COURS',
+        color: AppColors.blue,
+        icon: Icons.autorenew_rounded,
+      );
     }
     if (status == 'PLANIFIE') {
       return const _GroupStatusChip(
-        label: 'PLANIFIÉ',
+        label: 'PLANIFIE',
         color: AppColors.textMuted,
+        icon: Icons.schedule_rounded,
       );
     }
-    return const _GroupStatusChip(label: 'INFO', color: AppColors.textMuted);
+    return const _GroupStatusChip(
+      label: 'INFO',
+      color: AppColors.textMuted,
+      icon: Icons.info_outline_rounded,
+    );
   }
 
   @override
@@ -890,53 +925,54 @@ class _GroupStatusChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.10),
+        color: color.withValues(alpha: 0.11),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: AppColors.borderSoft),
+        border: Border.all(color: color.withValues(alpha: 0.24)),
       ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w900,
-          letterSpacing: 0.2,
-          color: color,
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12.5, color: color),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10.8,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0.25,
+              color: color,
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
 class _LoadingView extends StatelessWidget {
-  const _LoadingView();
+  const _LoadingView({super.key});
 
   @override
   Widget build(BuildContext context) {
     return ListView(
+      physics: const BouncingScrollPhysics(
+        parent: AlwaysScrollableScrollPhysics(),
+      ),
       padding: const EdgeInsets.fromLTRB(0, 0, 0, 18),
-      children: const [
-        SizedBox(height: 10),
-        Center(
-          child: _Handle(),
-        ),
-        SizedBox(height: 14),
-        Padding(
+      children: [
+        const SizedBox(height: 10),
+        const Center(child: _Handle()),
+        const SizedBox(height: 14),
+        const Padding(
           padding: EdgeInsets.symmetric(horizontal: 16),
           child: _HeaderSkeleton(),
         ),
-        SizedBox(height: 14),
-        Padding(
-          padding: EdgeInsets.fromLTRB(16, 0, 16, 12),
-          child: _GroupCardSkeleton(),
-        ),
-        Padding(
-          padding: EdgeInsets.fromLTRB(16, 0, 16, 12),
-          child: _GroupCardSkeleton(),
-        ),
-        Padding(
-          padding: EdgeInsets.fromLTRB(16, 0, 16, 12),
-          child: _GroupCardSkeleton(),
-        ),
+        const SizedBox(height: 14),
+        for (int index = 0; index < 3; index++)
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 0, 16, 12),
+            child: _GroupCardSkeleton(),
+          ),
       ],
     );
   }
@@ -965,14 +1001,16 @@ class _HeaderSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    return const Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: const [
-        _SkeletonBox(width: 160, height: 22, radius: 10),
+      children: [
+        _SkeletonBox(width: 130, height: 24, radius: 10),
         SizedBox(height: 8),
-        _SkeletonBox(width: double.infinity, height: 14, radius: 8),
+        _SkeletonBox(width: 210, height: 12, radius: 8),
         SizedBox(height: 14),
-        _SkeletonBox(width: double.infinity, height: 52, radius: 20),
+        _SkeletonBox(width: double.infinity, height: 48, radius: 16),
+        SizedBox(height: 10),
+        _SkeletonBox(width: double.infinity, height: 34, radius: 999),
       ],
     );
   }
@@ -984,10 +1022,10 @@ class _GroupCardSkeleton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: AppColors.card,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(color: AppColors.borderSoft),
       ),
       child: const Column(
@@ -995,21 +1033,25 @@ class _GroupCardSkeleton extends StatelessWidget {
         children: [
           Row(
             children: [
-              _SkeletonBox(width: 34, height: 34, radius: 10),
-              SizedBox(width: 12),
-              Expanded(child: _SkeletonBox(width: double.infinity, height: 16)),
+              _SkeletonBox(width: 38, height: 38, radius: 11),
               SizedBox(width: 10),
-              _SkeletonBox(width: 72, height: 26, radius: 999),
+              Expanded(child: _SkeletonBox(width: double.infinity, height: 15)),
+              SizedBox(width: 8),
+              _SkeletonBox(width: 30, height: 30, radius: 999),
+            ],
+          ),
+          SizedBox(height: 8),
+          _SkeletonBox(width: 140, height: 12, radius: 8),
+          SizedBox(height: 12),
+          Row(
+            children: [
+              _SkeletonBox(width: 92, height: 26, radius: 999),
+              SizedBox(width: 8),
+              _SkeletonBox(width: 106, height: 26, radius: 999),
             ],
           ),
           SizedBox(height: 10),
-          _SkeletonBox(width: 220, height: 12),
-          SizedBox(height: 14),
-          _SkeletonBox(width: double.infinity, height: 10, radius: 999),
-          SizedBox(height: 14),
-          _SkeletonBox(width: double.infinity, height: 12),
-          SizedBox(height: 8),
-          _SkeletonBox(width: 160, height: 12),
+          _SkeletonBox(width: 95, height: 11, radius: 8),
         ],
       ),
     );

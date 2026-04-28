@@ -50,7 +50,7 @@ class _GuideGroupePelerinsSheetState
     final dio = ref.read(dioProvider);
     try {
       final response =
-          await dio.get('/guide/groupes/${widget.groupeId}/pelerins');
+          await dio.get('/mobile/planning/groupes/${widget.groupeId}/pelerins');
       final raw = response.data;
       final list = raw is List ? raw : const [];
       setState(() {

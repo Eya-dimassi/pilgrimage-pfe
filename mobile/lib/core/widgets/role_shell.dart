@@ -42,6 +42,29 @@ class _RoleShellState extends State<RoleShell> {
 
   @override
   Widget build(BuildContext context) {
+    const destinations = [
+      _ShellDestination(
+        label: 'Accueil',
+        icon: Icons.home_outlined,
+        activeIcon: Icons.home_rounded,
+      ),
+      _ShellDestination(
+        label: 'Planning',
+        icon: Icons.calendar_today_outlined,
+        activeIcon: Icons.calendar_month_rounded,
+      ),
+      _ShellDestination(
+        label: 'Alertes',
+        icon: Icons.notifications_none_rounded,
+        activeIcon: Icons.notifications_rounded,
+      ),
+      _ShellDestination(
+        label: 'Profil',
+        icon: Icons.person_outline_rounded,
+        activeIcon: Icons.person_rounded,
+      ),
+    ];
+
     final pages = [
       widget.homeChild,
       widget.planningChild ??
@@ -70,114 +93,167 @@ class _RoleShellState extends State<RoleShell> {
           ),
         ),
       ),
-      bottomNavigationBar: DecoratedBox(
-        decoration: BoxDecoration(
-          color: AppColors.card.withValues(alpha: 0.98),
-          border: const Border(
-            top: BorderSide(color: AppColors.borderSoft),
-          ),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x12000000),
-              blurRadius: 18,
-              offset: Offset(0, -6),
+      bottomNavigationBar: _MagicBottomNavigation(
+        items: destinations,
+        currentIndex: _currentIndex,
+        onSelected: (index) => setState(() => _currentIndex = index),
+      ),
+    );
+  }
+}
+
+class _MagicBottomNavigation extends StatelessWidget {
+  const _MagicBottomNavigation({
+    required this.items,
+    required this.currentIndex,
+    required this.onSelected,
+  });
+
+  final List<_ShellDestination> items;
+  final int currentIndex;
+  final ValueChanged<int> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      top: false,
+      minimum: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final slotWidth = constraints.maxWidth / items.length;
+          const bubbleSize = 56.0;
+          final bubbleLeft =
+              (slotWidth * currentIndex) + ((slotWidth - bubbleSize) / 2);
+
+          return SizedBox(
+            height: 78,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: Container(
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: AppColors.card.withValues(alpha: 0.98),
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(color: AppColors.borderSoft),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Color(0x18000000),
+                          blurRadius: 24,
+                          offset: Offset(0, 10),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: List.generate(items.length, (index) {
+                        final destination = items[index];
+                        final active = index == currentIndex;
+
+                        return Expanded(
+                          child: Tooltip(
+                            message: destination.label,
+                            child: Semantics(
+                              button: true,
+                              selected: active,
+                              label: destination.label,
+                              child: InkWell(
+                                onTap: () => onSelected(index),
+                                borderRadius: BorderRadius.circular(14),
+                                child: Center(
+                                  child: AnimatedOpacity(
+                                    duration: const Duration(milliseconds: 180),
+                                    curve: Curves.easeOut,
+                                    opacity: active ? 0.0 : 1.0,
+                                    child: Icon(
+                                      destination.icon,
+                                      size: 22,
+                                      color: AppColors.textMuted,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      }),
+                    ),
+                  ),
+                ),
+                AnimatedPositioned(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOutCubic,
+                  left: bubbleLeft,
+                  top: 0,
+                  child: _ActiveNavBubble(
+                    icon: items[currentIndex].activeIcon,
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-        child: SafeArea(
-          top: false,
-          child: Row(
-            children: [
-              _BottomNavItem(
-                icon: Icons.home_rounded,
-                label: 'Accueil',
-                active: _currentIndex == 0,
-                onTap: () => setState(() => _currentIndex = 0),
-              ),
-              _BottomNavItem(
-                icon: Icons.calendar_today_outlined,
-                label: 'Planning',
-                active: _currentIndex == 1,
-                onTap: () => setState(() => _currentIndex = 1),
-              ),
-              _BottomNavItem(
-                icon: Icons.notifications_none_rounded,
-                label: 'Alertes',
-                active: _currentIndex == 2,
-                onTap: () => setState(() => _currentIndex = 2),
-              ),
-              _BottomNavItem(
-                icon: Icons.person_outline_rounded,
-                label: 'Profil',
-                active: _currentIndex == 3,
-                onTap: () => setState(() => _currentIndex = 3),
-              ),
-            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _ActiveNavBubble extends StatelessWidget {
+  const _ActiveNavBubble({
+    required this.icon,
+  });
+
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 56,
+      height: 56,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: const Color.fromARGB(255, 0, 0, 0),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x32000000),
+            blurRadius: 16,
+            offset: Offset(0, 8),
           ),
+        ],
+      ),
+      padding: const EdgeInsets.all(4),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: Colors.white,
+          border: Border.all(
+            color: const Color.fromARGB(255, 0, 0, 0),
+            width: 1.6,
+          ),
+        ),
+        child: Icon(
+          icon,
+          color: AppColors.text,
+          size: 24,
         ),
       ),
     );
   }
 }
 
-class _BottomNavItem extends StatelessWidget {
-  const _BottomNavItem({
-    required this.icon,
+class _ShellDestination {
+  const _ShellDestination({
     required this.label,
-    required this.active,
-    required this.onTap,
+    required this.icon,
+    required this.activeIcon,
   });
 
-  final IconData icon;
   final String label;
-  final bool active;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = active ? AppColors.gold : AppColors.textMuted;
-
-    return Expanded(
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(0),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 220),
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          decoration: BoxDecoration(
-            color: active ? AppColors.goldSoft.withValues(alpha: 0.65) : Colors.transparent,
-            border: active
-                ? const Border(
-                    top: BorderSide(
-                      color: AppColors.gold,
-                      width: 2,
-                    ),
-                  )
-                : null,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                icon,
-                size: 21,
-                color: color,
-              ),
-              const SizedBox(height: 2),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-                  color: color,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+  final IconData icon;
+  final IconData activeIcon;
 }
 
 class _FeaturePlaceholder extends StatelessWidget {

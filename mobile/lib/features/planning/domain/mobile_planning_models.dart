@@ -42,6 +42,9 @@ class MobilePlanningEvent {
     this.description,
     this.lieu,
     this.heureDebutPrevue,
+    this.estValide = false,
+    this.valideeAt,
+    this.valideParGuideId,
   });
 
   final String id;
@@ -50,6 +53,9 @@ class MobilePlanningEvent {
   final String? description;
   final String? lieu;
   final DateTime? heureDebutPrevue;
+  final bool estValide;
+  final DateTime? valideeAt;
+  final String? valideParGuideId;
 
   List<String> get lieux {
     if (lieu == null || lieu!.trim().isEmpty) return const [];
@@ -70,6 +76,11 @@ class MobilePlanningEvent {
       heureDebutPrevue: json['heureDebutPrevue'] is String
           ? DateTime.tryParse(json['heureDebutPrevue'] as String)
           : null,
+      estValide: json['estValide'] as bool? ?? false,
+      valideeAt: json['valideeAt'] is String
+          ? DateTime.tryParse(json['valideeAt'] as String)
+          : null,
+      valideParGuideId: json['valideParGuideId'] as String?,
     );
   }
 }

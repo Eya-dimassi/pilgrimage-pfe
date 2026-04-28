@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/widgets/adhan_panel.dart';
-import '../../../core/widgets/role_home_template.dart';
+import '../../../core/widgets/role_journey_home_content.dart';
 import '../../../core/widgets/role_profile_template.dart';
 import '../../../core/widgets/role_shell.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../../planning/providers/mobile_planning_provider.dart';
 import '../../planning/screens/role_planning_pages.dart';
 import '../widgets/guide_groupes_sheet.dart';
 
@@ -27,19 +27,14 @@ class GuideHomeScreen extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    void openParcoursSheet() {
-      showModalBottomSheet<void>(
-        context: context,
-        isScrollControlled: true,
-        backgroundColor: Colors.transparent,
-        builder: (context) => const GuideGroupesSheet(
-          openPelerinsOnTap: false,
-        ),
-      );
-    }
+    final fullName = user.fullName.trim();
+    final firstName = user.prenom.trim().isNotEmpty
+        ? user.prenom.trim()
+        : (fullName.isNotEmpty ? fullName.split(' ').first : user.email);
+    final planningGroupsAsync = ref.watch(mobilePlanningGroupsProvider);
 
     void openGroupesSheet() {
-      showModalBottomSheet<void>(
+      showModalBottomSheet<void>( 
         context: context,
         isScrollControlled: true,
         backgroundColor: Colors.transparent,
@@ -49,47 +44,20 @@ class GuideHomeScreen extends ConsumerWidget {
 
     return RoleShell(
       initialIndex: initialTabIndex,
-      homeChild: RoleHomeTemplate(
-        title: 'Le terrain, coordonne depuis le mobile.',
-        subtitle:
-            'Retrouvez votre groupe, la localisation live et les actions prioritaires dans une interface plus proche du web.',
-        roleLabel: 'Guide · Mobile',
-        accentColor: Color(0xFF67C9B7),
-        icon: Icons.map_outlined,
-        headerExtra: AdhanPanel(
-          accentColor: Color(0xFF67C9B7),
-          roleToneLabel:
-              'Un rappel spirituel discret pour guider avec calme et presence.',
-        ),
-        stats: [
-          HomeStatData(value: 'GPS', label: 'suivi live'),
-          HomeStatData(value: 'Groupe', label: 'coordination'),
-          HomeStatData(value: 'SOS', label: 'actions rapides'),
-        ],
-        cards: [
-          InfoCardData(
-            title: 'Vue complete',
-            description:
-                'Gardez le fil de tout le voyage pour anticiper les deplacements et briefer votre groupe.',
-            icon: Icons.route_outlined,
-            tag: 'Lecture',
-          ),
-          InfoCardData(
-            title: 'Journee actuelle',
-            description:
-                'Retrouvez les rendez-vous du jour dans l ordre, sans action d edition depuis le mobile.',
-            icon: Icons.calendar_month_outlined,
-            tag: 'Planning',
-            toneColor: Color(0xFF6B7FD7),
-            onTap: openParcoursSheet,
-          ),
-          InfoCardData(
-            title: 'Coordination',
-            description:
-                'Le mobile vous aide a informer le groupe, pas a modifier le planning de l agence.',
+      homeChild: RoleJourneyHomeContent(
+        firstName: firstName,
+        groupeNom: user.groupeNom,
+        groupsAsync: planningGroupsAsync,
+        accentColor: const Color(0xFF67C9B7),
+        roleToneLabel:
+            'Un rappel spirituel discret pour guider avec calme et presence.',
+        quickActions: [
+          HomeQuickAction(
+            label: 'Pelerins',
+            description: 'Liste par groupe',
             icon: Icons.groups_outlined,
-            tag: 'Groupe',
-            toneColor: Color(0xFFB8962E),
+            toneColor: const Color(0xFF2D7A4A),
+            onTap: openGroupesSheet,
           ),
         ],
       ),

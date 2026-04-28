@@ -40,4 +40,17 @@ class MobilePlanningRepository {
       throw AuthException.fromDio(error);
     }
   }
+
+  Future<void> validateEvent({
+    required String groupeId,
+    required String eventId,
+  }) async {
+    try {
+      await _dio.put(
+        ApiEndpoints.mobilePlanningValidateEvent(groupeId, eventId),
+      );
+    } on DioException catch (error) {
+      throw AuthException.fromDio(error);
+    }
+  }
 }

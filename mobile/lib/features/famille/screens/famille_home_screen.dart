@@ -12,7 +12,6 @@ import '../../auth/widgets/auth_feedback.dart';
 import '../domain/family_link.dart';
 import '../providers/family_links_provider.dart';
 import '../../planning/screens/role_planning_pages.dart';
-import '../widgets/famille_parcours_pelerins.dart';
 
 class FamilleHomeScreen extends ConsumerStatefulWidget {
   const FamilleHomeScreen({
@@ -144,15 +143,6 @@ class _FamilleHomeScreenState extends ConsumerState<FamilleHomeScreen> {
 
     if (user == null) {
       return const SizedBox.shrink();
-    }
-
-    void openParcoursSheet() {
-      showModalBottomSheet<void>(
-        context: context,
-        isScrollControlled: true,
-        backgroundColor: Colors.transparent,
-        builder: (context) => const FamilleParcoursPelerinsSheet(),
-      );
     }
 
     return RoleShell(
