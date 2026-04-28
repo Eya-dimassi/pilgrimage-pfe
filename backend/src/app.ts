@@ -35,8 +35,6 @@ app.use('/agence/groupes', planningRouter);
 app.use('/agence/guides', guideRouter);
 app.use('/agence', agencesRouter);
 app.use('/mobile/planning', mobilePlanningRouter);
-app.use('/guide', guideParcoursRoutes);
-app.use('/pelerin', pelerinParcoursRoutes);
-app.use('/famille', familleParcoursRoutes);
+
 
 export default app;
