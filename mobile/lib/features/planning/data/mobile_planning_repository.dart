@@ -40,4 +40,15 @@ class MobilePlanningRepository {
       throw AuthException.fromDio(error);
     }
   }
+
+  Future<MobilePlanningEvent> validateEvent(String eventId) async {
+    try {
+      final response = await _dio.patch<Map<String, dynamic>>(
+        ApiEndpoints.validatePlanningEvent(eventId),
+      );
+      return MobilePlanningEvent.fromJson(response.data ?? const {});
+    } on DioException catch (error) {
+      throw AuthException.fromDio(error);
+    }
+  }
 }

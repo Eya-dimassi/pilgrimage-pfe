@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../data/mobile_planning_repository.dart';
 import '../domain/mobile_planning_models.dart';
 import '../providers/mobile_planning_provider.dart';
 
@@ -31,6 +32,7 @@ class MobilePlanningScreen extends ConsumerStatefulWidget {
 class _MobilePlanningScreenState extends ConsumerState<MobilePlanningScreen> {
   String? _selectedGroupId;
   String? _selectedPlanningId;
+  String? _validatingEventId;
 
   @override
   void didUpdateWidget(covariant MobilePlanningScreen oldWidget) {
@@ -213,6 +215,13 @@ class _MobilePlanningScreenState extends ConsumerState<MobilePlanningScreen> {
                       _SelectedDaySection(
                         planning: selectedDay,
                         dayNumber: selectedDayNumber,
+                        showGuideValidation:
+                            widget.view == PlanningRoleView.guide,
+                        validatingEventId: _validatingEventId,
+                        onValidateEvent: (event) => _validateEvent(
+                          event: event,
+                          groupeId: selectedGroup.id,
+                        ),
                       ),
                   ],
                 ],
@@ -284,6 +293,38 @@ class _MobilePlanningScreenState extends ConsumerState<MobilePlanningScreen> {
 
   MobilePlanningDay _pickBestPlanning(List<MobilePlanningDay> plannings) {
     return plannings.first;
+  }
+
+  Future<void> _validateEvent({
+    required MobilePlanningEvent event,
+    required String groupeId,
+  }) async {
+    if (_validatingEventId != null || !event.canBeValidated) return;
+
+    setState(() {
+      _validatingEventId = event.id;
+    });
+
+    try {
+      await ref.read(mobilePlanningRepositoryProvider).validateEvent(event.id);
+      ref.invalidate(mobilePlanningDetailProvider(groupeId));
+      ref.invalidate(mobilePlanningGroupsProvider);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Etape validee')),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.toString())),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _validatingEventId = null;
+        });
+      }
+    }
   }
 
   Widget _buildRoleHeader({
@@ -858,10 +899,16 @@ class _SelectedDaySection extends StatelessWidget {
   const _SelectedDaySection({
     required this.planning,
     required this.dayNumber,
+    required this.showGuideValidation,
+    required this.validatingEventId,
+    required this.onValidateEvent,
   });
 
   final MobilePlanningDay planning;
   final int dayNumber;
+  final bool showGuideValidation;
+  final String? validatingEventId;
+  final ValueChanged<MobilePlanningEvent> onValidateEvent;
 
   @override
   Widget build(BuildContext context) {
@@ -913,6 +960,9 @@ class _SelectedDaySection extends StatelessWidget {
             (entry) => _TimelineEventTile(
               event: entry.value,
               isLast: entry.key == planning.evenements.length - 1,
+              showGuideValidation: showGuideValidation,
+              isValidating: validatingEventId == entry.value.id,
+              onValidate: () => onValidateEvent(entry.value),
             ),
           ),
       ],
@@ -924,16 +974,23 @@ class _TimelineEventTile extends StatelessWidget {
   const _TimelineEventTile({
     required this.event,
     required this.isLast,
+    required this.showGuideValidation,
+    required this.isValidating,
+    required this.onValidate,
   });
 
   final MobilePlanningEvent event;
   final bool isLast;
+  final bool showGuideValidation;
+  final bool isValidating;
+  final VoidCallback onValidate;
 
   @override
   Widget build(BuildContext context) {
     final displayTime = event.heureDebutPrevue != null
         ? _formatHour(event.heureDebutPrevue!)
         : '--:--';
+    final canShowValidation = showGuideValidation && event.type != 'PRIERE';
 
     return IntrinsicHeight(
       child: Row(
@@ -1036,6 +1093,14 @@ class _TimelineEventTile extends StatelessWidget {
                           background: _eventTypeSoftColor(event.type),
                           foreground: _eventTypeStrongColor(event.type),
                         ),
+                        if (event.etape?.trim().isNotEmpty == true) ...[
+                          const SizedBox(width: 8),
+                          _MetaPill(
+                            label: _formatEtapeLabel(event.etape!),
+                            background: AppColors.section,
+                            foreground: AppColors.textMuted,
+                          ),
+                        ],
                       ],
                     ),
                     if (event.description?.trim().isNotEmpty == true) ...[
@@ -1047,6 +1112,35 @@ class _TimelineEventTile extends StatelessWidget {
                           height: 1.45,
                           color: AppColors.textMuted,
                         ),
+                      ),
+                    ],
+                    if (canShowValidation) ...[
+                      const SizedBox(height: 14),
+                      SizedBox(
+                        width: double.infinity,
+                        child: event.estValide
+                            ? OutlinedButton.icon(
+                                onPressed: null,
+                                icon: const Icon(Icons.check_circle_rounded),
+                                label: const Text('Etape validee'),
+                              )
+                            : FilledButton.icon(
+                                onPressed: isValidating ? null : onValidate,
+                                icon: isValidating
+                                    ? const SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                    : const Icon(Icons.check_rounded),
+                                label: Text(
+                                  isValidating
+                                      ? 'Validation...'
+                                      : 'Valider l etape',
+                                ),
+                              ),
                       ),
                     ],
                   ],
@@ -1247,6 +1341,14 @@ String _eventTypeLabel(String type) {
     default:
       return 'Autre';
   }
+}
+
+String _formatEtapeLabel(String value) {
+  return value
+      .split('_')
+      .where((part) => part.isNotEmpty)
+      .map((part) => '${part[0]}${part.substring(1).toLowerCase()}')
+      .join(' ');
 }
 
 Color _eventTypeSoftColor(String type) {

@@ -1,23 +1,5 @@
 ﻿<template>
   <div class="view-section planning-shell">
-    <div class="planning-topbar">
-      <div class="planning-group-picker">
-        <label for="planning-group">Groupe</label>
-        <select id="planning-group" v-model="selectedGroupId">
-          <option v-for="groupe in groupes" :key="groupe.id" :value="groupe.id">
-            {{ groupe.nom }} · {{ groupe.typeVoyage }} · {{ groupe.annee }}
-          </option>
-        </select>
-      </div>
-
-      <div v-if="selectedGroup" class="planning-summary">
-        <span class="group-type-badge" :class="selectedGroup.typeVoyage === 'HAJJ' ? 'hajj' : 'umrah'">
-          {{ selectedGroup.typeVoyage === 'HAJJ' ? 'Hajj' : 'Omra' }}
-        </span>
-        <span class="planning-summary-text">{{ tripRangeLabel }}</span>
-      </div>
-    </div>
-
     <div v-if="loading" class="state-center planning-state">
       <div class="spinner"></div>
       <p>Chargement du planning...</p>
@@ -40,165 +22,132 @@
       <p class="planning-empty-copy">Définissez la date de départ et de retour du groupe pour activer le planning du voyage.</p>
     </div>
 
-    <div v-else class="planning-workspace">
-      <aside class="planning-sidebar">
-        <div class="planning-sidebar-header">
-          <div class="planning-group-card">
-            <div class="planning-group-card-top">
-              <h2 class="planning-group-title">{{ selectedGroup.nom }}</h2>
-              <span class="group-type-badge" :class="selectedGroup.typeVoyage === 'HAJJ' ? 'hajj' : 'umrah'">
-                {{ selectedGroup.typeVoyage === 'HAJJ' ? 'Hajj' : 'Omra' }}
-              </span>
-            </div>
-            <p class="planning-group-range">{{ tripRangeLabel }} · {{ tripDurationLabel }}</p>
-            <p class="planning-group-count">{{ plannedDaysCount }} journée(s) planifiée(s)</p>
+    <div v-else class="planning-page">
+      <section class="planning-card planning-hero-card">
+        <div class="planning-hero-top">
+          <div class="planning-select-summary">
+            <span class="group-type-badge" :class="selectedGroup.typeVoyage === 'HAJJ' ? 'hajj' : 'umrah'">
+              {{ selectedGroup.typeVoyage === 'HAJJ' ? 'Hajj' : 'Omra' }}
+            </span>
+            <span class="planning-select-text">{{ groupStatusLabel }}</span>
+          </div>
+
+          <div class="planning-group-picker planning-group-picker--inline">
+            <label for="planning-group">Groupe</label>
+            <select id="planning-group" v-model="selectedGroupId">
+              <option v-for="groupe in groupes" :key="groupe.id" :value="groupe.id">
+                {{ groupe.nom }} · {{ groupe.typeVoyage }} · {{ groupe.annee }}
+              </option>
+            </select>
           </div>
         </div>
 
-        <div class="planning-sidebar-actions">
+        <div class="planning-hero-copy">
+          <p class="planning-hero-kicker">Planning du voyage</p>
+          <div class="planning-hero-heading-row">
+            <h2 class="planning-hero-title">{{ selectedGroup.nom }}</h2>
+            <div class="planning-hero-subtitle planning-inline-meta">
+              <span>{{ tripRangeLabel }}</span>
+              <span>{{ selectedGroup.typeVoyage }}</span>
+              <span>{{ totalPelerins }} pèlerin<span v-if="totalPelerins > 1">s</span></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="planning-hero-actions">
           <button
-            class="planning-action-button is-primary"
+            class="planning-action-button"
             :disabled="saving || hajjGenerationBlocked"
             :title="hajjGenerationBlocked ? 'Renseignez d’abord la date du 8 Dhul Hijja' : ''"
             @click="generateTemplate"
           >
             <AppIcon name="sparkles" :size="16" />
-            <span>Générer le modèle</span>
+            <span>Générer modèle {{ selectedGroup.typeVoyage === 'HAJJ' ? 'Hajj' : 'Omra' }}</span>
           </button>
-          <button class="planning-action-button" :disabled="saving || !selectedDateKey" title="Créer une journée" @click="openDayModal()">
+          <button
+            class="planning-action-button"
+            :disabled="saving || !selectedDateKey"
+            @click="openDayModal()"
+          >
             <AppIcon name="calendar-plus" :size="16" />
             <span>Créer une journée</span>
           </button>
           <button
             class="planning-action-button"
             :disabled="saving || !plannedDaysCount"
-            title="Décaler toutes les journées"
-            @click="shiftPlanning()"
+            @click="openShiftModal"
           >
             <AppIcon name="arrow-right-left" :size="16" />
-            <span>Décaler le planning</span>
+            <span>Décaler</span>
           </button>
           <button
-            class="planning-action-button is-danger"
-            :disabled="saving || !plannedDaysCount"
-            title="Supprimer le planning"
-            @click="deleteWholePlanning()"
+            class="planning-action-button planning-action-button--primary"
+            :disabled="saving || !selectedDateKey"
+            @click="selectedPlanning ? openEventModal() : createSelectedDayQuick()"
           >
-            <AppIcon name="trash" :size="16" />
-            <span>Supprimer le planning</span>
+            <AppIcon name="plus" :size="16" />
+            <span>Ajouter un événement</span>
           </button>
         </div>
+      </section>
 
-        <div class="planning-sidebar-legend">
-          <button
-            type="button"
-            :class="['planning-filter-chip', { active: dayFilter === 'all' }]"
-            @click="dayFilter = 'all'"
-          >
-            Toutes
-            <span>{{ tripDays.length }}</span>
-          </button>
-          <button
-            type="button"
-            :class="['planning-filter-chip', 'is-filled', { active: dayFilter === 'filled' }]"
-            @click="dayFilter = 'filled'"
-          >
-            <span class="planning-legend-dot is-filled"></span>
-            Journées remplies
-            <span>{{ filledTripDaysCount }}</span>
-          </button>
-          <button
-            type="button"
-            :class="['planning-filter-chip', 'is-empty', { active: dayFilter === 'empty' }]"
-            @click="dayFilter = 'empty'"
-          >
-            <span class="planning-legend-dot is-empty"></span>
-            Journées vides
-            <span>{{ emptyTripDaysCount }}</span>
-          </button>
+      <section class="planning-card planning-days-card">
+        <div class="planning-section-head">
+          <h3><AppIcon name="calendar" :size="16" /> Jours du voyage</h3>
+          <span>{{ tripRangeLabel }}</span>
         </div>
 
-        <div v-if="!filteredTripDays.length" class="planning-sidebar-empty">
-          Aucune journée ne correspond à ce filtre.
+        <div v-if="!filteredTripDays.length" class="planning-inline-empty">
+          Aucune journée disponible pour ce voyage.
         </div>
 
-        <div v-else class="planning-day-list">
+        <div v-else class="planning-day-rail">
           <button
             v-for="day in filteredTripDays"
             :key="day.dateKey"
             :class="[
-              'planning-day-item',
-              {
-                active: selectedDateKey === day.dateKey,
-                empty: !planningByDate[day.dateKey],
-                filled: !!planningByDate[day.dateKey],
-              },
+              'planning-day-card',
+              { active: selectedDateKey === day.dateKey },
+              { empty: !(planningByDate[day.dateKey]?.evenements?.length) }
             ]"
             @click="selectedDateKey = day.dateKey"
           >
-            <div class="planning-day-item-top">
-              <span class="planning-day-number">{{ day.primaryDayLabel }}</span>
-              <span class="planning-day-marker" :class="{ filled: !!planningByDate[day.dateKey] }"></span>
+            <span class="planning-day-card-kicker">{{ day.primaryDayLabel }}</span>
+            <div class="planning-day-card-date">
+              <strong class="planning-day-card-number">{{ day.calendarDay }}</strong>
+              <span class="planning-day-card-month">{{ getDayMonthShort(day) }}</span>
             </div>
-            <div class="planning-day-date">{{ day.shortDateLong }}</div>
-            <div v-if="day.secondaryDayLabel" class="planning-day-subline">{{ day.secondaryDayLabel }}</div>
-            <div class="planning-day-preview">
-              {{ formatSidebarDayTitle(planningByDate[day.dateKey]?.titre, day.dayNumber) }}
-            </div>
-            <div v-if="planningByDate[day.dateKey]" class="planning-day-meta">
-              {{ planningByDate[day.dateKey].evenements?.length || 0 }} événement(s)
-            </div>
+            <strong class="planning-day-card-title">{{ getWeekdayLabel(day) }}</strong>
+            <span class="planning-day-card-meta">{{ getDayLocationLabel(day) }}</span>
+            <span class="planning-day-card-count">
+              {{ formatEventCount(planningByDate[day.dateKey]?.evenements?.length ?? 0) }}
+            </span>
           </button>
         </div>
-      </aside>
+      </section>
 
-      <section class="planning-main">
-        <div class="planning-main-header">
-          <div class="planning-main-copy">
-            <p class="planning-main-kicker">{{ selectedDayHeading }}</p>
-            <h3 class="planning-main-title">
-              {{ selectedPlanning?.titre || suggestedDayTitle }}
-            </h3>
-            <p class="planning-main-subtitle">
-              {{ selectedDayDateLabel }}
-            </p>
+      <section class="planning-card planning-detail-card">
+        <div class="planning-detail-head">
+          <div class="planning-detail-copy">
+            <p class="planning-detail-kicker">Jour sélectionné</p>
+            <h3 class="planning-detail-title">{{ selectedPlanning?.titre || suggestedDayTitle }}</h3>
+            <div class="planning-detail-subtitle planning-inline-meta">
+              <span><AppIcon name="calendar" :size="14" /> {{ selectedDayDateLabel }}</span>
+              <span><AppIcon name="map-pin" :size="14" /> {{ selectedDayPrimaryLieu }}</span>
+              <span><AppIcon name="list" :size="14" /> {{ formatEventCount(selectedPlanning?.evenements?.length || 0) }}</span>
+            </div>
           </div>
 
-          <div class="planning-main-actions">
-            <button
-              v-if="selectedPlanning"
-              class="planning-icon-button"
-              title="Modifier la journée"
-              @click="openDayModal(selectedPlanning)"
-            >
-              <AppIcon name="edit" :size="16" />
+          <div v-if="selectedPlanning" class="planning-detail-actions">
+            <button class="planning-secondary-button" @click="openDayModal(selectedPlanning)">
+              <AppIcon name="edit" :size="15" />
+              <span>Modifier la journée</span>
             </button>
-            <button
-              v-if="selectedPlanning"
-              class="planning-icon-button is-danger"
-              title="Supprimer la journée"
-              @click="deleteDay(selectedPlanning)"
-            >
-              <AppIcon name="trash" :size="16" />
-            </button>
-            <button
-              class="planning-icon-button is-primary"
-              title="Ajouter un événement"
-              @click="selectedPlanning ? openEventModal() : createSelectedDayQuick()"
-            >
-              <AppIcon name="plus" :size="16" />
+            <button class="planning-secondary-button" @click="deleteDay(selectedPlanning)">
+              <AppIcon name="trash" :size="15" />
+              <span>Supprimer la journée</span>
             </button>
           </div>
-        </div>
-
-        <div class="planning-progress-row">
-          <span class="planning-progress-label">{{ selectedDayProgressLabel }}</span>
-          <div class="planning-progress-track">
-            <div class="planning-progress-fill" :style="{ width: progressPercent }"></div>
-          </div>
-          <span class="planning-progress-meta">
-            {{ selectedDayProgressPercent }} · {{ formatEventCount(selectedPlanning?.evenements?.length || 0) }}
-          </span>
         </div>
 
         <div v-if="missingHajjStartDate" class="planning-hajj-setup">
@@ -220,62 +169,75 @@
           </div>
         </div>
 
-        <div v-if="!selectedPlanning" class="planning-main-empty">
-          <AppIcon name="calendar" :size="40" :stroke-width="1.5" style="opacity: 0.22; margin-bottom: 12px" />
-          <p class="planning-empty-title">Aucun planning pour cette journée</p>
-          <p class="planning-empty-copy">Ajoutez directement un événement et la journée sera créée automatiquement pour cette date.</p>
-          <button class="btn-primary" @click="createSelectedDayQuick()">Ajouter un événement</button>
-        </div>
-
-        <template v-else>
+        <template v-if="selectedPlanning">
           <div v-if="selectedPlanning.evenements?.length" class="planning-event-list">
             <article
               v-for="event in selectedPlanning.evenements"
               :key="event.id"
-              class="planning-event-card"
+              class="planning-event-row"
+              :class="`is-${event.type.toLowerCase()}`"
             >
-              <div class="planning-event-content">
+              <div class="planning-event-time">
+                <span class="planning-event-time-main">{{ formatEventTime(event.heureDebutPrevue) || '--:--' }}</span>
+                <span class="planning-event-time-label">Rendez-vous</span>
+              </div>
+
+              <div class="planning-event-copy">
                 <h4 class="planning-event-title">{{ event.titre }}</h4>
-                <div class="planning-event-location">
-                  <template v-if="splitLieux(event.lieu).length">
-                    <span v-for="lieu in splitLieux(event.lieu)" :key="lieu" class="planning-location-chip">
-                      {{ lieu }}
-                    </span>
-                  </template>
-                  <span v-else>Lieu à préciser</span>
-                </div>
+                <p class="planning-event-location-line">
+                  <AppIcon name="map-pin" :size="13" />
+                  {{ getEventFallbackDescription(event) }}
+                </p>
+                <p v-if="event.description" class="planning-event-description">
+                  {{ event.description }}
+                </p>
+              </div>
+
+              <div class="planning-event-side">
                 <div class="planning-event-badges">
                   <span :class="['planning-type-pill', `is-${event.type.toLowerCase()}`]">
                     {{ formatEventType(event.type) }}
                   </span>
-                  <span v-if="formatEventTime(event.heureDebutPrevue)" class="planning-time-pill">
-                    Rendez-vous · {{ formatEventTime(event.heureDebutPrevue) }}
+                  <span v-if="event.etape" class="planning-etape-pill">
+                    {{ event.etape }}
                   </span>
                 </div>
-                <p v-if="event.description" class="planning-event-description">{{ event.description }}</p>
-              </div>
 
-              <div class="planning-event-actions">
-                <button class="act-btn" title="Modifier" @click="openEventModal(event)">
-                  <AppIcon name="edit" :size="14" />
-                </button>
-                <button class="act-btn act-btn-danger" title="Supprimer" @click="deleteEvent(event)">
-                  <AppIcon name="trash" :size="14" />
-                </button>
+                <div class="planning-event-actions">
+                  <button class="act-btn" title="Modifier" @click="openEventModal(event)">
+                    <AppIcon name="edit" :size="14" />
+                  </button>
+                  <button class="act-btn act-btn-danger" title="Supprimer" @click="deleteEvent(event)">
+                    <AppIcon name="trash" :size="14" />
+                  </button>
+                </div>
               </div>
             </article>
-
-            <button class="planning-add-inline" @click="openEventModal()">
-              + Ajouter un événement à cette journée
-            </button>
           </div>
 
           <div v-else class="planning-main-empty">
             <AppIcon name="calendar" :size="40" :stroke-width="1.5" style="opacity: 0.22; margin-bottom: 12px" />
             <p class="planning-empty-title">Aucun événement pour cette journée</p>
-            <p class="planning-empty-copy">Ajoutez les lieux, activités et l heure de rendez-vous prévue pour ce jour.</p>
-            <button class="btn-primary" @click="openEventModal()">Ajouter un événement</button>
+            <p class="planning-empty-copy">Ajoutez les lieux, activités et l’heure de rendez-vous prévue pour ce jour.</p>
           </div>
+
+          <button class="planning-primary-wide" @click="openEventModal()">
+            <AppIcon name="plus" :size="16" />
+            Ajouter un événement
+          </button>
+        </template>
+
+        <template v-else>
+          <div class="planning-main-empty">
+            <AppIcon name="calendar" :size="40" :stroke-width="1.5" style="opacity: 0.22; margin-bottom: 12px" />
+            <p class="planning-empty-title">Aucun planning pour cette journée</p>
+            <p class="planning-empty-copy">Ajoutez directement un événement et la journée sera créée automatiquement pour cette date.</p>
+          </div>
+
+          <button class="planning-primary-wide" @click="createSelectedDayQuick()">
+            <AppIcon name="plus" :size="16" />
+            Ajouter un événement
+          </button>
         </template>
       </section>
     </div>
@@ -300,6 +262,26 @@
         <button class="btn-secondary" @click="closeDayModal">Annuler</button>
         <button class="btn-primary" :disabled="saving" @click="submitDay">
           {{ saving ? 'Sauvegarde...' : 'Sauvegarder' }}
+        </button>
+      </template>
+    </DashboardModalShell>
+
+    <DashboardModalShell
+      v-if="showShiftModal"
+      title="Décaler le planning"
+      :error="modalError"
+      @close="closeShiftModal"
+    >
+      <div class="form-grid">
+        <div class="form-field full">
+          <label>Décalage en jours</label>
+          <input v-model.number="shiftForm.offsetDays" type="number" min="-14" max="14" step="1" />
+        </div>
+      </div>
+      <template #actions>
+        <button class="btn-secondary" @click="closeShiftModal">Annuler</button>
+        <button class="btn-primary" :disabled="saving" @click="submitShift">
+          {{ saving ? 'Décalage...' : 'Décaler' }}
         </button>
       </template>
     </DashboardModalShell>
@@ -363,7 +345,6 @@ import AppIcon from '@/components/AppIcon.vue'
 import DashboardModalShell from '@/features/agence/components/dashboard/DashboardModalShell.vue'
 import {
   createAgencePlanningDay,
-  deleteAgencePlanning,
   createAgencePlanningEvent,
   deleteAgencePlanningDay,
   deleteAgencePlanningEvent,
@@ -480,12 +461,13 @@ const selectedGroupId = ref('')
 const hajjStartDateInput = ref('')
 const planningData = ref({ groupe: null, plannings: [], tripDays: [] })
 const selectedDateKey = ref('')
-const dayFilter = ref('all')
 const showDayModal = ref(false)
 const showEventModal = ref(false)
+const showShiftModal = ref(false)
 const editingDayId = ref('')
 const editingEventId = ref('')
 const dayForm = ref({ date: '', titre: '' })
+const shiftForm = ref({ offsetDays: 1 })
 const eventForm = ref({
   type: 'TRANSPORT',
   titre: '',
@@ -496,10 +478,16 @@ const eventForm = ref({
 const toast = ref({ show: false, message: '', type: 'success' })
 
 const selectedGroup = computed(() => {
+  const listedGroup = props.groupes.find((group) => group.id === selectedGroupId.value)
   if (planningData.value.groupe?.id === selectedGroupId.value) {
-    return planningData.value.groupe
+    return {
+      ...(listedGroup ?? {}),
+      ...planningData.value.groupe,
+      _count: listedGroup?._count ?? planningData.value.groupe?._count,
+      pelerins: listedGroup?.pelerins ?? planningData.value.groupe?.pelerins,
+    }
   }
-  return props.groupes.find((group) => group.id === selectedGroupId.value) ?? null
+  return listedGroup ?? null
 })
 const hasTripDates = computed(() => Boolean(selectedGroup.value?.dateDepart && selectedGroup.value?.dateRetour))
 const missingHajjStartDate = computed(() => selectedGroup.value?.typeVoyage === 'HAJJ' && !selectedGroup.value?.hajjStartDate)
@@ -508,30 +496,20 @@ const tripDays = computed(() => planningData.value.tripDays ?? [])
 const planningByDate = computed(() =>
   Object.fromEntries((planningData.value.plannings ?? []).map((planning) => [toDateKey(planning.date), planning]))
 )
-const filledTripDaysCount = computed(() => tripDays.value.filter((day) => Boolean(planningByDate.value[day.dateKey])).length)
-const emptyTripDaysCount = computed(() => Math.max(0, tripDays.value.length - filledTripDaysCount.value))
-const filteredTripDays = computed(() => {
-  if (dayFilter.value === 'filled') {
-    return tripDays.value.filter((day) => Boolean(planningByDate.value[day.dateKey]))
-  }
-  if (dayFilter.value === 'empty') {
-    return tripDays.value.filter((day) => !planningByDate.value[day.dateKey])
-  }
-  return tripDays.value
-})
+const filteredTripDays = computed(() => tripDays.value)
+
+function getDayLocationLabel(day) {
+  const firstEventLieu = planningByDate.value[day.dateKey]?.evenements?.[0]?.lieu
+  const resolvedLieu = splitLieux(firstEventLieu)[0] || day.locationLabel
+  return resolvedLieu || '—'
+}
 const selectedPlanning = computed(() => planningByDate.value[selectedDateKey.value] ?? null)
 const selectedDay = computed(() => tripDays.value.find((item) => item.dateKey === selectedDateKey.value) ?? null)
-const plannedDaysCount = computed(() => Object.keys(planningByDate.value).length)
-const selectedDayHeading = computed(() => selectedDay.value?.primaryDayLabel ?? 'Sélectionnez une date')
 const selectedDayDateLabel = computed(() => {
   if (!selectedDay.value) return 'Sélectionnez une date'
   return selectedDay.value.secondaryDayLabel
     ? `${selectedDay.value.label} · ${selectedDay.value.secondaryDayLabel}`
     : selectedDay.value.label
-})
-const tripDurationLabel = computed(() => {
-  if (!tripDays.value.length) return 'A définir'
-  return tripDays.value.length > 1 ? `${tripDays.value.length} jours` : '1 jour'
 })
 const groupStatusLabel = computed(() => {
   switch (selectedGroup.value?.status) {
@@ -550,21 +528,15 @@ const tripRangeLabel = computed(() => {
   if (!selectedGroup.value?.dateDepart || !selectedGroup.value?.dateRetour) return 'Dates à définir'
   return `${formatShortDate(selectedGroup.value.dateDepart)} → ${formatShortDate(selectedGroup.value.dateRetour)}`
 })
+const plannedDaysCount = computed(() => planningData.value.plannings?.length ?? 0)
 const suggestedDayTitle = computed(() => {
   if (!selectedDay.value) return 'Journée du voyage'
   return selectedDay.value.primaryDayLabel
 })
-const progressPercent = computed(() => {
-  if (!selectedDay.value || !tripDays.value.length) return '0%'
-  return `${Math.max(6, (selectedDay.value.dayNumber / tripDays.value.length) * 100)}%`
-})
-const selectedDayProgressPercent = computed(() => {
-  if (!selectedDay.value || !tripDays.value.length) return '0%'
-  return `${Math.round((selectedDay.value.dayNumber / tripDays.value.length) * 100)}%`
-})
-const selectedDayProgressLabel = computed(() => {
-  if (!selectedDay.value) return 'Sélectionnez une date'
-  return 'Progression du voyage'
+const totalPelerins = computed(() => selectedGroup.value?._count?.pelerins ?? selectedGroup.value?.pelerins?.length ?? 0)
+const selectedDayPrimaryLieu = computed(() => {
+  const firstLieu = selectedPlanning.value?.evenements?.[0]?.lieu
+  return splitLieux(firstLieu)[0] || 'Lieu à préciser'
 })
 
 function showToast(message, type = 'success') {
@@ -574,10 +546,21 @@ function showToast(message, type = 'success') {
   }, 6000)
 }
 
-function formatSidebarDayTitle(title, dayNumber) {
-  if (!title) return 'Journée à définir'
-  const cleaned = title.replace(new RegExp(`^Jour\\s+${dayNumber}\\s*[-·]\\s*`, 'i'), '').trim()
-  return cleaned || title
+function getEventFallbackDescription(event) {
+  const lieux = splitLieux(event?.lieu)
+  return lieux.length ? lieux.join(' → ') : 'Détails à préciser'
+}
+
+function getWeekdayLabel(day) {
+  const date = parsePlanningDate(day?.date)
+  if (Number.isNaN(date.getTime())) return day?.label ?? ''
+  return date.toLocaleDateString('fr-FR', { weekday: 'long' })
+}
+
+function getDayMonthShort(day) {
+  const date = parsePlanningDate(day?.date)
+  if (Number.isNaN(date.getTime())) return day?.monthShort ?? ''
+  return date.toLocaleDateString('fr-FR', { month: 'short' }).replace('.', '')
 }
 
 async function saveHajjStartDate() {
@@ -638,6 +621,17 @@ function openDayModal(planning = null) {
 function closeDayModal() {
   showDayModal.value = false
   editingDayId.value = ''
+  modalError.value = ''
+}
+
+function openShiftModal() {
+  modalError.value = ''
+  shiftForm.value = { offsetDays: 1 }
+  showShiftModal.value = true
+}
+
+function closeShiftModal() {
+  showShiftModal.value = false
   modalError.value = ''
 }
 
@@ -748,6 +742,29 @@ async function createSelectedDayQuick() {
   }
 }
 
+async function submitShift() {
+  const offsetDays = Number(shiftForm.value.offsetDays)
+
+  if (!Number.isInteger(offsetDays) || offsetDays === 0) {
+    modalError.value = 'Le décalage doit être un entier non nul'
+    return
+  }
+
+  saving.value = true
+  modalError.value = ''
+
+  try {
+    const result = await shiftAgencePlanning(selectedGroupId.value, { offsetDays })
+    closeShiftModal()
+    await loadPlanning()
+    showToast(`${result.shiftedDays} journée(s) décalée(s)`)
+  } catch (err) {
+    modalError.value = err.response?.data?.message || err.message
+  } finally {
+    saving.value = false
+  }
+}
+
 async function submitEvent() {
   if (!selectedPlanning.value) {
     modalError.value = "Créez d'abord la journée de planning"
@@ -803,53 +820,6 @@ async function deleteDay(planning) {
     await loadPlanning()
   } catch (err) {
     showToast(err.response?.data?.message || err.message, 'error')
-  }
-}
-
-async function deleteWholePlanning() {
-  if (!selectedGroupId.value || !plannedDaysCount.value) return
-
-  const confirmed = window.confirm(
-    `Supprimer tout le planning de ce groupe ? ${plannedDaysCount.value} journée(s) seront supprimée(s).`
-  )
-
-  if (!confirmed) return
-
-  try {
-    const result = await deleteAgencePlanning(selectedGroupId.value)
-    showToast(`${result.deletedDays || 0} journée(s) supprimée(s)`)
-    await loadPlanning()
-  } catch (err) {
-    showToast(err.response?.data?.message || err.message, 'error')
-  }
-}
-
-async function shiftPlanning() {
-  if (!selectedGroupId.value || !plannedDaysCount.value) return
-
-  const rawValue = window.prompt(
-    'Décaler toutes les journées du voyage de combien de jour(s) ? Utilisez 1, -1, 2, etc.',
-    '1'
-  )
-
-  if (rawValue == null) return
-
-  const offsetDays = Number.parseInt(rawValue, 10)
-  if (!Number.isInteger(offsetDays) || offsetDays === 0) {
-    showToast('Entrez un nombre entier non nul', 'error')
-    return
-  }
-
-  saving.value = true
-
-  try {
-    const result = await shiftAgencePlanning(selectedGroupId.value, { offsetDays })
-    await loadPlanning()
-    showToast(`${result.shiftedDays || 0} journée(s) décalée(s) de ${offsetDays} jour(s)`)
-  } catch (err) {
-    showToast(err.response?.data?.message || err.message, 'error')
-  } finally {
-    saving.value = false
   }
 }
 
@@ -915,7 +885,7 @@ watch(
 )
 
 watch(
-  [filteredTripDays, dayFilter],
+  filteredTripDays,
   () => {
     if (!filteredTripDays.value.length) return
     const stillVisible = filteredTripDays.value.some((day) => day.dateKey === selectedDateKey.value)
@@ -948,14 +918,6 @@ watch(selectedGroupId, () => {
   gap: 18px;
 }
 
-.planning-topbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: end;
-  justify-content: space-between;
-  gap: 14px;
-}
-
 .planning-group-picker {
   display: flex;
   flex-direction: column;
@@ -967,433 +929,327 @@ watch(selectedGroupId, () => {
   font-size: 11px;
   font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.8px;
+  letter-spacing: 0.08em;
   color: var(--text2);
 }
 
 .planning-group-picker select {
-  padding: 10px 12px;
-  border-radius: 10px;
-  border: 1px solid var(--border);
-  background: var(--bg2);
-  color: var(--text);
-  font-size: 13.5px;
+  min-height: 48px;
+  padding: 0 14px;
+  border-radius: 14px;
+  border: 1px solid #e6ddd1;
+  background: #fffdfa;
+  color: #20170f;
+  font-size: 14px;
   font-family: 'DM Sans', sans-serif;
 }
 
-.planning-summary {
+.planning-page {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.planning-card,
+.planning-state,
+.planning-empty-card {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 251, 245, 0.98));
+  border: 1px solid #ece2d6;
+  border-radius: 18px;
+  box-shadow: 0 10px 28px rgba(34, 26, 15, 0.05);
+}
+
+.planning-select-summary {
   display: inline-flex;
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
 }
 
-.planning-summary-text {
+.planning-select-text {
   font-size: 13px;
-  color: var(--text2);
+  font-weight: 700;
+  color: #7a6f62;
 }
 
-.planning-workspace {
-  display: grid;
-  grid-template-columns: 300px minmax(0, 1fr);
-  gap: 18px;
-  height: calc(100vh - 220px);
-  min-height: 620px;
+.planning-hero-card,
+.planning-days-card,
+.planning-detail-card {
+  padding: 18px 20px;
 }
 
-.planning-sidebar,
-.planning-main {
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  border-radius: 18px;
-  box-shadow: var(--shadow);
-}
-
-.planning-sidebar {
+.planning-hero-card {
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-  min-height: 0;
-}
-
-.planning-sidebar-header {
-  padding: 22px 20px 16px;
-  border-bottom: 1px solid var(--border);
-}
-
-.planning-group-card {
-  padding: 18px 18px 16px;
-  border-radius: 18px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.62));
-  border: 1px solid rgba(201, 168, 76, 0.12);
-}
-
-.planning-group-card-top {
-  display: flex;
-  align-items: start;
-  justify-content: space-between;
   gap: 12px;
 }
 
-.planning-group-title {
-  margin: 0;
-  font-family: 'Syne', sans-serif;
-  font-size: 24px;
-  line-height: 1.05;
-}
-
-.planning-group-range,
-.planning-group-count {
-  margin: 10px 0 0;
-  font-size: 13px;
-  color: var(--text2);
-  font-weight: 600;
-}
-
-.planning-group-count {
-  margin-top: 6px;
-}
-
-.planning-sidebar-actions {
+.planning-hero-top {
   display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 16px 20px 10px;
-}
-
-.planning-action-button {
-  width: 100%;
-  min-height: 44px;
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  justify-content: flex-start;
-  border-radius: 12px;
-  border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.44);
-  color: var(--text);
-  cursor: pointer;
-  padding: 0 14px;
-  font-size: 14px;
-  font-weight: 700;
-  transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease, color 0.16s ease;
-}
-
-.planning-action-button:hover:not(:disabled) {
-  transform: translateY(-1px);
-  border-color: rgba(201, 168, 76, 0.28);
-  background: rgba(201, 168, 76, 0.08);
-}
-
-.planning-action-button:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-.planning-action-button.is-primary {
-  background: rgba(201, 168, 76, 0.9);
-  border-color: rgba(201, 168, 76, 0.9);
-  color: white;
-}
-
-.planning-action-button.is-danger {
-  color: var(--red);
-}
-
-.planning-action-button.is-danger:hover:not(:disabled) {
-  border-color: rgba(248, 113, 113, 0.32);
-  background: rgba(248, 113, 113, 0.08);
-}
-
-.planning-icon-button {
-  width: 40px;
-  height: 40px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 12px;
-  border: 1px solid var(--border);
-  background: var(--bg3);
-  color: var(--text);
-  cursor: pointer;
-  transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease, color 0.16s ease;
-}
-
-.planning-icon-button:hover:not(:disabled) {
-  transform: translateY(-1px);
-  border-color: rgba(201, 168, 76, 0.28);
-  background: rgba(201, 168, 76, 0.08);
-}
-
-.planning-icon-button:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-.planning-icon-button.is-primary {
-  background: rgba(201, 168, 76, 0.12);
-  border-color: rgba(201, 168, 76, 0.28);
-  color: var(--gold);
-}
-
-.planning-icon-button.is-danger {
-  color: var(--red);
-}
-
-.planning-icon-button.is-danger:hover:not(:disabled) {
-  border-color: rgba(248, 113, 113, 0.32);
-  background: rgba(248, 113, 113, 0.08);
-}
-
-.planning-sidebar-legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding: 0 20px 14px;
-}
-
-.planning-filter-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 5px 10px;
-  border-radius: 999px;
-  background: var(--bg3);
-  border: 1px solid var(--border);
-  color: var(--text2);
-  font-size: 11.5px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: border-color 0.16s ease, background 0.16s ease, color 0.16s ease;
-}
-
-.planning-filter-chip span:last-child {
-  font-weight: 800;
-}
-
-.planning-filter-chip:hover {
-  border-color: rgba(201, 168, 76, 0.24);
-}
-
-.planning-filter-chip.active {
-  background: rgba(201, 168, 76, 0.1);
-  border-color: rgba(201, 168, 76, 0.28);
-  color: var(--text);
-}
-
-.planning-filter-chip.is-filled.active {
-  background: rgba(201, 168, 76, 0.12);
-  border-color: rgba(201, 168, 76, 0.32);
-}
-
-.planning-filter-chip.is-empty.active {
-  background: rgba(92, 146, 255, 0.1);
-  border-color: rgba(92, 146, 255, 0.24);
-  color: var(--text);
-}
-
-.planning-legend-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  margin-right: 7px;
-}
-
-.planning-legend-dot.is-filled {
-  background: var(--gold);
-}
-
-.planning-legend-dot.is-empty {
-  background: #7ea5ff;
-}
-
-.planning-legend-dot.is-prayer {
-  background: var(--blue);
-}
-
-.planning-day-list {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  padding: 6px 12px 12px;
-}
-
-.planning-sidebar-empty {
-  margin: 0 20px 12px;
-  padding: 12px 14px;
-  border-radius: 12px;
-  border: 1px dashed var(--border);
-  color: var(--text2);
-  font-size: 12.5px;
-  text-align: center;
-}
-
-.planning-day-item {
-  width: 100%;
-  text-align: left;
-  padding: 14px;
-  border-radius: 14px;
-  border: 1px solid transparent;
-  background: transparent;
-  color: var(--text);
-  cursor: pointer;
-  transition: background 0.16s ease, border-color 0.16s ease, transform 0.16s ease;
-  margin-bottom: 6px;
-}
-
-.planning-day-item:hover {
-  background: var(--bg3);
-  border-color: rgba(201, 168, 76, 0.18);
-}
-
-.planning-day-item.active {
-  background: rgba(201, 168, 76, 0.08);
-  border-color: rgba(201, 168, 76, 0.28);
-}
-
-.planning-day-item.filled {
-  background: linear-gradient(180deg, rgba(201, 168, 76, 0.05), transparent);
-}
-
-.planning-day-item.empty {
-  opacity: 0.75;
-}
-
-.planning-day-item-top {
-  display: flex;
-  align-items: center;
+  align-items: end;
   justify-content: space-between;
-  gap: 10px;
+  gap: 14px;
+  flex-wrap: wrap;
 }
 
-.planning-day-number {
+.planning-group-picker--inline {
+  min-width: 260px;
+  max-width: 420px;
+  margin-left: auto;
+}
+
+.planning-group-picker--inline label {
+  font-size: 10px;
+}
+
+.planning-group-picker--inline select {
+  min-height: 40px;
+  padding: 0 12px;
+  border-radius: 12px;
+  font-size: 13px;
+}
+
+.planning-hero-kicker,
+.planning-detail-kicker {
+  margin: 0 0 4px;
+  color: var(--gold);
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--gold);
 }
 
-.planning-day-marker {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--border);
-  flex-shrink: 0;
+.planning-hero-title,
+.planning-detail-title {
+  margin: 0;
+  font-family: 'Syne', sans-serif;
+  color: #17120c;
 }
 
-.planning-day-marker.filled {
-  background: var(--gold);
+.planning-hero-title {
+  font-size: clamp(24px, 2.4vw, 31px);
+  line-height: 1;
 }
 
-.planning-day-date {
-  margin-top: 6px;
+.planning-detail-title {
+  font-size: clamp(24px, 2.5vw, 32px);
+  line-height: 1;
+}
+
+.planning-hero-heading-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.planning-hero-subtitle,
+.planning-detail-subtitle {
+  margin: 0;
+  color: #786c5e;
   font-size: 14px;
-  font-weight: 700;
-  color: var(--text);
+  font-weight: 600;
 }
 
-.planning-day-subline {
-  margin-top: 4px;
-  font-size: 11.5px;
-  font-weight: 700;
-  color: var(--text2);
+.planning-inline-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
 }
 
-.planning-day-preview {
-  margin-top: 6px;
+.planning-inline-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.planning-hero-actions,
+.planning-detail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.planning-action-button,
+.planning-secondary-button,
+.planning-primary-wide {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 0 16px;
+  border-radius: 14px;
+  border: 1px solid #dfd2c2;
+  background: #fffdfa;
+  color: #20170f;
   font-size: 13px;
   font-weight: 700;
-  color: var(--text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  cursor: pointer;
+  transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease;
 }
 
-.planning-day-meta {
-  margin-top: 8px;
-  font-size: 12px;
-  color: var(--text2);
+.planning-action-button:hover:not(:disabled),
+.planning-secondary-button:hover:not(:disabled),
+.planning-primary-wide:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: #d4b574;
+  background: #fff7e8;
 }
 
-.planning-main {
-  padding: 24px 24px 22px;
+.planning-action-button:disabled,
+.planning-secondary-button:disabled,
+.planning-primary-wide:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.planning-action-button--primary {
+  background: #d8b04d;
+  border-color: #d8b04d;
+  color: #231907;
+}
+
+.planning-action-button--primary:hover:not(:disabled) {
+  background: #dfba61;
+  border-color: #dfba61;
+}
+
+.planning-section-head,
+.planning-detail-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.planning-section-head {
+  margin-bottom: 12px;
+}
+
+.planning-section-head h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+  color: #17120c;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.planning-section-head span {
+  color: #7a6f62;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.planning-inline-empty {
+  min-height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed #e5dbce;
+  border-radius: 18px;
+  color: #877b6c;
+}
+
+.planning-day-rail {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(136px, 156px);
+  grid-template-columns: none;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.planning-day-card {
+  min-height: 132px;
+  padding: 12px;
   display: flex;
   flex-direction: column;
-  gap: 18px;
-  min-width: 0;
-  min-height: 0;
-  overflow-y: auto;
+  align-items: flex-start;
+  gap: 6px;
+  text-align: left;
+  border-radius: 16px;
+  border: 1px solid #d8b04d;
+  background: #fff8ea;
+  color: #20170f;
+  cursor: pointer;
+  transition: border-color 0.16s ease, background 0.16s ease, transform 0.16s ease, box-shadow 0.16s ease;
 }
 
-.planning-main-header {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  align-items: start;
-  padding-bottom: 18px;
-  border-bottom: 1px solid rgba(201, 168, 76, 0.12);
+.planning-day-card:hover {
+  transform: translateY(-1px);
+  border-color: #cda13b;
 }
 
-.planning-main-copy {
-  min-width: 0;
+.planning-day-card.active {
+  background: #fff2d3;
+  border-color: #cda13b;
+  box-shadow: 0 8px 20px rgba(216, 176, 77, 0.14);
 }
 
-.planning-main-kicker {
-  margin: 0 0 6px;
-  color: var(--gold);
-  font-size: 12px;
+.planning-day-card.empty {
+  background: #fffaf0;
+  border-color: #eadfce;
+}
+
+.planning-day-card-kicker {
+  font-size: 9px;
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+  color: #c79e35;
 }
 
-.planning-main-title {
-  margin: 0;
-  font-family: 'Syne', sans-serif;
-  font-size: 34px;
-  line-height: 0.98;
-  max-width: 680px;
-}
-
-.planning-main-subtitle {
-  margin: 10px 0 0;
-  color: var(--text2);
-  font-size: 15px;
-}
-
-.planning-main-actions {
+.planning-day-card-date {
   display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
+  align-items: baseline;
+  gap: 6px;
 }
 
-.planning-progress-row {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  gap: 12px;
-  align-items: center;
+.planning-day-card-number {
+  font-family: 'Syne', sans-serif;
+  font-size: 24px;
+  line-height: 1;
+  color: #9f7017;
 }
 
-.planning-progress-label,
-.planning-progress-meta {
+.planning-day-card-month {
+  font-size: 11px;
+  font-weight: 800;
+  color: #84715d;
+  text-transform: lowercase;
+}
+
+.planning-day-card-title {
   font-size: 13px;
-  font-weight: 700;
-  color: var(--text2);
+  line-height: 1.2;
+  color: #7b6f62;
+  text-transform: lowercase;
 }
 
-.planning-progress-track {
-  height: 6px;
-  border-radius: 999px;
-  background: var(--bg3);
-  overflow: hidden;
+.planning-day-card-subtitle,
+.planning-day-card-meta {
+  color: #7b6f62;
+  font-size: 11px;
+  font-weight: 600;
 }
 
-.planning-progress-fill {
-  height: 100%;
-  border-radius: 999px;
-  background: linear-gradient(90deg, var(--gold), #e4bd58);
+.planning-day-card-count {
+  margin-top: auto;
+  color: #c79e35;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.planning-detail-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 
 .planning-hajj-setup {
@@ -1402,26 +1258,22 @@ watch(selectedGroupId, () => {
   align-items: end;
   justify-content: space-between;
   gap: 16px;
-  padding: 18px 20px;
+  padding: 14px 16px;
   border-radius: 16px;
-  border: 1px solid rgba(201, 168, 76, 0.22);
-  background: rgba(201, 168, 76, 0.06);
-}
-
-.planning-hajj-setup-copy {
-  max-width: 560px;
+  border: 1px solid #ecddbc;
+  background: #fff8ea;
 }
 
 .planning-hajj-setup-title {
   margin: 0 0 6px;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 800;
-  color: var(--text);
+  color: #1d160e;
 }
 
 .planning-hajj-setup-text {
   margin: 0;
-  color: var(--text2);
+  color: #7a6f62;
   font-size: 13px;
 }
 
@@ -1438,156 +1290,182 @@ watch(selectedGroupId, () => {
 }
 
 .planning-main-empty {
-  flex: 1;
-  min-height: 300px;
-  border: 1px dashed var(--border);
+  min-height: 170px;
+  border: 1px dashed #e7ddd1;
   border-radius: 18px;
-  background: linear-gradient(180deg, rgba(201, 168, 76, 0.03), transparent);
+  background: linear-gradient(180deg, rgba(255, 248, 235, 0.72), transparent);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   text-align: center;
-  padding: 26px;
+  padding: 22px;
 }
 
 .planning-empty-title {
-  margin: 0 0 6px;
+  margin: 0 0 8px;
   font-size: 16px;
   font-weight: 700;
+  color: #1c150e;
 }
 
 .planning-empty-copy {
-  margin: 0 0 16px;
-  color: var(--text2);
+  margin: 0;
+  color: #7a6f62;
   font-size: 13px;
-  max-width: 420px;
+  max-width: 460px;
 }
 
 .planning-event-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
 }
 
-.planning-add-inline {
-  width: 100%;
-  min-height: 54px;
-  border-radius: 16px;
-  border: 1px dashed rgba(201, 168, 76, 0.28);
-  background: transparent;
-  color: var(--text2);
-  font-size: 16px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: border-color 0.16s ease, color 0.16s ease, background 0.16s ease;
-}
-
-.planning-add-inline:hover {
-  border-color: rgba(201, 168, 76, 0.48);
-  color: var(--gold);
-  background: rgba(201, 168, 76, 0.04);
-}
-
-.planning-event-card {
+.planning-event-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 18px;
-  align-items: start;
-  padding: 18px 18px;
-  border-radius: 18px;
-  border: 1px solid var(--border);
-  background: var(--bg2);
-  transition: border-color 0.16s ease, transform 0.16s ease, box-shadow 0.16s ease;
+  grid-template-columns: 84px minmax(0, 1fr) auto;
+  gap: 0;
+  align-items: stretch;
+  border-radius: 14px;
+  border: 1px solid #e6d8c7;
+  background: #fbf6ee;
+  overflow: hidden;
 }
 
-.planning-event-card:hover {
-  border-color: rgba(201, 168, 76, 0.22);
-  transform: translateY(-1px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+.planning-event-row.is-transport {
+  box-shadow: inset 3px 0 0 #5ca5ff;
 }
 
-.planning-event-content {
+.planning-event-row.is-rite {
+  box-shadow: inset 3px 0 0 #8d7cff;
+}
+
+.planning-event-row.is-visite {
+  box-shadow: inset 3px 0 0 #44b97c;
+}
+
+.planning-event-row.is-repas {
+  box-shadow: inset 3px 0 0 #f1a650;
+}
+
+.planning-event-row.is-repos {
+  box-shadow: inset 3px 0 0 #9aa7bd;
+}
+
+.planning-event-row.is-priere {
+  box-shadow: inset 3px 0 0 #77a8ff;
+}
+
+.planning-event-time {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  padding: 12px 10px;
+  background: rgba(255, 255, 255, 0.35);
+  border-right: 1px solid #eadfce;
+}
+
+.planning-event-time-main {
+  font-size: 18px;
+  line-height: 1;
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  color: #17120c;
+}
+
+.planning-event-time-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #b28c63;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.planning-event-copy {
   min-width: 0;
+  padding: 12px 14px;
 }
 
 .planning-event-title {
   margin: 0;
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--text);
+  font-size: 16px;
+  font-weight: 800;
+  color: #1a140c;
 }
 
-.planning-event-location {
-  margin: 8px 0 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  color: var(--text2);
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.planning-location-chip {
+.planning-event-location-line {
+  margin: 6px 0 0;
+  color: #9c8164;
+  font-size: 13px;
   display: inline-flex;
   align-items: center;
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--border);
-  color: var(--text2);
-  font-size: 11.5px;
-  font-weight: 700;
+  gap: 6px;
 }
 
-.planning-event-badges {
-  margin-top: 12px;
+.planning-event-description {
+  margin: 8px 0 0;
+  color: #75695b;
+  font-size: 12px;
+}
+
+.planning-event-side {
   display: flex;
+  align-items: center;
+  gap: 12px;
   flex-wrap: wrap;
-  gap: 8px;
+  justify-content: flex-end;
+  padding: 12px 14px;
 }
 
-.planning-type-pill,
-.planning-time-pill {
+.planning-type-pill {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 28px;
-  padding: 4px 11px;
+  min-height: 24px;
+  padding: 0 10px;
   border-radius: 999px;
-  font-size: 11.5px;
-  font-weight: 700;
+  font-size: 10px;
+  font-weight: 800;
   border: 1px solid transparent;
 }
 
+.planning-event-badges {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .planning-type-pill.is-priere {
-  background: rgba(74, 158, 255, 0.12);
-  color: var(--blue);
+  background: rgba(74, 158, 255, 0.15);
+  color: #2f7ad6;
 }
 
 .planning-type-pill.is-transport {
-  background: rgba(92, 146, 255, 0.12);
-  color: #4d85ff;
+  background: #dcecff;
+  color: #1764c3;
 }
 
 .planning-type-pill.is-visite {
-  background: rgba(80, 205, 137, 0.14);
+  background: rgba(80, 205, 137, 0.18);
   color: #248a4b;
 }
 
 .planning-type-pill.is-repas {
-  background: rgba(255, 174, 102, 0.16);
+  background: rgba(255, 174, 102, 0.2);
   color: #b86a1a;
 }
 
 .planning-type-pill.is-repos {
-  background: rgba(173, 183, 201, 0.16);
+  background: rgba(173, 183, 201, 0.2);
   color: #667287;
 }
 
 .planning-type-pill.is-rite {
-  background: rgba(201, 168, 76, 0.16);
-  color: #9b7b1d;
+  background: #e9e1ff;
+  color: #5d47d6;
 }
 
 .planning-type-pill.is-autre {
@@ -1595,73 +1473,77 @@ watch(selectedGroupId, () => {
   color: var(--text2);
 }
 
-.planning-time-pill {
-  background: rgba(201, 168, 76, 0.1);
-  color: #8c6b12;
-  border: 1px solid rgba(201, 168, 76, 0.18);
-}
-
-
-.planning-event-description {
-  margin: 10px 0 0;
-  font-size: 13px;
-  color: var(--text2);
+.planning-etape-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: #f5e8c8;
+  color: #a76c14;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
 }
 
 .planning-event-actions {
   display: flex;
-  gap: 6px;
-  opacity: 0;
-  pointer-events: none;
-  transform: translateY(4px);
-  transition: opacity 0.16s ease, transform 0.16s ease;
+  gap: 8px;
 }
 
-.planning-event-card:hover .planning-event-actions {
-  opacity: 1;
-  pointer-events: auto;
-  transform: translateY(0);
+.planning-primary-wide {
+  width: 100%;
 }
 
-.planning-state,
-.planning-empty-card {
-  min-height: 240px;
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  border-radius: 18px;
+.group-type-badge {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 5px 12px;
+  border-radius: 999px;
 }
 
-@media (max-width: 1080px) {
-  .planning-workspace {
-    grid-template-columns: 1fr;
-    height: auto;
+.group-type-badge.hajj {
+  background: rgba(201, 168, 76, 0.14);
+  color: var(--gold);
+  border: 1px solid rgba(201, 168, 76, 0.24);
+}
+
+.group-type-badge.umrah {
+  background: rgba(74, 158, 255, 0.1);
+  color: var(--blue);
+  border: 1px solid rgba(74, 158, 255, 0.22);
+}
+
+@media (max-width: 960px) {
+  .planning-hero-card,
+  .planning-days-card,
+  .planning-detail-card {
+    padding: 18px 16px;
   }
 
-  .planning-sidebar {
-    max-height: 360px;
+  .planning-hero-heading-row,
+  .planning-hero-top {
+    align-items: flex-start;
   }
-}
 
-@media (max-width: 920px) {
-  .planning-main-header,
-  .planning-progress-row {
-    display: flex;
+  .planning-hero-actions,
+  .planning-detail-actions {
     flex-direction: column;
-    align-items: stretch;
   }
 
-  .planning-main-actions {
-    justify-content: flex-start;
+  .planning-action-button,
+  .planning-secondary-button {
+    width: 100%;
   }
 
-  .planning-event-card {
+  .planning-event-row {
     grid-template-columns: 1fr;
+    align-items: flex-start;
   }
 
-  .planning-event-actions {
-    opacity: 1;
-    pointer-events: auto;
-    transform: none;
+  .planning-event-side {
+    justify-content: flex-start;
   }
 }
 </style>

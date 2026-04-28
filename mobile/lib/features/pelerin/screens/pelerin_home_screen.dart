@@ -11,6 +11,9 @@ import '../../notifications/screens/mobile_alerts_screen.dart';
 import '../../planning/domain/mobile_planning_models.dart';
 import '../../planning/providers/mobile_planning_provider.dart';
 import '../../planning/screens/role_planning_pages.dart';
+import '../../sos/presentation/sos_screen.dart';
+import '../../sos/presentation/widgets/sos_button.dart';
+import '../../sos/providers/sos_provider.dart';
 
 class PelerinHomeScreen extends ConsumerWidget {
   const PelerinHomeScreen({
@@ -91,6 +94,8 @@ class _PelerinHomeContent extends ConsumerWidget {
           group: selectedGroup,
           planningAsync: planningAsync,
         ),
+        const SizedBox(height: 14),
+        const _PelerinSosPanel(),
         const SizedBox(height: 14),
         const AdhanPanel(
           accentColor: Color(0xFFD4AF37),
@@ -191,6 +196,123 @@ class _PelerinHero extends StatelessWidget {
             nextTitle: nextEvent?.titre,
             nextMeta: _eventMeta(nextEvent),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PelerinSosPanel extends ConsumerWidget {
+  const _PelerinSosPanel();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final sosState = ref.watch(sosControllerProvider);
+    final activeAlert = sosState.valueOrNull;
+    final isLoading = sosState.isLoading;
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.96),
+        borderRadius: BorderRadius.circular(26),
+        border: Border.all(color: AppColors.borderSoft),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: const Color(0x14B3292D),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(
+                  Icons.health_and_safety_outlined,
+                  color: Color(0xFFB3292D),
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Urgence SOS',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      'Utilisez ce bouton uniquement en cas d urgence reelle.',
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        height: 1.4,
+                        color: AppColors.textMuted,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          if (activeAlert?.isActive == true) ...[
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFDF4F4),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: const Color(0x30B3292D)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Secours alertes',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFFB3292D),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Une alerte SOS est deja active depuis ${_formatHour(activeAlert!.createdAt)}.',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      height: 1.45,
+                      color: AppColors.textMuted,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ] else ...[
+            SosHoldButton(
+              loading: isLoading,
+              onTriggered: () async {
+                try {
+                  final alert = await ref
+                      .read(sosControllerProvider.notifier)
+                      .triggerSos();
+                  if (!context.mounted) return;
+                  await showSosConfirmationSheet(context, alert: alert);
+                } catch (error) {
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text(error.toString().replaceFirst('Exception: ', ''))),
+                  );
+                }
+              },
+            ),
+          ],
         ],
       ),
     );

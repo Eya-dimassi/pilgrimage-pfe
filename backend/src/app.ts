@@ -11,6 +11,8 @@ import planningRouter from './modules/agences/planning/planning.router';
 import guideRouter from './modules/agences/guide/guide.router';
 import mobilePlanningRouter from './modules/mobile/planning/planning.router';
 import mobileNotificationsRouter from './modules/mobile/notifications/notifications.router';
+import mobileSosRouter from './modules/mobile/sos/sos.router';
+import mobileGuideSosRouter from './modules/mobile/guide-sos/guide-sos.router';
 
 const app=express();
 
@@ -33,5 +35,7 @@ app.use('/agence/guides', guideRouter);
 app.use('/agence', agencesRouter);
 app.use('/mobile/planning', mobilePlanningRouter);
 app.use('/mobile/notifications', mobileNotificationsRouter);
+app.use('/mobile/sos', mobileSosRouter);
+app.use('/mobile/guide/sos', mobileGuideSosRouter);
 
 export default app;
