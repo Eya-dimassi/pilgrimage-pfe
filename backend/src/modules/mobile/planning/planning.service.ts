@@ -374,6 +374,17 @@ function shiftASTDay(baseDay: Date, offsetDays: number): Date {
   return new Date(baseDay.getTime() + offsetDays * DAY_MS)
 }
 
+function keepFromTripStart<T extends { date: Date }>(
+  plannings: T[],
+  dateDepart: Date | null,
+): T[] {
+  if (!dateDepart) return plannings
+  const tripStart = startOfASTDay(dateDepart)
+  return plannings.filter((planning) =>
+    startOfASTDay(planning.date).getTime() >= tripStart.getTime(),
+  )
+}
+
 // Picks a limited day window around today (for example yesterday/today/tomorrow).
 function pickVisiblePlanningWindow<T extends { date: Date }>(
   plannings: T[],
@@ -418,30 +429,15 @@ async function getWindowedPlanningForGroup(
     },
   })
 
-  const visiblePlannings: any[] = dayOffsets.length === 1 && dayOffsets[0] === 0
+  let visiblePlannings = dayOffsets.length === 1 && dayOffsets[0] === 0
     ? (() => {
         const selectedPlanning = pickVisiblePlanningDay(plannings)
         return selectedPlanning == null ? [] : [selectedPlanning]
       })()
     : pickVisiblePlanningWindow(plannings, dayOffsets)
 
-  // For pelerin only: keep J-1 visible as an empty day when it is before trip start.
-  if (role === 'PELERIN' && dayOffsets.includes(-1) && groupe.dateDepart) {
-    const today = startOfASTDay(new Date())
-    const yesterday = shiftASTDay(today, -1)
-    const tripStart = startOfASTDay(groupe.dateDepart)
-    const hasYesterdayPlanning = visiblePlannings.some((planning) =>
-      isSameASTDay(planning.date, yesterday),
-    )
-
-    if (yesterday.getTime() < tripStart.getTime() && !hasYesterdayPlanning) {
-      visiblePlannings.unshift({
-        id: `virtual-pretrip-${groupeId}-${yesterday.toISOString()}`,
-        date: yesterday,
-        titre: null,
-        evenements: [],
-      })
-    }
+  if (role === 'PELERIN') {
+    visiblePlannings = keepFromTripStart(visiblePlannings, groupe.dateDepart)
   }
 
   visiblePlannings.sort((left, right) => left.date.getTime() - right.date.getTime())
@@ -486,7 +482,8 @@ export async function getMobilePlanningForGroup(userId: string, role: string, gr
       },
     },
   })
-  const planningsWithValidation = await attachEventValidation(plannings)
+  const visiblePlannings = keepFromTripStart(plannings, groupe.dateDepart)
+  const planningsWithValidation = await attachEventValidation(visiblePlannings)
 
   return {
     groupe,
