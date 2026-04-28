@@ -1,4 +1,5 @@
 import prisma from '../../../config/prisma'
+import { Prisma } from '../../../../generated/prisma/client'
 import { isSameASTDay, startOfASTDay } from '../../agences/planning/date.utils'
 
 const MOBILE_GROUP_SELECT = {
@@ -11,6 +12,33 @@ const MOBILE_GROUP_SELECT = {
   status: true,
 } as const
 
+const MOBILE_GROUP_WITH_COUNT_SELECT = {
+  ...MOBILE_GROUP_SELECT,
+  _count: {
+    select: {
+      membres: {
+        where: { actif: true },
+      },
+    },
+  },
+} as const
+
+type EventValidationRow = {
+  id: string
+  estValide: boolean | null
+  valideeAt: Date | null
+  valideParGuideId: string | null
+}
+
+type OrderedGroupEventRow = {
+  id: string
+  titre: string
+  estValide: boolean | null
+  heureDebutPrevue: Date | null
+  createdAt: Date
+  planningDate: Date
+}
+
 // Resolves the currently authenticated mobile user into the active groups they can consult.
 export async function getMobilePlanningGroups(userId: string, role: string) {
   if (role === 'GUIDE') {
@@ -22,13 +50,21 @@ export async function getMobilePlanningGroups(userId: string, role: string) {
       orderBy: { dateDebut: 'desc' },
       select: {
         groupe: {
-          select: MOBILE_GROUP_SELECT,
+          select: MOBILE_GROUP_WITH_COUNT_SELECT,
         },
       },
     })
 
     return relations
-      .map((relation) => relation.groupe)
+      .map((relation) => {
+        const groupe = relation.groupe
+        if (!groupe) return null
+        const { _count, ...rest } = groupe
+        return {
+          ...rest,
+          nbPelerins: _count.membres,
+        }
+      })
       .filter((groupe): groupe is NonNullable<typeof groupe> => Boolean(groupe))
   }
 
@@ -149,14 +185,215 @@ async function assertMobilePlanningAccess(userId: string, role: string, groupeId
   throw new Error('Role mobile non pris en charge')
 }
 
+export async function validateMobilePlanningEvent(
+  userId: string,
+  role: string,
+  groupeId: string,
+  eventId: string,
+) {
+  if (role !== 'GUIDE') {
+    throw new Error('Seul un guide peut valider un evenement')
+  }
+
+  await assertMobilePlanningAccess(userId, role, groupeId)
+
+  const guide = await prisma.guide.findUnique({
+    where: { utilisateurId: userId },
+    select: { id: true },
+  })
+
+  if (!guide) {
+    throw new Error('Profil guide introuvable')
+  }
+
+  const orderedEvents = await prisma.$queryRaw<OrderedGroupEventRow[]>`
+    SELECT
+      ep."id",
+      ep."titre",
+      ep."estValide",
+      ep."heureDebutPrevue",
+      ep."createdAt",
+      pq."date" AS "planningDate"
+    FROM "EvenementPlanning" ep
+    INNER JOIN "PlanningQuotidien" pq ON pq."id" = ep."planningQuotidienId"
+    WHERE pq."groupeId" = ${groupeId}
+    ORDER BY
+      pq."date" ASC,
+      CASE WHEN ep."heureDebutPrevue" IS NULL THEN 1 ELSE 0 END ASC,
+      ep."heureDebutPrevue" ASC,
+      ep."createdAt" ASC,
+      ep."id" ASC
+  `
+
+  const eventIndex = orderedEvents.findIndex((event) => event.id === eventId)
+
+  if (eventIndex < 0) {
+    throw new Error('Evenement introuvable dans ce groupe')
+  }
+
+  const targetEvent = orderedEvents[eventIndex]
+
+  const existingValidation = await prisma.$queryRaw<EventValidationRow[]>`
+    SELECT "id", "estValide", "valideeAt", "valideParGuideId"
+    FROM "EvenementPlanning"
+    WHERE "id" = ${targetEvent.id}
+    LIMIT 1
+  `
+
+  if (targetEvent.estValide) {
+    return {
+      message: 'Evenement deja valide',
+      evenement: existingValidation[0],
+    }
+  }
+
+  let previousPendingEvent: OrderedGroupEventRow | null = null
+  for (let index = eventIndex - 1; index >= 0; index -= 1) {
+    if (!orderedEvents[index].estValide) {
+      previousPendingEvent = orderedEvents[index]
+      break
+    }
+  }
+
+  if (previousPendingEvent) {
+    throw new Error(
+      `Validation refusee: validez d'abord l'evenement precedent (${previousPendingEvent.titre}).`,
+    )
+  }
+
+  const updatedRows = await prisma.$queryRaw<EventValidationRow[]>`
+    UPDATE "EvenementPlanning"
+    SET
+      "estValide" = TRUE,
+      "valideParGuideId" = ${guide.id},
+      "valideeAt" = NOW()
+    WHERE "id" = ${targetEvent.id}
+    RETURNING "id", "estValide", "valideeAt", "valideParGuideId"
+  `
+
+  if (!updatedRows.length) {
+    throw new Error('Evenement introuvable dans ce groupe')
+  }
+
+  return {
+    message: 'Evenement valide avec succes',
+    evenement: updatedRows[0],
+  }
+}
+
+export async function getMobileGroupPelerins(
+  userId: string,
+  role: string,
+  groupeId: string,
+) {
+  if (role !== 'GUIDE') {
+    throw new Error('Seul un guide peut consulter la liste des pelerins')
+  }
+
+  await assertMobilePlanningAccess(userId, role, groupeId)
+
+  const groupe = await prisma.groupe.findUnique({
+    where: { id: groupeId },
+    select: {
+      membres: {
+        where: { actif: true },
+        select: {
+          pelerin: {
+            select: {
+              id: true,
+              utilisateur: {
+                select: {
+                  nom: true,
+                  prenom: true,
+                  telephone: true,
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+
+  if (!groupe) {
+    throw new Error('Groupe introuvable')
+  }
+
+  return groupe.membres
+    .map((membre) => ({
+      id: membre.pelerin.id,
+      nom: membre.pelerin.utilisateur.nom,
+      prenom: membre.pelerin.utilisateur.prenom,
+      telephone: membre.pelerin.utilisateur.telephone,
+    }))
+    .sort((a, b) =>
+      `${a.prenom} ${a.nom}`.localeCompare(`${b.prenom} ${b.nom}`, 'fr', {
+        sensitivity: 'base',
+      }),
+    )
+}
+
+async function attachEventValidation<T extends { evenements: Array<{ id: string }> }>(
+  plannings: T[],
+) {
+  const eventIds = plannings.flatMap((planning) => planning.evenements.map((event) => event.id))
+
+  if (!eventIds.length) {
+    return plannings
+  }
+
+  const rows = await prisma.$queryRaw<EventValidationRow[]>`
+    SELECT "id", "estValide", "valideeAt", "valideParGuideId"
+    FROM "EvenementPlanning"
+    WHERE "id" IN (${Prisma.join(eventIds)})
+  `
+  const validationByEventId = new Map(rows.map((row) => [row.id, row]))
+
+  return plannings.map((planning) => ({
+    ...planning,
+    evenements: planning.evenements.map((event) => {
+      const validation = validationByEventId.get(event.id)
+      return {
+        ...event,
+        estValide: Boolean(validation?.estValide),
+        valideeAt: validation?.valideeAt ?? null,
+        valideParGuideId: validation?.valideParGuideId ?? null,
+      }
+    }),
+  }))
+}
+
 // Picks today's planning day for day-only mobile views.
-function pickVisiblePlanningDay(plannings: Array<{ date: Date }>) {
+function pickVisiblePlanningDay<T extends { date: Date }>(plannings: T[]): T | null {
   const today = startOfASTDay(new Date())
   return plannings.find((planning) => isSameASTDay(planning.date, today)) ?? null
 }
 
+function shiftASTDay(baseDay: Date, offsetDays: number): Date {
+  const DAY_MS = 24 * 60 * 60 * 1000
+  return new Date(baseDay.getTime() + offsetDays * DAY_MS)
+}
+
+// Picks a limited day window around today (for example yesterday/today/tomorrow).
+function pickVisiblePlanningWindow<T extends { date: Date }>(
+  plannings: T[],
+  offsets: number[],
+): T[] {
+  const today = startOfASTDay(new Date())
+  const targetDays = offsets.map((offset) => shiftASTDay(today, offset))
+
+  return plannings.filter((planning) =>
+    targetDays.some((targetDay) => isSameASTDay(planning.date, targetDay)),
+  )
+}
+
 // Returns only the planning day relevant to a mobile day-only role.
-async function getDayOnlyPlanningForGroup(userId: string, role: 'FAMILLE' | 'PELERIN', groupeId: string) {
+async function getWindowedPlanningForGroup(
+  userId: string,
+  role: 'FAMILLE' | 'PELERIN',
+  groupeId: string,
+  dayOffsets: number[],
+) {
   await assertMobilePlanningAccess(userId, role, groupeId)
 
   const groupe = await prisma.groupe.findUnique({
@@ -181,18 +418,49 @@ async function getDayOnlyPlanningForGroup(userId: string, role: 'FAMILLE' | 'PEL
     },
   })
 
-  const selectedPlanning = pickVisiblePlanningDay(plannings)
+  const visiblePlannings: any[] = dayOffsets.length === 1 && dayOffsets[0] === 0
+    ? (() => {
+        const selectedPlanning = pickVisiblePlanningDay(plannings)
+        return selectedPlanning == null ? [] : [selectedPlanning]
+      })()
+    : pickVisiblePlanningWindow(plannings, dayOffsets)
+
+  // For pelerin only: keep J-1 visible as an empty day when it is before trip start.
+  if (role === 'PELERIN' && dayOffsets.includes(-1) && groupe.dateDepart) {
+    const today = startOfASTDay(new Date())
+    const yesterday = shiftASTDay(today, -1)
+    const tripStart = startOfASTDay(groupe.dateDepart)
+    const hasYesterdayPlanning = visiblePlannings.some((planning) =>
+      isSameASTDay(planning.date, yesterday),
+    )
+
+    if (yesterday.getTime() < tripStart.getTime() && !hasYesterdayPlanning) {
+      visiblePlannings.unshift({
+        id: `virtual-pretrip-${groupeId}-${yesterday.toISOString()}`,
+        date: yesterday,
+        titre: null,
+        evenements: [],
+      })
+    }
+  }
+
+  visiblePlannings.sort((left, right) => left.date.getTime() - right.date.getTime())
+  const planningsWithValidation = await attachEventValidation(visiblePlannings)
 
   return {
     groupe,
-    plannings: selectedPlanning ? [selectedPlanning] : [],
+    plannings: planningsWithValidation,
   }
 }
 
 // Returns the full read-only planning for one accessible group.
 export async function getMobilePlanningForGroup(userId: string, role: string, groupeId: string) {
-  if (role === 'FAMILLE' || role === 'PELERIN') {
-    return getDayOnlyPlanningForGroup(userId, role, groupeId)
+  if (role === 'FAMILLE') {
+    return getWindowedPlanningForGroup(userId, role, groupeId, [0])
+  }
+
+  if (role === 'PELERIN') {
+    return getWindowedPlanningForGroup(userId, role, groupeId, [-1, 0, 1])
   }
 
   await assertMobilePlanningAccess(userId, role, groupeId)
@@ -218,9 +486,10 @@ export async function getMobilePlanningForGroup(userId: string, role: string, gr
       },
     },
   })
+  const planningsWithValidation = await attachEventValidation(plannings)
 
   return {
     groupe,
-    plannings,
+    plannings: planningsWithValidation,
   }
 }

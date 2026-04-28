@@ -217,13 +217,8 @@ class InfoCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final toneColor = card.toneColor ?? accentColor;
 
-    return Container(
+    final content = Padding(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.card.withValues(alpha: 0.95),
-        borderRadius: BorderRadius.circular(26),
-        border: Border.all(color: AppColors.borderSoft),
-      ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -271,13 +266,29 @@ class InfoCard extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
-          Icon(
-            Icons.arrow_outward_rounded,
-            color: toneColor,
-            size: 18,
-          ),
+          if (card.onTap != null)
+            Icon(
+              Icons.arrow_outward_rounded,
+              color: toneColor,
+              size: 18,
+            ),
         ],
       ),
+    );
+
+    return Material(
+      color: AppColors.card.withValues(alpha: 0.95),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(26),
+        side: const BorderSide(color: AppColors.borderSoft),
+      ),
+      child: card.onTap == null
+          ? content
+          : InkWell(
+              onTap: card.onTap,
+              borderRadius: BorderRadius.circular(26),
+              child: content,
+            ),
     );
   }
 }
@@ -289,6 +300,7 @@ class InfoCardData {
     required this.icon,
     this.tag,
     this.toneColor,
+    this.onTap,
   });
 
   final String title;
@@ -296,6 +308,7 @@ class InfoCardData {
   final IconData icon;
   final String? tag;
   final Color? toneColor;
+  final VoidCallback? onTap;
 }
 
 class HomeStatData {

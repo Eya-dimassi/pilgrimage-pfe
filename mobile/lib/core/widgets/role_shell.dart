@@ -47,6 +47,30 @@ class _RoleShellState extends ConsumerState<RoleShell> {
   @override
   Widget build(BuildContext context) {
     final unreadCount = ref.watch(unreadNotificationsCountProvider);
+    final destinations = [
+      const _ShellDestination(
+        label: 'Accueil',
+        icon: Icons.home_outlined,
+        activeIcon: Icons.home_rounded,
+      ),
+      const _ShellDestination(
+        label: 'Planning',
+        icon: Icons.calendar_today_outlined,
+        activeIcon: Icons.calendar_month_rounded,
+      ),
+      _ShellDestination(
+        label: 'Alertes',
+        icon: Icons.notifications_none_rounded,
+        activeIcon: Icons.notifications_rounded,
+        badgeCount: unreadCount,
+      ),
+      const _ShellDestination(
+        label: 'Profil',
+        icon: Icons.person_outline_rounded,
+        activeIcon: Icons.person_rounded,
+      ),
+    ];
+
     final pages = [
       widget.homeChild,
       widget.planningChild ??
@@ -76,148 +100,233 @@ class _RoleShellState extends ConsumerState<RoleShell> {
           ),
         ),
       ),
-      bottomNavigationBar: DecoratedBox(
-        decoration: BoxDecoration(
-          color: AppColors.card.withValues(alpha: 0.98),
-          border: const Border(
-            top: BorderSide(color: AppColors.borderSoft),
-          ),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x12000000),
-              blurRadius: 18,
-              offset: Offset(0, -6),
+      bottomNavigationBar: _MagicBottomNavigation(
+        items: destinations,
+        currentIndex: _currentIndex,
+        onSelected: (index) => setState(() => _currentIndex = index),
+      ),
+    );
+  }
+}
+
+class _MagicBottomNavigation extends StatelessWidget {
+  const _MagicBottomNavigation({
+    required this.items,
+    required this.currentIndex,
+    required this.onSelected,
+  });
+
+  final List<_ShellDestination> items;
+  final int currentIndex;
+  final ValueChanged<int> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      top: false,
+      minimum: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final slotWidth = constraints.maxWidth / items.length;
+          const bubbleSize = 56.0;
+          final bubbleLeft =
+              (slotWidth * currentIndex) + ((slotWidth - bubbleSize) / 2);
+
+          return SizedBox(
+            height: 78,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: Container(
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: AppColors.card.withValues(alpha: 0.98),
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(color: AppColors.borderSoft),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Color(0x18000000),
+                          blurRadius: 24,
+                          offset: Offset(0, 10),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: List.generate(items.length, (index) {
+                        final destination = items[index];
+                        final active = index == currentIndex;
+
+                        return Expanded(
+                          child: Tooltip(
+                            message: destination.label,
+                            child: Semantics(
+                              button: true,
+                              selected: active,
+                              label: destination.label,
+                              child: InkWell(
+                                onTap: () => onSelected(index),
+                                borderRadius: BorderRadius.circular(14),
+                                child: Center(
+                                  child: AnimatedOpacity(
+                                    duration: const Duration(milliseconds: 180),
+                                    curve: Curves.easeOut,
+                                    opacity: active ? 0.0 : 1.0,
+                                    child: Stack(
+                                      clipBehavior: Clip.none,
+                                      children: [
+                                        Icon(
+                                          destination.icon,
+                                          size: 22,
+                                          color: AppColors.textMuted,
+                                        ),
+                                        if (destination.badgeCount > 0)
+                                          Positioned(
+                                            right: -8,
+                                            top: -7,
+                                            child: _UnreadBadge(
+                                              count: destination.badgeCount,
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      }),
+                    ),
+                  ),
+                ),
+                AnimatedPositioned(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOutCubic,
+                  left: bubbleLeft,
+                  top: 0,
+                  child: _ActiveNavBubble(
+                    icon: items[currentIndex].activeIcon,
+                    badgeCount: items[currentIndex].badgeCount,
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-        child: SafeArea(
-          top: false,
-          child: Row(
-            children: [
-              _BottomNavItem(
-                icon: Icons.home_rounded,
-                label: 'Accueil',
-                active: _currentIndex == 0,
-                onTap: () => setState(() => _currentIndex = 0),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _ActiveNavBubble extends StatelessWidget {
+  const _ActiveNavBubble({
+    required this.icon,
+    this.badgeCount = 0,
+  });
+
+  final IconData icon;
+  final int badgeCount;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 56,
+      height: 56,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: const Color(0xFF69B8EA),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x32000000),
+                  blurRadius: 16,
+                  offset: Offset(0, 8),
+                ),
+              ],
+            ),
+            padding: const EdgeInsets.all(4),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white,
+                border: Border.all(
+                  color: const Color(0xFFB9E4FF),
+                  width: 1.6,
+                ),
               ),
-              _BottomNavItem(
-                icon: Icons.calendar_today_outlined,
-                label: 'Planning',
-                active: _currentIndex == 1,
-                onTap: () => setState(() => _currentIndex = 1),
+              child: Icon(
+                icon,
+                color: AppColors.text,
+                size: 24,
               ),
-              _BottomNavItem(
-                icon: Icons.notifications_none_rounded,
-                label: 'Alertes',
-                active: _currentIndex == 2,
-                badgeCount: unreadCount,
-                onTap: () => setState(() => _currentIndex = 2),
-              ),
-              _BottomNavItem(
-                icon: Icons.person_outline_rounded,
-                label: 'Profil',
-                active: _currentIndex == 3,
-                onTap: () => setState(() => _currentIndex = 3),
-              ),
-            ],
+            ),
           ),
+          if (badgeCount > 0)
+            Positioned(
+              right: -4,
+              top: -3,
+              child: _UnreadBadge(count: badgeCount),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _UnreadBadge extends StatelessWidget {
+  const _UnreadBadge({
+    required this.count,
+  });
+
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(
+        minWidth: 16,
+        minHeight: 16,
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE58E73),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: AppColors.card, width: 1.4),
+      ),
+      child: Text(
+        count > 99 ? '99+' : '$count',
+        textAlign: TextAlign.center,
+        style: const TextStyle(
+          fontSize: 9,
+          fontWeight: FontWeight.w800,
+          color: Colors.white,
         ),
       ),
     );
   }
 }
 
-class _BottomNavItem extends StatelessWidget {
-  const _BottomNavItem({
-    required this.icon,
+class _ShellDestination {
+  const _ShellDestination({
     required this.label,
-    required this.active,
-    required this.onTap,
+    required this.icon,
+    required this.activeIcon,
     this.badgeCount = 0,
   });
 
-  final IconData icon;
   final String label;
-  final bool active;
-  final VoidCallback onTap;
+  final IconData icon;
+  final IconData activeIcon;
   final int badgeCount;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = active ? AppColors.gold : AppColors.textMuted;
-
-    return Expanded(
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(0),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 220),
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          decoration: BoxDecoration(
-            color: active ? AppColors.goldSoft.withValues(alpha: 0.65) : Colors.transparent,
-            border: active
-                ? const Border(
-                    top: BorderSide(
-                      color: AppColors.gold,
-                      width: 2,
-                    ),
-                  )
-                : null,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Icon(
-                    icon,
-                    size: 21,
-                    color: color,
-                  ),
-                  if (badgeCount > 0)
-                    Positioned(
-                      right: -8,
-                      top: -6,
-                      child: Container(
-                        constraints: const BoxConstraints(
-                          minWidth: 16,
-                          minHeight: 16,
-                        ),
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFE58E73),
-                          borderRadius: BorderRadius.circular(999),
-                          border: Border.all(color: AppColors.card, width: 1.4),
-                        ),
-                        child: Text(
-                          badgeCount > 99 ? '99+' : '$badgeCount',
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontSize: 9,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 2),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-                  color: color,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 class _FeaturePlaceholder extends StatelessWidget {

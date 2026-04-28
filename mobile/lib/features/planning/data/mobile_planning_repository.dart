@@ -41,12 +41,14 @@ class MobilePlanningRepository {
     }
   }
 
-  Future<MobilePlanningEvent> validateEvent(String eventId) async {
+  Future<void> validateEvent({
+    required String groupeId,
+    required String eventId,
+  }) async {
     try {
-      final response = await _dio.patch<Map<String, dynamic>>(
-        ApiEndpoints.validatePlanningEvent(eventId),
+      await _dio.put(
+        ApiEndpoints.mobilePlanningValidateEvent(groupeId, eventId),
       );
-      return MobilePlanningEvent.fromJson(response.data ?? const {});
     } on DioException catch (error) {
       throw AuthException.fromDio(error);
     }

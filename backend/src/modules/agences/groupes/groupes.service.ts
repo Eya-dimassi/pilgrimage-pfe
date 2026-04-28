@@ -575,7 +575,7 @@ export const assignerPelerin = async (
   }
 
   if (['TERMINE', 'ANNULE'].includes(groupe.status)) {
-    throw new Error("Impossible d'affecter des pelerins ")
+    throw new Error("Impossible d'affecter des pelerins à un groupe terminé ou annulé")
   }
 
   const groupeStart = groupe.dateDepart ?? null

@@ -415,52 +415,53 @@ export const familySignup = async (data: {
 
   const hash = await bcrypt.hash(data.motDePasse, 10);
 
-  const famille = await prisma.famille.create({
-    data: {
-      lienParente: data.lienParente?.trim() || null,
-      agence: {
-        connect: {
-          id: pelerin.agenceId,
-        },
+  const familleId = uuidv4();
+  const now = new Date();
+  const lienParente = data.lienParente?.trim() || null;
+
+  const created = await prisma.$transaction(async (tx) => {
+    const utilisateur = await tx.utilisateur.create({
+      data: {
+        email: normalizedEmail,
+        motDePasse: hash,
+        nom: data.nom.trim(),
+        prenom: data.prenom.trim(),
+        telephone: data.telephone?.trim() || null,
+        role: Role.FAMILLE,
+        actif: true,
       },
-      utilisateur: {
-        create: {
-          email: normalizedEmail,
-          motDePasse: hash,
-          nom: data.nom.trim(),
-          prenom: data.prenom.trim(),
-          telephone: data.telephone?.trim() || null,
-          role: Role.FAMILLE,
-          actif: true,
-        },
+      select: {
+        id: true,
+        email: true,
+        nom: true,
+        prenom: true,
       },
-      associations: {
-        create: {
-          pelerinId: pelerin.id,
-        },
+    });
+
+    // Prisma Client ici est visiblement desynchronise du schema DB (agenceId requis sur Famille).
+    // On insere via SQL brut pour fournir agenceId et eviter la violation NOT NULL.
+    await tx.$executeRaw`
+      INSERT INTO "Famille" ("id", "utilisateurId", "agenceId", "lienParente", "createdAt", "updatedAt")
+      VALUES (${familleId}, ${utilisateur.id}, ${pelerin.agenceId}, ${lienParente}, ${now}, ${now})
+    `;
+
+    await tx.famillePelerin.create({
+      data: {
+        familleId,
+        pelerinId: pelerin.id,
       },
-    },
-    include: {
-      utilisateur: {
-        select: {
-          id: true,
-          email: true,
-          nom: true,
-          prenom: true,
-        },
+      select: {
+        pelerinId: true,
       },
-      associations: {
-        select: {
-          pelerinId: true,
-        },
-      },
-    },
+    });
+
+    return utilisateur;
   });
 
   return {
     message: 'Compte famille cree avec succes. Vous pouvez maintenant vous connecter.',
-    familleId: famille.id,
-    utilisateurId: famille.utilisateur.id,
+    familleId,
+    utilisateurId: created.id,
     agenceId: pelerin.agenceId,
     pelerin: {
       id: pelerin.id,

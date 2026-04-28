@@ -32,7 +32,7 @@ class MobilePlanningScreen extends ConsumerStatefulWidget {
 class _MobilePlanningScreenState extends ConsumerState<MobilePlanningScreen> {
   String? _selectedGroupId;
   String? _selectedPlanningId;
-  String? _validatingEventId;
+  final Set<String> _validatingEventIds = <String>{};
 
   @override
   void didUpdateWidget(covariant MobilePlanningScreen oldWidget) {
@@ -48,7 +48,7 @@ class _MobilePlanningScreenState extends ConsumerState<MobilePlanningScreen> {
   @override
   Widget build(BuildContext context) {
     final groupsAsync = ref.watch(mobilePlanningGroupsProvider);
-    final isDayOnly = widget.view != PlanningRoleView.guide;
+    final isDayOnly = widget.view == PlanningRoleView.famille;
     final showGroupTabs = widget.view == PlanningRoleView.guide;
 
     return groupsAsync.when(
@@ -215,13 +215,14 @@ class _MobilePlanningScreenState extends ConsumerState<MobilePlanningScreen> {
                       _SelectedDaySection(
                         planning: selectedDay,
                         dayNumber: selectedDayNumber,
-                        showGuideValidation:
-                            widget.view == PlanningRoleView.guide,
-                        validatingEventId: _validatingEventId,
-                        onValidateEvent: (event) => _validateEvent(
-                          event: event,
-                          groupeId: selectedGroup.id,
-                        ),
+                        isGuide: widget.view == PlanningRoleView.guide,
+                        validatingEventIds: _validatingEventIds,
+                        onValidateEvent: widget.view == PlanningRoleView.guide
+                            ? (event) => _validateEvent(
+                                  groupeId: selectedGroup.id,
+                                  event: event,
+                                )
+                            : null,
                       ),
                   ],
                 ],
@@ -292,6 +293,27 @@ class _MobilePlanningScreenState extends ConsumerState<MobilePlanningScreen> {
   }
 
   MobilePlanningDay _pickBestPlanning(List<MobilePlanningDay> plannings) {
+    if (widget.view == PlanningRoleView.pelerin) {
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+
+      for (final planning in plannings) {
+        final planningDay = DateTime(
+          planning.date.year,
+          planning.date.month,
+          planning.date.day,
+        );
+        if (planningDay.isAtSameMomentAs(today)) {
+          return planning;
+        }
+        if (planningDay.isAfter(today)) {
+          return planning;
+        }
+      }
+
+      return plannings.last;
+    }
+
     return plannings.first;
   }
 
@@ -299,30 +321,31 @@ class _MobilePlanningScreenState extends ConsumerState<MobilePlanningScreen> {
     required MobilePlanningEvent event,
     required String groupeId,
   }) async {
-    if (_validatingEventId != null || !event.canBeValidated) return;
+    if (!event.canBeValidated || _validatingEventIds.contains(event.id)) return;
 
-    setState(() {
-      _validatingEventId = event.id;
-    });
+    setState(() => _validatingEventIds.add(event.id));
 
     try {
-      await ref.read(mobilePlanningRepositoryProvider).validateEvent(event.id);
+      await ref.read(mobilePlanningRepositoryProvider).validateEvent(
+            groupeId: groupeId,
+            eventId: event.id,
+          );
       ref.invalidate(mobilePlanningDetailProvider(groupeId));
-      ref.invalidate(mobilePlanningGroupsProvider);
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Etape validee')),
-      );
+      await ref.read(mobilePlanningDetailProvider(groupeId).future);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Etape validee')),
+        );
+      }
     } catch (error) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.toString())),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Validation impossible: $error')),
+        );
+      }
     } finally {
       if (mounted) {
-        setState(() {
-          _validatingEventId = null;
-        });
+        setState(() => _validatingEventIds.remove(event.id));
       }
     }
   }
@@ -899,16 +922,16 @@ class _SelectedDaySection extends StatelessWidget {
   const _SelectedDaySection({
     required this.planning,
     required this.dayNumber,
-    required this.showGuideValidation,
-    required this.validatingEventId,
+    required this.isGuide,
+    required this.validatingEventIds,
     required this.onValidateEvent,
   });
 
   final MobilePlanningDay planning;
   final int dayNumber;
-  final bool showGuideValidation;
-  final String? validatingEventId;
-  final ValueChanged<MobilePlanningEvent> onValidateEvent;
+  final bool isGuide;
+  final Set<String> validatingEventIds;
+  final ValueChanged<MobilePlanningEvent>? onValidateEvent;
 
   @override
   Widget build(BuildContext context) {
@@ -957,40 +980,85 @@ class _SelectedDaySection extends StatelessWidget {
           )
         else
           ...planning.evenements.asMap().entries.map(
-            (entry) => _TimelineEventTile(
-              event: entry.value,
-              isLast: entry.key == planning.evenements.length - 1,
-              showGuideValidation: showGuideValidation,
-              isValidating: validatingEventId == entry.value.id,
-              onValidate: () => onValidateEvent(entry.value),
-            ),
+            (entry) {
+              final event = entry.value;
+              return _TimelineEventTile(
+                event: event,
+                isLast: entry.key == planning.evenements.length - 1,
+                canValidate: isGuide && !event.estValide,
+                isValidating: validatingEventIds.contains(event.id),
+                onValidate: onValidateEvent == null
+                    ? null
+                    : () {
+                        _confirmAndValidateEvent(
+                          context,
+                          event,
+                          onValidateEvent!,
+                        );
+                      },
+              );
+            },
           ),
       ],
     );
   }
 }
 
+Future<void> _confirmAndValidateEvent(
+  BuildContext context,
+  MobilePlanningEvent event,
+  ValueChanged<MobilePlanningEvent> onValidateEvent,
+) async {
+  final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Confirmer la validation'),
+          content: Text(
+            'Voulez-vous valider cet evenement : "${event.titre}" ?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Annuler'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text('Valider'),
+            ),
+          ],
+        ),
+      ) ??
+      false;
+
+  if (!context.mounted || !confirmed) {
+    return;
+  }
+
+  onValidateEvent(event);
+}
+
 class _TimelineEventTile extends StatelessWidget {
   const _TimelineEventTile({
     required this.event,
     required this.isLast,
-    required this.showGuideValidation,
+    required this.canValidate,
     required this.isValidating,
-    required this.onValidate,
+    this.onValidate,
   });
 
   final MobilePlanningEvent event;
   final bool isLast;
-  final bool showGuideValidation;
+  final bool canValidate;
   final bool isValidating;
-  final VoidCallback onValidate;
+  final VoidCallback? onValidate;
 
   @override
   Widget build(BuildContext context) {
     final displayTime = event.heureDebutPrevue != null
         ? _formatHour(event.heureDebutPrevue!)
         : '--:--';
-    final canShowValidation = showGuideValidation && event.type != 'PRIERE';
+    final canShowValidation =
+        event.type != 'PRIERE' && (canValidate || event.estValide);
 
     return IntrinsicHeight(
       child: Row(
@@ -1012,8 +1080,8 @@ class _TimelineEventTile extends StatelessWidget {
                 Container(
                   width: 10,
                   height: 10,
-                  decoration: const BoxDecoration(
-                    color: AppColors.gold,
+                  decoration: BoxDecoration(
+                    color: event.estValide ? AppColors.green : AppColors.gold,
                     shape: BoxShape.circle,
                   ),
                 ),
@@ -1101,8 +1169,27 @@ class _TimelineEventTile extends StatelessWidget {
                             foreground: AppColors.textMuted,
                           ),
                         ],
+                        if (event.estValide) ...[
+                          const SizedBox(width: 8),
+                          const _MetaPill(
+                            label: 'Valide',
+                            background: AppColors.greenSoft,
+                            foreground: AppColors.green,
+                          ),
+                        ],
                       ],
                     ),
+                    if (event.estValide && event.valideeAt != null) ...[
+                      const SizedBox(height: 10),
+                      Text(
+                        'Valide a ${_formatHour(event.valideeAt!)}',
+                        style: const TextStyle(
+                          fontSize: 12.5,
+                          color: AppColors.textMuted,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                     if (event.description?.trim().isNotEmpty == true) ...[
                       const SizedBox(height: 12),
                       Text(
