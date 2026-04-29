@@ -1,10 +1,9 @@
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/network/api_error_message.dart';
-import '../../../core/network/dio_client.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../planning/domain/mobile_planning_models.dart';
+import '../../planning/providers/mobile_planning_provider.dart';
 
 class GuideGroupePelerinsSheet extends ConsumerStatefulWidget {
   const GuideGroupePelerinsSheet({
@@ -25,191 +24,164 @@ class _GuideGroupePelerinsSheetState
     extends ConsumerState<GuideGroupePelerinsSheet> {
   final _searchController = TextEditingController();
 
-  bool _loading = true;
-  String? _error;
-  List<GuidePelerinItem> _items = const [];
-
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
-
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
   }
 
-  Future<void> _load() async {
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
-
-    final dio = ref.read(dioProvider);
-    try {
-      final response =
-          await dio.get('/mobile/planning/groupes/${widget.groupeId}/pelerins');
-      final raw = response.data;
-      final list = raw is List ? raw : const [];
-      setState(() {
-        _items = list
-            .whereType<Map>()
-            .map((e) => GuidePelerinItem.fromJson(e.cast<String, dynamic>()))
-            .toList();
-      });
-    } on DioException catch (error) {
-      setState(() => _error = apiErrorMessage(error));
-    } catch (_) {
-      setState(() => _error = 'Une erreur est survenue. Reessayez.');
-    } finally {
-      if (mounted) setState(() => _loading = false);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
+    final pelerinsAsync = ref.watch(
+      mobilePlanningGroupPelerinsProvider(widget.groupeId),
+    );
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
     final height = MediaQuery.of(context).size.height;
 
-    final query = _searchController.text.trim().toLowerCase();
-    final visibleItems = query.isEmpty
-        ? _items
-        : _items
-            .where(
-              (p) =>
-                  p.fullName.toLowerCase().contains(query) ||
-                  (p.telephone ?? '').toLowerCase().contains(query),
-            )
-            .toList();
-
     return SafeArea(
       child: Padding(
-        padding: EdgeInsets.fromLTRB(16, 12, 16, 16 + bottomInset),
+        padding: EdgeInsets.fromLTRB(16, 10, 16, 14 + bottomInset),
         child: Material(
           color: AppColors.card,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
+            borderRadius: BorderRadius.circular(22),
             side: const BorderSide(color: AppColors.borderSoft),
           ),
           child: SizedBox(
             height: height * 0.92,
-            child: _loading
-                ? const Center(
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2.4,
-                      color: AppColors.gold,
-                    ),
-                  )
-                : _error != null
-                    ? Padding(
-                        padding: const EdgeInsets.all(18),
-                        child: _ErrorView(message: _error!, onRetry: _load),
-                      )
-                    : RefreshIndicator(
-                        onRefresh: _load,
-                        color: AppColors.gold,
-                        child: ListView(
-                          padding: const EdgeInsets.fromLTRB(0, 0, 0, 18),
+            child: pelerinsAsync.when(
+              loading: () => const Center(
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.4,
+                  color: AppColors.gold,
+                ),
+              ),
+              error: (error, _) => Padding(
+                padding: const EdgeInsets.all(18),
+                child: _ErrorView(
+                  message: error.toString(),
+                  onRetry: () => ref.invalidate(
+                    mobilePlanningGroupPelerinsProvider(widget.groupeId),
+                  ),
+                ),
+              ),
+              data: (items) {
+                final query = _searchController.text.trim().toLowerCase();
+                final visibleItems = query.isEmpty
+                    ? items
+                    : items
+                        .where(
+                          (p) =>
+                              p.fullName.toLowerCase().contains(query) ||
+                              (p.telephone ?? '').toLowerCase().contains(query),
+                        )
+                        .toList();
+
+                return RefreshIndicator(
+                  onRefresh: () async => ref.refresh(
+                    mobilePlanningGroupPelerinsProvider(widget.groupeId).future,
+                  ),
+                  color: AppColors.gold,
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(0, 0, 0, 18),
+                    children: [
+                      const SizedBox(height: 10),
+                      const SizedBox(height: 8),
+                      Center(
+                        child: Container(
+                          width: 44,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: AppColors.border,
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        child: Row(
                           children: [
-                            const SizedBox(height: 10),
-                            Center(
-                              child: Container(
-                                width: 44,
-                                height: 4,
-                                decoration: BoxDecoration(
-                                  color: AppColors.border,
-                                  borderRadius: BorderRadius.circular(999),
+                            IconButton(
+                              onPressed: () => Navigator.of(context).pop(),
+                              icon: const Icon(Icons.close_rounded),
+                            ),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                widget.groupeNom,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 14.5,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: -0.4,
                                 ),
                               ),
                             ),
-                            const SizedBox(height: 8),
-                            Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 8),
-                              child: Row(
-                                children: [
-                                  IconButton(
-                                    onPressed: () =>
-                                        Navigator.of(context).pop(),
-                                    icon: const Icon(Icons.close_rounded),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Expanded(
-                                    child: Text(
-                                      widget.groupeNom,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w900,
-                                        letterSpacing: -0.4,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  IconButton(
-                                    onPressed: _load,
-                                    icon: const Icon(Icons.refresh_rounded),
-                                  ),
-                                ],
+                            const SizedBox(width: 6),
+                            IconButton(
+                              onPressed: () => ref.invalidate(
+                                mobilePlanningGroupPelerinsProvider(widget.groupeId),
                               ),
+                              icon: const Icon(Icons.refresh_rounded),
                             ),
-                            const SizedBox(height: 8),
-                            Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 16),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    'Pelerins',
-                                    style: TextStyle(
-                                      fontSize: 22,
-                                      fontWeight: FontWeight.w900,
-                                      letterSpacing: -0.6,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    '${visibleItems.length} personne(s)',
-                                    style: const TextStyle(
-                                      fontSize: 12.5,
-                                      color: AppColors.textMuted,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 12),
-                                  TextField(
-                                    controller: _searchController,
-                                    onChanged: (_) => setState(() {}),
-                                    decoration: const InputDecoration(
-                                      prefixIcon: Icon(Icons.search_rounded),
-                                      hintText:
-                                          'Rechercher par nom ou telephone',
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 14),
-                            if (visibleItems.isEmpty)
-                              const Padding(
-                                padding: EdgeInsets.symmetric(horizontal: 16),
-                                child: _EmptyState(),
-                              )
-                            else
-                              ...visibleItems.map(
-                                (item) => Padding(
-                                  padding:
-                                      const EdgeInsets.fromLTRB(16, 0, 16, 10),
-                                  child: _PelerinCard(item: item),
-                                ),
-                              ),
                           ],
                         ),
                       ),
+                      const SizedBox(height: 6),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Pelerins',
+                              style: TextStyle(
+                                fontSize: 19,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: -0.6,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '${visibleItems.length} personne(s)',
+                              style: const TextStyle(
+                                fontSize: 11.5,
+                                color: AppColors.textMuted,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            TextField(
+                              controller: _searchController,
+                              onChanged: (_) => setState(() {}),
+                              decoration: const InputDecoration(
+                                prefixIcon: Icon(Icons.search_rounded),
+                                hintText: 'Rechercher par nom ou telephone',
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      if (visibleItems.isEmpty)
+                        const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 16),
+                          child: _EmptyState(),
+                        )
+                      else
+                        ...visibleItems.map(
+                          (item) => Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 9),
+                            child: _PelerinCard(item: item),
+                          ),
+                        ),
+                    ],
+                  ),
+                );
+              },
+            ),
           ),
         ),
       ),
@@ -217,35 +189,10 @@ class _GuideGroupePelerinsSheetState
   }
 }
 
-class GuidePelerinItem {
-  GuidePelerinItem({
-    required this.id,
-    required this.nom,
-    required this.prenom,
-    required this.telephone,
-  });
-
-  final String id;
-  final String nom;
-  final String prenom;
-  final String? telephone;
-
-  String get fullName => '${prenom.trim()} ${nom.trim()}'.trim();
-
-  factory GuidePelerinItem.fromJson(Map<String, dynamic> json) {
-    return GuidePelerinItem(
-      id: (json['id'] as String?) ?? '',
-      nom: (json['nom'] as String?) ?? '',
-      prenom: (json['prenom'] as String?) ?? '',
-      telephone: json['telephone'] as String?,
-    );
-  }
-}
-
 class _PelerinCard extends StatelessWidget {
   const _PelerinCard({required this.item});
 
-  final GuidePelerinItem item;
+  final MobileGroupPelerin item;
 
   @override
   Widget build(BuildContext context) {
@@ -255,16 +202,16 @@ class _PelerinCard extends StatelessWidget {
     return Material(
       color: AppColors.card,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(18),
         side: const BorderSide(color: AppColors.borderSoft, width: 0.5),
       ),
       clipBehavior: Clip.hardEdge,
       child: Padding(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(12),
         child: Row(
           children: [
             CircleAvatar(
-              radius: 20,
+              radius: 18,
               backgroundColor: tone.withValues(alpha: 0.14),
               child: Text(
                 initials,
@@ -284,12 +231,12 @@ class _PelerinCard extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                      fontSize: 14.5,
+                      fontSize: 13.5,
                       fontWeight: FontWeight.w900,
                       letterSpacing: -0.2,
                     ),
                   ),
-                  const SizedBox(height: 3),
+                  const SizedBox(height: 2),
                   Text(
                     item.telephone == null || item.telephone!.trim().isEmpty
                         ? '-'
@@ -297,7 +244,7 @@ class _PelerinCard extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                      fontSize: 12.5,
+                      fontSize: 11.5,
                       color: AppColors.textMuted,
                       fontWeight: FontWeight.w600,
                     ),

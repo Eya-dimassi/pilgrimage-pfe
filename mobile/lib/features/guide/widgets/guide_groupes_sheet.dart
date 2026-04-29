@@ -1,10 +1,9 @@
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/network/api_error_message.dart';
-import '../../../core/network/dio_client.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../planning/domain/mobile_planning_models.dart';
+import '../../planning/providers/mobile_planning_provider.dart';
 import 'guide_groupe_pelerins_sheet.dart';
 
 class GuideGroupesSheet extends ConsumerStatefulWidget {
@@ -17,16 +16,7 @@ class GuideGroupesSheet extends ConsumerStatefulWidget {
 class _GuideGroupesSheetState extends ConsumerState<GuideGroupesSheet> {
   final _searchController = TextEditingController();
 
-  bool _loading = true;
-  String? _error;
-  List<GuideGroupeItem> _groups = const [];
   _GroupFilter _filter = _GroupFilter.all;
-
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
 
   @override
   void dispose() {
@@ -34,35 +24,7 @@ class _GuideGroupesSheetState extends ConsumerState<GuideGroupesSheet> {
     super.dispose();
   }
 
-  Future<void> _load() async {
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
-
-    final dio = ref.read(dioProvider);
-    try {
-      final response = await dio.get('/mobile/planning/groupes');
-      final raw = response.data;
-      final list = raw is List ? raw : const [];
-      setState(() {
-        _groups = list
-            .whereType<Map>()
-            .map((e) => GuideGroupeItem.fromJson(e.cast<String, dynamic>()))
-            .toList();
-      });
-    } on DioException catch (error) {
-      setState(() => _error = apiErrorMessage(error));
-    } catch (_) {
-      setState(() => _error = 'Une erreur est survenue. Reessayez.');
-    } finally {
-      if (mounted) {
-        setState(() => _loading = false);
-      }
-    }
-  }
-
-  void _openGroupe(GuideGroupeItem group) {
+  void _openGroupe(MobilePlanningGroup group) {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -81,94 +43,96 @@ class _GuideGroupesSheetState extends ConsumerState<GuideGroupesSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final groupsAsync = ref.watch(mobilePlanningGroupsProvider);
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
     final height = MediaQuery.of(context).size.height;
     final query = _searchController.text.trim().toLowerCase();
-
-    final baseGroups = switch (_filter) {
-      _GroupFilter.all => _groups,
-      _GroupFilter.enCours =>
-        _groups.where((g) => g.status == 'EN_COURS').toList(),
-      _GroupFilter.planifie =>
-        _groups.where((g) => g.status == 'PLANIFIE').toList(),
-      _GroupFilter.termine =>
-        _groups.where((g) => g.status == 'TERMINE').toList(),
-    };
-
-    final visibleGroups = query.isEmpty
-        ? baseGroups
-        : baseGroups.where((g) => g.nom.toLowerCase().contains(query)).toList();
-
-    Widget stateChild;
-    if (_loading) {
-      stateChild = const _LoadingView(key: ValueKey('loading'));
-    } else if (_error != null) {
-      stateChild = Padding(
+    final stateChild = groupsAsync.when(
+      loading: () => const _LoadingView(key: ValueKey('loading')),
+      error: (error, _) => Padding(
         key: const ValueKey('error'),
         padding: const EdgeInsets.all(16),
-        child: _ErrorView(message: _error!, onRetry: _load),
-      );
-    } else {
-      stateChild = RefreshIndicator(
-        key: ValueKey('list_${_filter.name}_${query}_${visibleGroups.length}'),
-        onRefresh: _load,
-        color: AppColors.gold,
-        child: ListView(
-          physics: const BouncingScrollPhysics(
-            parent: AlwaysScrollableScrollPhysics(),
-          ),
-          padding: const EdgeInsets.fromLTRB(0, 0, 0, 18),
-          children: [
-            const SizedBox(height: 10),
-            const Center(child: _Handle()),
-            const SizedBox(height: 14),
-            _Header(
-              searchController: _searchController,
-              visibleCount: visibleGroups.length,
-              filter: _filter,
-              onSearchChanged: (_) => setState(() {}),
-              onFilterChanged: (next) => setState(() => _filter = next),
+        child: _ErrorView(
+          message: error.toString(),
+          onRetry: () async => ref.invalidate(mobilePlanningGroupsProvider),
+        ),
+      ),
+      data: (groups) {
+        final baseGroups = switch (_filter) {
+          _GroupFilter.all => groups,
+          _GroupFilter.enCours =>
+            groups.where((g) => g.status == 'EN_COURS').toList(),
+          _GroupFilter.planifie =>
+            groups.where((g) => g.status == 'PLANIFIE').toList(),
+          _GroupFilter.termine =>
+            groups.where((g) => g.status == 'TERMINE').toList(),
+        };
+
+        final visibleGroups = query.isEmpty
+            ? baseGroups
+            : baseGroups.where((g) => g.nom.toLowerCase().contains(query)).toList();
+
+        return RefreshIndicator(
+          key: ValueKey('list_${_filter.name}_${query}_${visibleGroups.length}'),
+          onRefresh: () async => ref.refresh(mobilePlanningGroupsProvider.future),
+          color: AppColors.gold,
+          child: ListView(
+            physics: const BouncingScrollPhysics(
+              parent: AlwaysScrollableScrollPhysics(),
             ),
-            const SizedBox(height: 14),
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 260),
-              switchInCurve: Curves.easeOutCubic,
-              switchOutCurve: Curves.easeInCubic,
-              child: visibleGroups.isEmpty
-                  ? Padding(
-                      key: ValueKey('empty_$query'),
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: _EmptyState(isSearch: query.isNotEmpty),
-                    )
-                  : Column(
-                      key: ValueKey('groups_${visibleGroups.length}_$query'),
-                      children: [
-                        for (int index = 0; index < visibleGroups.length; index++)
-                          Padding(
-                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                            child: _AppearIn(
-                              index: index,
-                              child: _GroupCard(
-                                group: visibleGroups[index],
-                                onOpen: () => _openGroupe(visibleGroups[index]),
-                                formatDate: _formatDate,
+            padding: const EdgeInsets.fromLTRB(0, 0, 0, 18),
+            children: [
+              const SizedBox(height: 10),
+              const Center(child: _Handle()),
+              const SizedBox(height: 12),
+              _Header(
+                searchController: _searchController,
+                visibleCount: visibleGroups.length,
+                filter: _filter,
+                onSearchChanged: (_) => setState(() {}),
+                onFilterChanged: (next) => setState(() => _filter = next),
+              ),
+              const SizedBox(height: 12),
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 260),
+                switchInCurve: Curves.easeOutCubic,
+                switchOutCurve: Curves.easeInCubic,
+                child: visibleGroups.isEmpty
+                    ? Padding(
+                        key: ValueKey('empty_$query'),
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: _EmptyState(isSearch: query.isNotEmpty),
+                      )
+                    : Column(
+                        key: ValueKey('groups_${visibleGroups.length}_$query'),
+                        children: [
+                          for (int index = 0; index < visibleGroups.length; index++)
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+                              child: _AppearIn(
+                                index: index,
+                                child: _GroupCard(
+                                  group: visibleGroups[index],
+                                  onOpen: () => _openGroupe(visibleGroups[index]),
+                                  formatDate: _formatDate,
+                                ),
                               ),
                             ),
-                          ),
-                      ],
-                    ),
-            ),
-          ],
-        ),
-      );
-    }
+                        ],
+                      ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
 
     return SafeArea(
       child: Padding(
-        padding: EdgeInsets.fromLTRB(16, 12, 16, 16 + bottomInset),
+        padding: EdgeInsets.fromLTRB(16, 10, 16, 14 + bottomInset),
         child: DecoratedBox(
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(28),
+            borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.05),
@@ -180,7 +144,7 @@ class _GuideGroupesSheetState extends ConsumerState<GuideGroupesSheet> {
           child: Material(
             color: AppColors.card,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(28),
+              borderRadius: BorderRadius.circular(24),
               side: const BorderSide(color: AppColors.borderSoft),
             ),
             clipBehavior: Clip.antiAlias,
@@ -207,44 +171,6 @@ enum _GroupFilter {
   termine,
 }
 
-class GuideGroupeItem {
-  GuideGroupeItem({
-    required this.id,
-    required this.nom,
-    required this.typeVoyage,
-    required this.status,
-    required this.nbPelerins,
-    required this.dateDepart,
-  });
-
-  final String id;
-  final String nom;
-  final String typeVoyage;
-  final String status;
-  final int nbPelerins;
-  final DateTime? dateDepart;
-
-  factory GuideGroupeItem.fromJson(Map<String, dynamic> json) {
-    DateTime? parseDate(dynamic value) {
-      if (value is String && value.isNotEmpty) return DateTime.tryParse(value);
-      return null;
-    }
-
-    final countFromNested =
-        json['_count'] is Map ? (json['_count'] as Map)['membres'] : null;
-    final rawCount = json['nbPelerins'] ?? countFromNested;
-
-    return GuideGroupeItem(
-      id: (json['id'] as String?) ?? '',
-      nom: (json['nom'] as String?) ?? '',
-      typeVoyage: (json['typeVoyage'] as String?) ?? '',
-      status: (json['status'] as String?) ?? '',
-      nbPelerins: rawCount is int ? rawCount : int.tryParse('$rawCount') ?? 0,
-      dateDepart: parseDate(json['dateDepart']),
-    );
-  }
-}
-
 class _Header extends StatelessWidget {
   const _Header({
     required this.searchController,
@@ -265,9 +191,9 @@ class _Header extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Container(
-        padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+        padding: const EdgeInsets.fromLTRB(13, 13, 13, 13),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(18),
           border: Border.all(color: AppColors.borderSoft),
           color: AppColors.card,
           boxShadow: [
@@ -290,7 +216,7 @@ class _Header extends StatelessWidget {
                       const Text(
                         'Groupes',
                         style: TextStyle(
-                          fontSize: 22,
+                          fontSize: 19,
                           fontWeight: FontWeight.w900,
                           letterSpacing: -0.6,
                         ),
@@ -299,7 +225,7 @@ class _Header extends StatelessWidget {
                       Text(
                         '$visibleCount groupe(s) disponibles',
                         style: const TextStyle(
-                          fontSize: 12.5,
+                          fontSize: 11.5,
                           color: AppColors.textMuted,
                           fontWeight: FontWeight.w700,
                         ),
@@ -314,43 +240,43 @@ class _Header extends StatelessWidget {
                     onTap: () => Navigator.of(context).pop(),
                     customBorder: const CircleBorder(),
                     child: const SizedBox(
-                      width: 36,
-                      height: 36,
+                      width: 34,
+                      height: 34,
                       child: Icon(
                         Icons.close_rounded,
-                        size: 20,
+                        size: 18,
                       ),
                     ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 7),
             const Text(
               'Consultez vos groupes et accedez rapidement a la liste des pelerins.',
               style: TextStyle(
-                fontSize: 13,
+                fontSize: 11.5,
                 height: 1.35,
                 color: AppColors.textMuted,
                 fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
             _SearchField(
               controller: searchController,
               onChanged: onSearchChanged,
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 8),
             _FilterRow(
               value: filter,
               onChanged: onFilterChanged,
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
             AnimatedSwitcher(
               duration: const Duration(milliseconds: 220),
               child: Container(
                 key: ValueKey('count_$visibleCount'),
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
                 decoration: BoxDecoration(
                   color: AppColors.section,
                   borderRadius: BorderRadius.circular(999),
@@ -359,7 +285,7 @@ class _Header extends StatelessWidget {
                 child: Text(
                   '$visibleCount resultat(s)',
                   style: const TextStyle(
-                    fontSize: 12,
+                    fontSize: 11,
                     color: AppColors.textMuted,
                     fontWeight: FontWeight.w700,
                   ),
@@ -417,7 +343,7 @@ class _GroupCard extends StatelessWidget {
     required this.formatDate,
   });
 
-  final GuideGroupeItem group;
+  final MobilePlanningGroup group;
   final VoidCallback onOpen;
   final String Function(DateTime) formatDate;
 
@@ -500,10 +426,10 @@ class _GroupCard extends StatelessWidget {
                   spacing: 8,
                   runSpacing: 8,
                   children: [
-                    _GroupStatusChip.fromStatus(status: group.status),
+                    _GroupStatusChip.fromStatus(status: group.status ?? ''),
                     _InfoPill(
                       icon: Icons.group_rounded,
-                      label: '${group.nbPelerins} pelerins',
+                      label: '${group.nbPelerins ?? 0} pelerins',
                     ),
                   ],
                 ),

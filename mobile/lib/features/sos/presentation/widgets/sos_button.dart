@@ -81,52 +81,43 @@ class _SosHoldButtonState extends State<SosHoldButton> {
       child: AnimatedOpacity(
         duration: const Duration(milliseconds: 180),
         opacity: disabled ? 0.65 : 1,
-        child: Container(
-          padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            color: const Color(0xFFB3292D),
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x2AB3292D),
-                blurRadius: 24,
-                offset: Offset(0, 12),
-              ),
-            ],
-          ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(18, 14, 18, 14),
           child: Column(
             children: [
-              Icon(
-                widget.loading ? Icons.sync_rounded : Icons.sos_rounded,
-                color: Colors.white,
-                size: 30,
-              ),
-              const SizedBox(height: 10),
               const Text(
                 'Maintenez 3 secondes',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: 13.5,
                   fontWeight: FontWeight.w800,
                   color: Colors.white,
                 ),
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 4),
               const Text(
                 'Une alerte SOS sera envoyee avec votre position.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 12.5,
-                  height: 1.4,
+                  fontSize: 11,
+                  height: 1.25,
                   color: Color(0xFFFDECEC),
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
-              const SizedBox(height: 14),
+              if (widget.loading) ...[
+                const SizedBox(height: 8),
+                const Icon(
+                  Icons.sync_rounded,
+                  color: Colors.white,
+                  size: 16,
+                ),
+              ],
+              const SizedBox(height: 10),
               ClipRRect(
                 borderRadius: BorderRadius.circular(999),
                 child: LinearProgressIndicator(
-                  minHeight: 7,
+                  minHeight: 4,
                   value: widget.loading ? null : _progress,
                   backgroundColor: const Color(0x40FFFFFF),
                   valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),

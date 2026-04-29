@@ -50,6 +50,7 @@ class GuideHomeScreen extends ConsumerWidget {
         groupeNom: user.groupeNom,
         groupsAsync: planningGroupsAsync,
         accentColor: const Color(0xFF67C9B7),
+        heroAssetPath: 'assets/images/mosque_guide.png',
         roleToneLabel:
             'Un rappel spirituel discret pour guider avec calme et presence.',
         quickActions: [

@@ -25,6 +25,9 @@ class ApiEndpoints {
   static String mobilePlanningGroup(String groupeId) =>
       '/mobile/planning/groupes/$groupeId';
 
+  static String mobilePlanningGroupPelerins(String groupeId) =>
+      '/mobile/planning/groupes/$groupeId/pelerins';
+
   static String mobilePlanningValidateEvent(String groupeId, String eventId) =>
       '/mobile/planning/groupes/$groupeId/evenements/$eventId/valider';
 

@@ -20,26 +20,26 @@ class BrandBackdrop extends StatelessWidget {
           children: [
             Positioned(
               top: -120,
-              right: -80,
+              right: -70,
               child: _GlowOrb(
-                size: 260,
+                size: 280,
                 color: AppColors.goldSoft,
               ),
             ),
             Positioned(
-              top: 190,
+              top: 220,
               left: -90,
               child: _GlowOrb(
-                size: 220,
-                color: AppColors.greenSoft,
+                size: 240,
+                color: const Color(0xFFE8F4EE),
               ),
             ),
             Positioned(
-              bottom: -110,
-              right: -70,
+              bottom: -120,
+              right: -60,
               child: _GlowOrb(
-                size: 250,
-                color: AppColors.blueSoft,
+                size: 260,
+                color: const Color(0xFFF7F1E2),
               ),
             ),
             child,
@@ -70,8 +70,9 @@ class BrandWordmark extends StatelessWidget {
           width: markSize,
           height: markSize,
           decoration: BoxDecoration(
-            color: AppColors.text,
+            color: AppColors.primaryDark,
             borderRadius: BorderRadius.circular(markSize * 0.34),
+            boxShadow: AppShadows.soft,
           ),
           alignment: Alignment.center,
           child: Stack(
@@ -97,7 +98,7 @@ class BrandWordmark extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: AppSpacing.sm),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -111,7 +112,7 @@ class BrandWordmark extends StatelessWidget {
                   fontSize: titleSize,
                   fontWeight: FontWeight.w700,
                   letterSpacing: -0.4,
-                  color: AppColors.text,
+                  color: AppColors.textPrimary,
                 ),
               ),
               if (caption != null)
@@ -121,7 +122,7 @@ class BrandWordmark extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     fontSize: 12,
-                    color: AppColors.textMuted,
+                    color: AppColors.textSecondary,
                   ),
                 ),
             ],
@@ -202,7 +203,13 @@ class _GlowOrb extends StatelessWidget {
         height: size,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: color,
+          gradient: RadialGradient(
+            colors: [
+              color.withValues(alpha: 0.72),
+              color.withValues(alpha: 0.12),
+              Colors.transparent,
+            ],
+          ),
         ),
       ),
     );

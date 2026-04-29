@@ -5,6 +5,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import 'notification_feed_refresh_service.dart';
 import 'notification_navigation_service.dart';
+import 'planning_feed_refresh_service.dart';
 
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
     FlutterLocalNotificationsPlugin();
@@ -30,6 +31,9 @@ Future<void> initLocalNotifications() async {
         final decoded = jsonDecode(payload);
         if (decoded is Map<String, dynamic>) {
           NotificationFeedRefreshService.instance.bump();
+          if (_shouldRefreshPlanning(decoded)) {
+            PlanningFeedRefreshService.instance.bump();
+          }
           final role = decoded['role']?.toString() ?? 'PELERIN';
           NotificationNavigationService.openFromPayload(decoded, role: role);
         }
@@ -71,4 +75,20 @@ void showFCMNotification(RemoteMessage message) {
     ),
     payload: jsonEncode(payload),
   );
+}
+
+bool _shouldRefreshPlanning(Map<String, dynamic> payload) {
+  final type = payload['type']?.toString().trim().toLowerCase();
+  final tab = payload['tab']?.toString().trim().toLowerCase();
+
+  if (payload['groupeId'] != null ||
+      payload['eventId'] != null ||
+      payload['etape'] != null) {
+    return true;
+  }
+
+  return type == 'planning_update' ||
+      type == 'upcoming_rendezvous' ||
+      type == 'planning' ||
+      tab == 'planning';
 }

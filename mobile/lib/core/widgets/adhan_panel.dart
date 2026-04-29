@@ -21,26 +21,12 @@ class AdhanPanel extends StatelessWidget {
     final timeline = _PrayerTimeline.forNow();
 
     return Container(
-      padding: EdgeInsets.all(compact ? 16 : 20),
+      padding: EdgeInsets.all(compact ? 12 : 22),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            Colors.white,
-            accentColor.withValues(alpha: 0.08),
-            AppColors.goldSoft,
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(compact ? 24 : 28),
+        color: Colors.white.withValues(alpha: 0.97),
+        borderRadius: BorderRadius.circular(compact ? 22 : 30),
         border: Border.all(color: AppColors.borderSoft),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x12000000),
-            blurRadius: 24,
-            offset: Offset(0, 10),
-          ),
-        ],
+        boxShadow: AppShadows.lifted,
       ),
       child: compact
           ? _CompactPrayerBlock(
@@ -165,59 +151,129 @@ class _CompactPrayerBlock extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              width: 34,
-              height: 34,
+              width: 36,
+              height: 36,
               decoration: BoxDecoration(
-                color: accentColor.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(12),
+                color: const Color(0xFFF4E7C3),
+                borderRadius: BorderRadius.circular(14),
               ),
               child: Icon(
-                Icons.access_time_rounded,
-                size: 18,
+                Icons.nightlight_round,
+                size: 17,
                 color: accentColor,
               ),
             ),
             const SizedBox(width: 10),
             Expanded(
-              child: Text(
-                timeline.shortLabel,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w800,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Horaires de priere',
+                    style: const TextStyle(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    timeline.shortLabel,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.textMuted,
+                    ),
+                  ),
+                ],
               ),
             ),
-            Text(
-              timeline.footer,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: accentColor,
+            const Padding(
+              padding: EdgeInsets.only(top: 5),
+              child: Icon(
+                Icons.chevron_right_rounded,
+                size: 22,
+                color: AppColors.textMuted,
               ),
             ),
           ],
         ),
-        if (timeline.nextMeta != null) ...[
-          const SizedBox(height: 6),
-          Text(
-            timeline.nextMeta!,
-            style: const TextStyle(
-              fontSize: 12,
-              color: AppColors.textMuted,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-        const SizedBox(height: 12),
-        _PrayerRow(
-          timeline: timeline,
-          accentColor: accentColor,
-          compact: true,
+        const SizedBox(height: 10),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: timeline.entries.map((entry) {
+            final isActive = entry.isActive;
+
+            return Expanded(
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 2),
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: isActive
+                        ? const Color(0xFFD4AF37)
+                        : const Color(0xFFEAEAEA),
+                    width: isActive ? 1.4 : 1,
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      entry.name,
+                      style: const TextStyle(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xFF6B7280),
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      entry.time,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Icon(
+                      _iconFor(entry.name),
+                      size: 14,
+                      color: isActive
+                          ? const Color(0xFFD4AF37)
+                          : const Color(0xFF9CA3AF),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
         ),
       ],
     );
+  }
+
+  IconData _iconFor(String name) {
+    switch (name) {
+      case 'Fajr':
+        return Icons.wb_twilight_outlined;
+      case 'Dhuhr':
+        return Icons.wb_sunny_outlined;
+      case 'Asr':
+        return Icons.cloud_outlined;
+      case 'Maghrib':
+        return Icons.wb_twilight;
+      case 'Isha':
+        return Icons.nightlight_round;
+      default:
+        return Icons.access_time;
+    }
   }
 }
 
@@ -225,12 +281,10 @@ class _PrayerRow extends StatelessWidget {
   const _PrayerRow({
     required this.timeline,
     required this.accentColor,
-    this.compact = false,
   });
 
   final _PrayerTimeline timeline;
   final Color accentColor;
-  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -242,7 +296,7 @@ class _PrayerRow extends StatelessWidget {
             _PrayerChip(
               entry: timeline.entries[index],
               accentColor: accentColor,
-              compact: compact,
+              compact: false,
             ),
             if (index < timeline.entries.length - 1) const SizedBox(width: 8),
           ],
@@ -266,30 +320,39 @@ class _PrayerChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isActive = entry.isActive;
+    final icon = switch (entry.name) {
+      'Fajr' => Icons.wb_twilight_outlined,
+      'Dhuhr' => Icons.wb_sunny_outlined,
+      'Asr' => Icons.cloud_outlined,
+      'Maghrib' => Icons.wb_twilight,
+      'Isha' => Icons.nightlight_round,
+      _ => Icons.access_time_rounded,
+    };
 
     return Container(
-      width: compact ? 86 : 108,
+      width: compact ? 0 : 108,
       padding: EdgeInsets.symmetric(
-        horizontal: compact ? 10 : 12,
-        vertical: compact ? 10 : 13,
+        horizontal: compact ? 8 : 12,
+        vertical: compact ? 8 : 13,
       ),
       decoration: BoxDecoration(
-        color: isActive ? accentColor.withValues(alpha: 0.12) : Colors.white,
-        borderRadius: BorderRadius.circular(compact ? 16 : 18),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(compact ? 18 : 18),
         border: Border.all(
-          color: isActive ? accentColor : AppColors.borderSoft,
+          color: isActive ? AppColors.gold : AppColors.borderSoft,
           width: isActive ? 1.3 : 1,
         ),
+        boxShadow: isActive ? AppShadows.soft : const [],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Text(
             entry.name,
             style: TextStyle(
               fontSize: compact ? 12 : 14,
-              fontWeight: FontWeight.w800,
-              color: isActive ? accentColor : AppColors.text,
+              fontWeight: FontWeight.w500,
+              color: AppColors.textPrimary,
             ),
           ),
           const SizedBox(height: 4),
@@ -297,28 +360,26 @@ class _PrayerChip extends StatelessWidget {
             entry.time,
             style: TextStyle(
               fontSize: compact ? 13 : 16,
-              color: AppColors.text,
+              color: AppColors.primaryDark,
               fontWeight: FontWeight.w800,
             ),
           ),
-          if (isActive && !compact) ...[
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-              decoration: BoxDecoration(
-                color: accentColor,
-                borderRadius: BorderRadius.circular(999),
-              ),
-              child: const Text(
-                'En cours',
-                style: TextStyle(
-                  fontSize: 10,
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
+          const SizedBox(height: 8),
+          Container(
+            width: compact ? 28 : 38,
+            height: compact ? 28 : 38,
+            decoration: BoxDecoration(
+              color: isActive
+                  ? AppColors.goldSoft
+                  : accentColor.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(14),
             ),
-          ],
+            child: Icon(
+              icon,
+              size: compact ? 17 : 20,
+              color: isActive ? AppColors.primaryDark : accentColor,
+            ),
+          ),
         ],
       ),
     );

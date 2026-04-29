@@ -1,6 +1,7 @@
 import prisma from '../../../config/prisma'
 import { Prisma } from '../../../../generated/prisma/client'
 import { isSameASTDay, startOfASTDay } from '../../agences/planning/date.utils'
+import { sendPushToUsers } from '../../../utils/push-notifications.utils'
 
 const MOBILE_GROUP_SELECT = {
   id: true,
@@ -34,9 +35,44 @@ type OrderedGroupEventRow = {
   id: string
   titre: string
   estValide: boolean | null
+  etape: string | null
   heureDebutPrevue: Date | null
   createdAt: Date
   planningDate: Date
+}
+
+function mobileGroupPriority(status?: string | null) {
+  switch (status) {
+    case 'EN_COURS':
+      return 0
+    case 'PLANIFIE':
+      return 1
+    case 'TERMINE':
+      return 2
+    case 'ANNULE':
+      return 3
+    default:
+      return 4
+  }
+}
+
+function sortMobileGroups<T extends { status?: string | null; dateDepart?: Date | null; dateRetour?: Date | null; annee?: number | null }>(
+  groups: T[],
+) {
+  return [...groups].sort((left, right) => {
+    const priorityDiff = mobileGroupPriority(left.status) - mobileGroupPriority(right.status)
+    if (priorityDiff !== 0) return priorityDiff
+
+    const leftStart = left.dateDepart?.getTime() ?? 0
+    const rightStart = right.dateDepart?.getTime() ?? 0
+    if (leftStart !== rightStart) return rightStart - leftStart
+
+    const leftEnd = left.dateRetour?.getTime() ?? 0
+    const rightEnd = right.dateRetour?.getTime() ?? 0
+    if (leftEnd !== rightEnd) return rightEnd - leftEnd
+
+    return (right.annee ?? 0) - (left.annee ?? 0)
+  })
 }
 
 // Resolves the currently authenticated mobile user into the active groups they can consult.
@@ -55,7 +91,8 @@ export async function getMobilePlanningGroups(userId: string, role: string) {
       },
     })
 
-    return relations
+    return sortMobileGroups(
+      relations
       .map((relation) => {
         const groupe = relation.groupe
         if (!groupe) return null
@@ -65,7 +102,8 @@ export async function getMobilePlanningGroups(userId: string, role: string) {
           nbPelerins: _count.membres,
         }
       })
-      .filter((groupe): groupe is NonNullable<typeof groupe> => Boolean(groupe))
+      .filter((groupe): groupe is NonNullable<typeof groupe> => Boolean(groupe)),
+    )
   }
 
   if (role === 'PELERIN') {
@@ -211,6 +249,7 @@ export async function validateMobilePlanningEvent(
       ep."id",
       ep."titre",
       ep."estValide",
+      ep."etape",
       ep."heureDebutPrevue",
       ep."createdAt",
       pq."date" AS "planningDate"
@@ -273,6 +312,81 @@ export async function validateMobilePlanningEvent(
 
   if (!updatedRows.length) {
     throw new Error('Evenement introuvable dans ce groupe')
+  }
+
+  const groupeContext = await prisma.groupe.findUnique({
+    where: { id: groupeId },
+    select: {
+      nom: true,
+      membres: {
+        where: { actif: true },
+        select: {
+          pelerin: {
+            select: {
+              utilisateurId: true,
+              familles: {
+                where: { actif: true },
+                select: {
+                  famille: {
+                    select: {
+                      utilisateurId: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+
+  if (groupeContext) {
+    const pelerinUserIds = Array.from(
+      new Set(
+        groupeContext.membres
+          .map((membership) => membership.pelerin.utilisateurId)
+          .filter(Boolean),
+      ),
+    )
+
+    const familleUserIds = Array.from(
+      new Set(
+        groupeContext.membres
+          .flatMap((membership) => membership.pelerin.familles)
+          .map((association) => association.famille.utilisateurId)
+          .filter(Boolean),
+      ),
+    )
+
+    const etapeLabel = targetEvent.etape ?? targetEvent.titre
+    const notificationData = {
+      type: 'alert',
+      tab: 'alerts',
+      groupeId,
+      eventId: targetEvent.id,
+      etape: String(etapeLabel),
+    }
+
+    if (pelerinUserIds.length) {
+      await sendPushToUsers({
+        userIds: pelerinUserIds,
+        role: 'PELERIN',
+        title: 'Etape validee',
+        body: `Le groupe ${groupeContext.nom} est passe a ${etapeLabel}.`,
+        data: notificationData,
+      })
+    }
+
+    if (familleUserIds.length) {
+      await sendPushToUsers({
+        userIds: familleUserIds,
+        role: 'FAMILLE',
+        title: 'Nouvelle etape validee',
+        body: `${groupeContext.nom} est passe a ${etapeLabel}.`,
+        data: notificationData,
+      })
+    }
   }
 
   return {
