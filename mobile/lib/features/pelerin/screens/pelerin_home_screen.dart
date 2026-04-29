@@ -264,6 +264,8 @@ class _HistoryGroupTileHome extends StatelessWidget {
   Widget build(BuildContext context) {
     final statusLabel = _statusLabel(item.groupe.status);
     final statusColor = _statusColor(item.groupe.status);
+    final departureDate = item.groupe.dateDepart;
+    final returnDate = item.groupe.dateRetour;
 
     return Container(
       padding: const EdgeInsets.all(14),
@@ -311,10 +313,12 @@ class _HistoryGroupTileHome extends StatelessWidget {
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                if (item.relationDateDebut != null) ...[
+                if (departureDate != null) ...[
                   const SizedBox(height: 4),
                   Text(
-                    'Debut: ${_formatDate(item.relationDateDebut!)}',
+                    returnDate == null
+                        ? 'Depart: ${_formatDate(departureDate)}'
+                        : 'Depart-Retour: ${_formatDate(departureDate)} - ${_formatDate(returnDate)}',
                     style: const TextStyle(
                       fontSize: 12.5,
                       color: AppColors.textMuted,
@@ -348,9 +352,14 @@ class _HistoryGroupTileHome extends StatelessWidget {
   }
 
   String _formatDate(DateTime value) {
-    final day = value.day.toString().padLeft(2, '0');
-    final month = value.month.toString().padLeft(2, '0');
-    return '$day/$month/${value.year}';
+    final astDate = _toAst(value);
+    final day = astDate.day.toString().padLeft(2, '0');
+    final month = astDate.month.toString().padLeft(2, '0');
+    return '$day/$month/${astDate.year}';
+  }
+
+  DateTime _toAst(DateTime value) {
+    return value.toUtc().add(const Duration(hours: 3));
   }
 
   String _statusLabel(String? status) {
