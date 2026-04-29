@@ -132,3 +132,27 @@ class MobilePlanningData {
     );
   }
 }
+
+class MobilePlanningGroupHistoryItem {
+  const MobilePlanningGroupHistoryItem({
+    required this.groupe,
+    required this.relationActive,
+    this.relationDateDebut,
+  });
+
+  final MobilePlanningGroup groupe;
+  final bool relationActive;
+  final DateTime? relationDateDebut;
+
+  factory MobilePlanningGroupHistoryItem.fromJson(Map<String, dynamic> json) {
+    return MobilePlanningGroupHistoryItem(
+      groupe: MobilePlanningGroup.fromJson(
+        json['groupe'] as Map<String, dynamic>? ?? const {},
+      ),
+      relationActive: json['relationActive'] as bool? ?? false,
+      relationDateDebut: json['relationDateDebut'] is String
+          ? DateTime.tryParse(json['relationDateDebut'] as String)
+          : null,
+    );
+  }
+}

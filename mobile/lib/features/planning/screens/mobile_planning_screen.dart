@@ -330,19 +330,14 @@ class _MobilePlanningScreenState extends ConsumerState<MobilePlanningScreen> {
 
   MobilePlanningDay _pickBestPlanning(List<MobilePlanningDay> plannings) {
     if (widget.view == PlanningRoleView.pelerin) {
-      final now = DateTime.now();
-      final today = DateTime(now.year, now.month, now.day);
+      final todayAst = _startOfAstDay(DateTime.now());
 
       for (final planning in plannings) {
-        final planningDay = DateTime(
-          planning.date.year,
-          planning.date.month,
-          planning.date.day,
-        );
-        if (planningDay.isAtSameMomentAs(today)) {
+        final planningDayAst = _startOfAstDay(planning.date);
+        if (planningDayAst.isAtSameMomentAs(todayAst)) {
           return planning;
         }
-        if (planningDay.isAfter(today)) {
+        if (planningDayAst.isAfter(todayAst)) {
           return planning;
         }
       }
@@ -897,7 +892,7 @@ class _PlanningDayCard extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             Text(
-              planning.date.day.toString().padLeft(2, '0'),
+              _toAst(planning.date).day.toString().padLeft(2, '0'),
               style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w800,
@@ -1355,13 +1350,13 @@ class _PlanningErrorState extends StatelessWidget {
 
 int _tripLengthInDays(DateTime? start, DateTime? end) {
   if (start == null || end == null) return 0;
-  return end.difference(DateTime(start.year, start.month, start.day)).inDays + 1;
+  return _startOfAstDay(end).difference(_startOfAstDay(start)).inDays + 1;
 }
 
 int _tripDayNumber(DateTime? start, DateTime date) {
   if (start == null) return 1;
-  final normalizedStart = DateTime(start.year, start.month, start.day);
-  final normalizedDate = DateTime(date.year, date.month, date.day);
+  final normalizedStart = _startOfAstDay(start);
+  final normalizedDate = _startOfAstDay(date);
   final difference = normalizedDate.difference(normalizedStart).inDays;
   return difference < 0 ? 1 : difference + 1;
 }
@@ -1392,7 +1387,17 @@ String _formatMediumDate(DateTime value) {
     'nov',
     'dec',
   ];
-  return '${value.day.toString().padLeft(2, '0')} ${months[value.month - 1]}';
+  final astDate = _toAst(value);
+  return '${astDate.day.toString().padLeft(2, '0')} ${months[astDate.month - 1]}';
+}
+
+DateTime _toAst(DateTime value) {
+  return value.toUtc().add(const Duration(hours: 3));
+}
+
+DateTime _startOfAstDay(DateTime value) {
+  final ast = _toAst(value);
+  return DateTime.utc(ast.year, ast.month, ast.day);
 }
 
 String _eventTypeLabel(String type) {

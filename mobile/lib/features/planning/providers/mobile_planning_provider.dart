@@ -14,3 +14,9 @@ final mobilePlanningDetailProvider =
       final repository = ref.watch(mobilePlanningRepositoryProvider);
       return repository.fetchGroupPlanning(groupeId);
     });
+
+final mobilePlanningGroupHistoryProvider =
+    FutureProvider<List<MobilePlanningGroupHistoryItem>>((ref) async {
+      final repository = ref.watch(mobilePlanningRepositoryProvider);
+      return repository.fetchPelerinGroupHistory();
+    });

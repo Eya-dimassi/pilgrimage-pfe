@@ -13,7 +13,7 @@ router.post('/', async (req: AuthRequest, res: Response) => {
     const { nom, prenom, email, telephone, dateNaissance, numeroPasseport, nationalite } = req.body;
 
     if (!nom || !prenom || !email) {
-      return res.status(400).json({ message: 'Nom, prénom et email sont requis' });
+      return res.status(400).json({ message: 'Nom, prénom et email sont =requis' });
     }
 
     const result = await pelerinsService.createPelerin(

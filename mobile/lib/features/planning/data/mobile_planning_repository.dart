@@ -30,6 +30,20 @@ class MobilePlanningRepository {
     }
   }
 
+  Future<List<MobilePlanningGroupHistoryItem>> fetchPelerinGroupHistory() async {
+    try {
+      final response = await _dio.get<List<dynamic>>(
+        ApiEndpoints.mobilePlanningGroupsHistory,
+      );
+      return (response.data ?? const [])
+          .whereType<Map<String, dynamic>>()
+          .map(MobilePlanningGroupHistoryItem.fromJson)
+          .toList();
+    } on DioException catch (error) {
+      throw AuthException.fromDio(error);
+    }
+  }
+
   Future<MobilePlanningData> fetchGroupPlanning(String groupeId) async {
     try {
       final response = await _dio.get<Map<String, dynamic>>(

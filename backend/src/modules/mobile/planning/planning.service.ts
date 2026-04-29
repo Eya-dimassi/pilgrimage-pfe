@@ -122,6 +122,54 @@ export async function getMobilePlanningGroups(userId: string, role: string) {
   throw new Error('Role mobile non pris en charge')
 }
 
+// Returns all groups linked to a pelerin (active and past) for history screens.
+export async function getMobilePelerinGroupHistory(userId: string, role: string) {
+  if (role !== 'PELERIN') {
+    throw new Error('Seul un pelerin peut consulter cet historique')
+  }
+
+  const relations = await prisma.groupePelerin.findMany({
+    where: {
+      pelerin: { utilisateurId: userId },
+    },
+    orderBy: [
+      { actif: 'desc' },
+      { dateDebut: 'desc' },
+    ],
+    select: {
+      actif: true,
+      dateDebut: true,
+      groupe: {
+        select: MOBILE_GROUP_SELECT,
+      },
+    },
+  })
+
+  // Keep one entry per group to avoid duplicates when assignment history has multiple rows.
+  const uniqueByGroupId = new Map<
+    string,
+    {
+      relationActive: boolean
+      relationDateDebut: Date | null
+      groupe: NonNullable<(typeof relations)[number]['groupe']>
+    }
+  >()
+
+  for (const relation of relations) {
+    const groupe = relation.groupe
+    if (!groupe) continue
+    if (uniqueByGroupId.has(groupe.id)) continue
+
+    uniqueByGroupId.set(groupe.id, {
+      relationActive: relation.actif,
+      relationDateDebut: relation.dateDebut,
+      groupe,
+    })
+  }
+
+  return Array.from(uniqueByGroupId.values())
+}
+
 // Verifies that the mobile user can access the requested group planning.
 async function assertMobilePlanningAccess(userId: string, role: string, groupeId: string) {
   if (role === 'GUIDE') {

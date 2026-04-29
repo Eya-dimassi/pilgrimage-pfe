@@ -1,4 +1,4 @@
-﻿// backend/src/modules/agence/groupes/groupes.service.ts
+// backend/src/modules/agence/groupes/groupes.service.ts
 
 import { addDays, startOfDay } from 'date-fns';
 import prisma from '../../../config/prisma';
@@ -545,7 +545,7 @@ export const deleteGroupe = async (agenceId: string, groupeId: string) => {
   }
 
   // 3. Supprimer le groupe (cascade automatique)
-  await prisma.groupe.delete({ 
+  await prisma.groupe.delete({  
     where: { id: groupeId } 
   });
 

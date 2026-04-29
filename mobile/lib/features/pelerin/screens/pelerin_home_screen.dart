@@ -73,6 +73,15 @@ class _PelerinHomeContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    void openHistorySheet() {
+      showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) => const _PelerinGroupHistorySheetHome(),
+      );
+    }
+
     final selectedGroup = groupsAsync.valueOrNull?.isNotEmpty == true
         ? groupsAsync.valueOrNull!.first
         : null;
@@ -98,9 +107,248 @@ class _PelerinHomeContent extends ConsumerWidget {
           compact: true,
         ),
         const SizedBox(height: 14),
+        Align(
+          alignment: Alignment.centerRight,
+          child: OutlinedButton.icon(
+            onPressed: openHistorySheet,
+            icon: const Icon(Icons.history_rounded, size: 18),
+            label: const Text('Historique groupes'),
+          ),
+        ),
+        const SizedBox(height: 12),
         _DailyFlowPanel(planningAsync: planningAsync),
       ],
     );
+  }
+}
+
+class _PelerinGroupHistorySheetHome extends ConsumerWidget {
+  const _PelerinGroupHistorySheetHome();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final historyAsync = ref.watch(mobilePlanningGroupHistoryProvider);
+    final height = MediaQuery.of(context).size.height;
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(16, 12, 16, 16 + bottomInset),
+        child: Material(
+          color: AppColors.card,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(28),
+            side: const BorderSide(color: AppColors.borderSoft),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: SizedBox(
+            height: height * 0.82,
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 14, 10, 10),
+                  child: Row(
+                    children: [
+                      const Expanded(
+                        child: Text(
+                          'Historique de vos groupes',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        icon: const Icon(Icons.close_rounded),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: historyAsync.when(
+                    loading: () => const Center(
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                    error: (error, _) => Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: Text(
+                          error.toString(),
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: AppColors.textMuted,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                    data: (items) {
+                      if (items.isEmpty) {
+                        return const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(20),
+                            child: Text(
+                              'Aucun historique de groupe disponible.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: AppColors.textMuted,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        );
+                      }
+
+                      return ListView.separated(
+                        padding: const EdgeInsets.fromLTRB(16, 6, 16, 18),
+                        itemCount: items.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 10),
+                        itemBuilder: (context, index) {
+                          final item = items[index];
+                          return _HistoryGroupTileHome(item: item);
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HistoryGroupTileHome extends StatelessWidget {
+  const _HistoryGroupTileHome({
+    required this.item,
+  });
+
+  final MobilePlanningGroupHistoryItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final statusLabel = _statusLabel(item.groupe.status);
+    final statusColor = _statusColor(item.groupe.status);
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.card,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AppColors.borderSoft),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: statusColor.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(11),
+            ),
+            child: Icon(
+              item.groupe.typeVoyage == 'HAJJ'
+                  ? Icons.mosque_rounded
+                  : Icons.location_on_outlined,
+              size: 18,
+              color: statusColor,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.groupe.nom,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${item.groupe.typeVoyage == 'HAJJ' ? 'Hajj' : 'Omra'} - ${item.groupe.annee}',
+                  style: const TextStyle(
+                    fontSize: 12.5,
+                    color: AppColors.textMuted,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                if (item.relationDateDebut != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    'Debut: ${_formatDate(item.relationDateDebut!)}',
+                    style: const TextStyle(
+                      fontSize: 12.5,
+                      color: AppColors.textMuted,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: statusColor.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(color: statusColor.withValues(alpha: 0.25)),
+            ),
+            child: Text(
+              statusLabel,
+              style: TextStyle(
+                fontSize: 11.5,
+                color: statusColor,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatDate(DateTime value) {
+    final day = value.day.toString().padLeft(2, '0');
+    final month = value.month.toString().padLeft(2, '0');
+    return '$day/$month/${value.year}';
+  }
+
+  String _statusLabel(String? status) {
+    switch (status) {
+      case 'PLANIFIE':
+        return 'Planifie';
+      case 'EN_COURS':
+        return 'En cours';
+      case 'TERMINE':
+        return 'Termine';
+      case 'ANNULE':
+        return 'Annule';
+      default:
+        return 'Inconnu';
+    }
+  }
+
+  Color _statusColor(String? status) {
+    switch (status) {
+      case 'PLANIFIE':
+        return AppColors.gold;
+      case 'EN_COURS':
+        return AppColors.green;
+      case 'TERMINE':
+        return AppColors.blue;
+      case 'ANNULE':
+        return const Color(0xFFE58E73);
+      default:
+        return AppColors.textMuted;
+    }
   }
 }
 

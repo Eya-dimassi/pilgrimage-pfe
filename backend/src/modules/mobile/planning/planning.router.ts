@@ -1,6 +1,7 @@
 import { Router, Response } from 'express'
 import { authenticate, requireRole, type AuthRequest } from '../../auth/auth.middleware'
 import {
+  getMobilePelerinGroupHistory,
   getMobilePlanningForGroup,
   getMobileGroupPelerins,
   getMobilePlanningGroups,
@@ -20,6 +21,19 @@ router.get('/groupes', async (req: AuthRequest, res: Response) => {
     return res.status(400).json({ message: error.message })
   }
 })
+
+router.get(
+  '/groupes/historique',
+  requireRole('PELERIN'),
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const groupes = await getMobilePelerinGroupHistory(req.user!.id, req.user!.role)
+      return res.status(200).json(groupes)
+    } catch (error: any) {
+      return res.status(400).json({ message: error.message })
+    }
+  },
+)
 
 router.get('/groupes/:groupeId', async (req: AuthRequest, res: Response) => {
   try {
