@@ -122,6 +122,15 @@ class _PelerinHomeContent extends ConsumerWidget {
             padding: const EdgeInsets.fromLTRB(18, 8, 18, 6),
             children: [
               _Header(firstName: firstName, groupeNom: groupeNom),
+              const SizedBox(height: 8),
+              Align(
+                alignment: Alignment.centerRight,
+                child: OutlinedButton.icon(
+                  onPressed: openHistorySheet,
+                  icon: const Icon(Icons.history_rounded, size: 18),
+                  label: const Text('Historique groupes'),
+                ),
+              ),
               const SizedBox(height: 12),
               _HeroCard(
                 group: selectedGroup,
@@ -140,23 +149,6 @@ class _PelerinHomeContent extends ConsumerWidget {
             ],
           ),
         ),
-        const SizedBox(height: 14),
-        const AdhanPanel(
-          accentColor: Color(0xFFD4AF37),
-          roleToneLabel: '',
-          compact: true,
-        ),
-        const SizedBox(height: 14),
-        Align(
-          alignment: Alignment.centerRight,
-          child: OutlinedButton.icon(
-            onPressed: openHistorySheet,
-            icon: const Icon(Icons.history_rounded, size: 18),
-            label: const Text('Historique groupes'),
-          ),
-        ),
-        const SizedBox(height: 12),
-        _DailyFlowPanel(planningAsync: planningAsync),
       ],
     );
   }
@@ -392,8 +384,6 @@ class _HistoryGroupTileHome extends StatelessWidget {
   }
 }
 
-class _PelerinHero extends StatelessWidget {
-  const _PelerinHero({
 MobilePlanningGroup _pickBestGroup(List<MobilePlanningGroup> groups) {
   int priority(MobilePlanningGroup group) {
     switch (group.status) {
