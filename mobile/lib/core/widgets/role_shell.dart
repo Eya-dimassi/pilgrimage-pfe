@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../features/notifications/providers/mobile_notifications_provider.dart';
 import '../theme/app_theme.dart';
+import 'app_surfaces.dart';
 import 'brand_frame.dart';
 
 class RoleShell extends ConsumerStatefulWidget {
@@ -124,16 +125,16 @@ class _MagicBottomNavigation extends StatelessWidget {
   Widget build(BuildContext context) {
     return SafeArea(
       top: false,
-      minimum: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+      minimum: const EdgeInsets.fromLTRB(16, 6, 16, 8),
       child: LayoutBuilder(
         builder: (context, constraints) {
           final slotWidth = constraints.maxWidth / items.length;
-          const bubbleSize = 56.0;
+          const bubbleSize = 54.0;
           final bubbleLeft =
               (slotWidth * currentIndex) + ((slotWidth - bubbleSize) / 2);
 
           return SizedBox(
-            height: 78,
+            height: 82,
             child: Stack(
               clipBehavior: Clip.none,
               children: [
@@ -142,18 +143,13 @@ class _MagicBottomNavigation extends StatelessWidget {
                   right: 0,
                   bottom: 0,
                   child: Container(
-                    height: 56,
+                    height: 62,
+                    padding: const EdgeInsets.fromLTRB(8, 10, 8, 6),
                     decoration: BoxDecoration(
                       color: AppColors.card.withValues(alpha: 0.98),
-                      borderRadius: BorderRadius.circular(18),
+                      borderRadius: BorderRadius.circular(24),
                       border: Border.all(color: AppColors.borderSoft),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Color(0x18000000),
-                          blurRadius: 24,
-                          offset: Offset(0, 10),
-                        ),
-                      ],
+                      boxShadow: AppShadows.lifted,
                     ),
                     child: Row(
                       children: List.generate(items.length, (index) {
@@ -169,31 +165,50 @@ class _MagicBottomNavigation extends StatelessWidget {
                               label: destination.label,
                               child: InkWell(
                                 onTap: () => onSelected(index),
-                                borderRadius: BorderRadius.circular(14),
-                                child: Center(
-                                  child: AnimatedOpacity(
-                                    duration: const Duration(milliseconds: 180),
-                                    curve: Curves.easeOut,
-                                    opacity: active ? 0.0 : 1.0,
-                                    child: Stack(
-                                      clipBehavior: Clip.none,
-                                      children: [
-                                        Icon(
-                                          destination.icon,
-                                          size: 22,
-                                          color: AppColors.textMuted,
-                                        ),
-                                        if (destination.badgeCount > 0)
-                                          Positioned(
-                                            right: -8,
-                                            top: -7,
-                                            child: _UnreadBadge(
-                                              count: destination.badgeCount,
-                                            ),
+                                borderRadius: BorderRadius.circular(20),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: [
+                                    AnimatedOpacity(
+                                      duration:
+                                          const Duration(milliseconds: 180),
+                                      curve: Curves.easeOut,
+                                      opacity: active ? 0.0 : 1.0,
+                                      child: Stack(
+                                        clipBehavior: Clip.none,
+                                        children: [
+                                          Icon(
+                                            destination.icon,
+                                            size: 24,
+                                            color: AppColors.textMuted,
                                           ),
-                                      ],
+                                          if (destination.badgeCount > 0)
+                                            Positioned(
+                                              right: -8,
+                                              top: -6,
+                                              child: _UnreadBadge(
+                                                count: destination.badgeCount,
+                                              ),
+                                            ),
+                                        ],
+                                      ),
                                     ),
-                                  ),
+                                    const SizedBox(height: 3),
+                                    Text(
+                                      destination.label,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: active
+                                            ? FontWeight.w800
+                                            : FontWeight.w500,
+                                        color: active
+                                            ? AppColors.primary
+                                            : AppColors.textSecondary,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),
@@ -234,22 +249,22 @@ class _ActiveNavBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 56,
-      height: 56,
+      width: 58,
+      height: 54,
       child: Stack(
         clipBehavior: Clip.none,
         children: [
           Container(
-            width: 56,
-            height: 56,
-            decoration: BoxDecoration(
+            width: 54,
+            height: 54,
+            decoration: const BoxDecoration(
               shape: BoxShape.circle,
-              color: const Color(0xFF69B8EA),
-              boxShadow: const [
+              color: Color(0xFF9FD0A7),
+              boxShadow: [
                 BoxShadow(
-                  color: Color(0x32000000),
-                  blurRadius: 16,
-                  offset: Offset(0, 8),
+                  color: Color(0x22000000),
+                  blurRadius: 18,
+                  offset: Offset(0, 9),
                 ),
               ],
             ),
@@ -259,14 +274,14 @@ class _ActiveNavBubble extends StatelessWidget {
                 shape: BoxShape.circle,
                 color: Colors.white,
                 border: Border.all(
-                  color: const Color(0xFFB9E4FF),
-                  width: 1.6,
+                  color: const Color(0xFFBEE0C3),
+                  width: 1.8,
                 ),
               ),
               child: Icon(
                 icon,
-                color: AppColors.text,
-                size: 24,
+                color: AppColors.primaryDark,
+                size: 22,
               ),
             ),
           ),
@@ -298,7 +313,7 @@ class _UnreadBadge extends StatelessWidget {
       ),
       padding: const EdgeInsets.symmetric(horizontal: 4),
       decoration: BoxDecoration(
-        color: const Color(0xFFE58E73),
+        color: AppColors.red,
         borderRadius: BorderRadius.circular(999),
         border: Border.all(color: AppColors.card, width: 1.4),
       ),
@@ -345,24 +360,16 @@ class _FeaturePlaceholder extends StatelessWidget {
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 22),
-        child: Container(
+        child: AppCard(
           padding: const EdgeInsets.all(22),
-          decoration: BoxDecoration(
-            color: AppColors.card.withValues(alpha: 0.96),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: AppColors.borderSoft),
-          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                width: 58,
-                height: 58,
-                decoration: BoxDecoration(
-                  color: AppColors.goldSoft,
-                  borderRadius: BorderRadius.circular(18),
-                ),
-                child: Icon(icon, color: AppColors.gold),
+              AppIconBadge(
+                icon: icon,
+                size: 58,
+                backgroundColor: AppColors.goldSoft,
+                foregroundColor: AppColors.gold,
               ),
               const SizedBox(height: 16),
               Text(

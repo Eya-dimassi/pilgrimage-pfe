@@ -4,13 +4,18 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/adhan_panel.dart';
+import '../../../core/widgets/app_surfaces.dart';
 import '../../../core/widgets/role_profile_template.dart';
 import '../../../core/widgets/role_shell.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../../notifications/providers/mobile_notifications_provider.dart';
 import '../../notifications/screens/mobile_alerts_screen.dart';
 import '../../planning/domain/mobile_planning_models.dart';
 import '../../planning/providers/mobile_planning_provider.dart';
 import '../../planning/screens/role_planning_pages.dart';
+import '../../sos/presentation/sos_screen.dart';
+import '../../sos/presentation/widgets/sos_button.dart';
+import '../../sos/providers/sos_provider.dart';
 
 class PelerinHomeScreen extends ConsumerWidget {
   const PelerinHomeScreen({
@@ -83,22 +88,57 @@ class _PelerinHomeContent extends ConsumerWidget {
     }
 
     final selectedGroup = groupsAsync.valueOrNull?.isNotEmpty == true
-        ? groupsAsync.valueOrNull!.first
+        ? _pickBestGroup(groupsAsync.valueOrNull!)
         : null;
+
     final planningAsync = selectedGroup == null
         ? const AsyncValue<MobilePlanningData?>.data(null)
-        : ref.watch(mobilePlanningDetailProvider(selectedGroup.id)).whenData(
-              (value) => value,
-            );
+        : ref.watch(mobilePlanningDetailProvider(selectedGroup.id));
 
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 18),
+    Future<void> refreshHome() async {
+      ref.invalidate(mobilePlanningGroupsProvider);
+      ref.invalidate(mobileNotificationsProvider);
+      ref.invalidate(sosControllerProvider);
+      if (selectedGroup != null) {
+        ref.invalidate(mobilePlanningDetailProvider(selectedGroup.id));
+      }
+
+      await ref.read(mobilePlanningGroupsProvider.future);
+      if (selectedGroup != null) {
+        await ref.read(mobilePlanningDetailProvider(selectedGroup.id).future);
+      }
+      await ref.read(mobileNotificationsProvider.future);
+      await ref.read(sosControllerProvider.future);
+    }
+
+    return Stack(
       children: [
-        _PelerinHero(
-          firstName: firstName,
-          fallbackGroupName: groupeNom,
-          group: selectedGroup,
-          planningAsync: planningAsync,
+        const _SoftScreenBackdrop(),
+        RefreshIndicator(
+          color: const Color(0xFFD4AF37),
+          onRefresh: refreshHome,
+          child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(18, 8, 18, 6),
+            children: [
+              _Header(firstName: firstName, groupeNom: groupeNom),
+              const SizedBox(height: 12),
+              _HeroCard(
+                group: selectedGroup,
+                planningAsync: planningAsync,
+              ),
+              const SizedBox(height: 12),
+              const AdhanPanel(
+                accentColor: Color(0xFFD4AF37),
+                roleToneLabel: '',
+                compact: true,
+              ),
+              const SizedBox(height: 12),
+              const _SosSection(),
+              const SizedBox(height: 12),
+              _JourneySection(planningAsync: planningAsync),
+            ],
+          ),
         ),
         const SizedBox(height: 14),
         const AdhanPanel(
@@ -354,14 +394,120 @@ class _HistoryGroupTileHome extends StatelessWidget {
 
 class _PelerinHero extends StatelessWidget {
   const _PelerinHero({
+MobilePlanningGroup _pickBestGroup(List<MobilePlanningGroup> groups) {
+  int priority(MobilePlanningGroup group) {
+    switch (group.status) {
+      case 'EN_COURS':
+        return 0;
+      case 'PLANIFIE':
+        return 1;
+      case 'TERMINE':
+        return 2;
+      case 'ANNULE':
+        return 3;
+      default:
+        return 4;
+    }
+  }
+
+  final sortedGroups = [...groups]
+    ..sort((left, right) {
+      final priorityDiff = priority(left) - priority(right);
+      if (priorityDiff != 0) return priorityDiff;
+
+      final rightStart = right.dateDepart?.millisecondsSinceEpoch ?? 0;
+      final leftStart = left.dateDepart?.millisecondsSinceEpoch ?? 0;
+      if (rightStart != leftStart) return rightStart.compareTo(leftStart);
+
+      final rightEnd = right.dateRetour?.millisecondsSinceEpoch ?? 0;
+      final leftEnd = left.dateRetour?.millisecondsSinceEpoch ?? 0;
+      if (rightEnd != leftEnd) return rightEnd.compareTo(leftEnd);
+
+      return right.annee.compareTo(left.annee);
+    });
+
+  return sortedGroups.first;
+}
+
+class _Header extends StatelessWidget {
+  const _Header({
     required this.firstName,
-    required this.fallbackGroupName,
+    required this.groupeNom,
+  });
+
+  final String firstName;
+  final String? groupeNom;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Bonjour',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                firstName,
+                style: const TextStyle(
+                  fontSize: 31,
+                  fontWeight: FontWeight.w800,
+                  height: 0.98,
+                  letterSpacing: -0.8,
+                  color: AppColors.primaryDark,
+                ),
+              ),
+              if (groupeNom != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  groupeNom!,
+                  style: const TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF8A8F98),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+        Container(
+          width: 46,
+          height: 46,
+          decoration: const BoxDecoration(
+            color: Color(0xFF0F3D2E),
+            shape: BoxShape.circle,
+          ),
+          alignment: Alignment.center,
+          child: const Text(
+            'الله',
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+              fontSize: 20,
+              height: 1,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _HeroCard extends StatelessWidget {
+  const _HeroCard({
     required this.group,
     required this.planningAsync,
   });
 
-  final String firstName;
-  final String? fallbackGroupName;
   final MobilePlanningGroup? group;
   final AsyncValue<MobilePlanningData?> planningAsync;
 
@@ -372,72 +518,134 @@ class _PelerinHero extends StatelessWidget {
         ? planning!.plannings.first
         : null;
     final currentEvent = _currentOrNextEvent(today?.evenements ?? const []);
-    final nextEvent = _nextEventAfter(today?.evenements ?? const [], currentEvent);
-    final groupLabel = group?.nom ?? fallbackGroupName ?? 'Votre groupe';
-    final tripPercent = _tripProgress(
+    final nextEvent = _nextEventAfter(
+      today?.evenements ?? const [],
+      currentEvent,
+    );
+
+    final percent = _tripProgress(
       group?.dateDepart,
       group?.dateRetour,
       today?.date,
     );
 
     return Container(
-      padding: const EdgeInsets.all(22),
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
       decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(22),
         gradient: const LinearGradient(
           colors: [
-            Color(0xFF103B2C),
-            Color(0xFF175340),
+            Color(0xFF0F3D2E),
+            Color(0xFF156243),
+            Color(0xFF1E7A58),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(30),
-        boxShadow: const [
+        boxShadow: [
           BoxShadow(
-            color: Color(0x16000000),
-            blurRadius: 28,
-            offset: Offset(0, 16),
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Stack(
         children: [
-          Text(
-            'Bonjour',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.white.withValues(alpha: 0.82),
-              fontWeight: FontWeight.w600,
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(22),
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.white.withValues(alpha: 0.08),
+                    Colors.transparent,
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
             ),
           ),
-          const SizedBox(height: 6),
-          Text(
-            firstName,
-            style: const TextStyle(
-              fontSize: 34,
-              fontWeight: FontWeight.w800,
-              height: 1.0,
-              color: Colors.white,
+          Positioned(
+            right: 8,
+            top: 28,
+            child: Opacity(
+              opacity: 0.84,
+              child: AppHeroAsset(
+                assetPath: 'assets/images/mosque_home.png',
+                width: 122,
+                height: 132,
+                scale: 1.14,
+                alignment: Alignment.bottomCenter,
+              ),
             ),
           ),
-          const SizedBox(height: 6),
-          Text(
-            groupLabel,
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.white.withValues(alpha: 0.74),
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 18),
-          _StageCard(
-            title: currentEvent?.titre ?? 'Aucun rendez-vous partage',
-            meta: _eventMeta(currentEvent),
-            progress: tripPercent,
-            progressLabel: '${(tripPercent * 100).round()}% du voyage',
-            nextTitle: nextEvent?.titre,
-            nextMeta: _eventMeta(nextEvent),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.10),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.08),
+                      ),
+                    ),
+                    child: Icon(
+                      _heroEventIcon(currentEvent),
+                      color: const Color(0xFF72E0A5),
+                      size: 22,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.only(right: 108),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            currentEvent?.titre ?? today?.titre ?? 'Visite spirituelle',
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 17,
+                              fontWeight: FontWeight.w800,
+                              height: 1.18,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            _heroMeta(currentEvent, group) ?? 'Programme du jour',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.74),
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 18),
+              _ProgressBlock(progress: percent),
+              const SizedBox(height: 14),
+              _HeroNextStepPanel(
+                event: nextEvent ?? currentEvent,
+                fallbackLocation: group?.nom ?? '',
+              ),
+            ],
           ),
         ],
       ),
@@ -445,124 +653,304 @@ class _PelerinHero extends StatelessWidget {
   }
 }
 
-class _StageCard extends StatelessWidget {
-  const _StageCard({
-    required this.title,
-    required this.meta,
-    required this.progress,
-    required this.progressLabel,
-    required this.nextTitle,
-    required this.nextMeta,
-  });
+class _ProgressBlock extends StatelessWidget {
+  const _ProgressBlock({required this.progress});
 
-  final String title;
-  final String? meta;
   final double progress;
-  final String progressLabel;
-  final String? nextTitle;
-  final String? nextMeta;
 
   @override
   Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          height: 6,
+          width: 186,
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.18),
+            borderRadius: BorderRadius.circular(999),
+          ),
+          alignment: Alignment.centerLeft,
+          child: FractionallySizedBox(
+            widthFactor: progress.clamp(0.0, 1.0),
+            child: Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFF45E090),
+                borderRadius: BorderRadius.circular(999),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          '${(progress * 100).round()}% du voyage',
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 11.5,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _HeroNextStepPanel extends StatelessWidget {
+  const _HeroNextStepPanel({
+    required this.event,
+    required this.fallbackLocation,
+  });
+
+  final MobilePlanningEvent? event;
+  final String fallbackLocation;
+
+  @override
+  Widget build(BuildContext context) {
+    final title = event != null && event!.titre.trim().isNotEmpty
+        ? event!.titre.trim()
+        : 'Programme partage a venir';
+    final meta = _heroPanelMeta(event) ?? fallbackLocation;
+
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 13),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.14),
-        ),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 26,
-              fontWeight: FontWeight.w800,
-              height: 1.05,
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            alignment: Alignment.center,
+            child: const Icon(
+              Icons.north_east_rounded,
+              size: 20,
               color: Colors.white,
             ),
           ),
-          if (meta != null) ...[
-            const SizedBox(height: 6),
-            Text(
-              meta!,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.white.withValues(alpha: 0.78),
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-          const SizedBox(height: 16),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(999),
-            child: LinearProgressIndicator(
-              minHeight: 5,
-              value: progress,
-              backgroundColor: Colors.white.withValues(alpha: 0.12),
-              valueColor: const AlwaysStoppedAnimation(Color(0xFF48D48F)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    height: 1.28,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  meta,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.74),
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 8),
-          Text(
-            progressLabel,
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.white.withValues(alpha: 0.82),
-              fontWeight: FontWeight.w700,
-            ),
+          const SizedBox(width: 10),
+          const Icon(
+            Icons.chevron_right_rounded,
+            size: 24,
+            color: Colors.white,
           ),
-          if (nextTitle != null) ...[
-            const SizedBox(height: 14),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(18),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.north_east_rounded,
-                    size: 18,
-                    color: Colors.white.withValues(alpha: 0.82),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          nextTitle!,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                          ),
-                        ),
-                        if (nextMeta != null) ...[
-                          const SizedBox(height: 2),
-                          Text(
-                            nextMeta!,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.white.withValues(alpha: 0.72),
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
         ],
       ),
+    );
+  }
+}
+
+class _SosSection extends ConsumerWidget {
+  const _SosSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final sosState = ref.watch(sosControllerProvider);
+    final activeAlert = sosState.valueOrNull;
+    final isLoading = sosState.isLoading;
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF5F5),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: AppColors.red.withValues(alpha: 0.07)),
+      ),
+      child: Column(
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 52,
+                height: 52,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFE53935), Color(0xFFD32F2F)],
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: const Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.shield_outlined, color: Colors.white, size: 20),
+                    SizedBox(height: 2),
+                    Text(
+                      'SOS',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Urgence SOS',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      'Utilisez ce bouton uniquement en cas d urgence reelle.',
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        height: 1.3,
+                        color: AppColors.textMuted,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              const Padding(
+                padding: EdgeInsets.only(top: 6),
+                child: Icon(
+                  Icons.chevron_right_rounded,
+                  size: 24,
+                  color: AppColors.red,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          activeAlert?.isActive == true
+              ? Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 12,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.red.withValues(alpha: 0.07),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(
+                      color: AppColors.red.withValues(alpha: 0.18),
+                    ),
+                  ),
+                  child: Text(
+                    'Alerte active depuis ${_formatHour(activeAlert!.createdAt)}',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      height: 1.45,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.red,
+                    ),
+                  ),
+                )
+              : Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFE53935), Color(0xFFD32F2F)],
+                    ),
+                    borderRadius: BorderRadius.circular(18),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFE53935).withValues(alpha: 0.18),
+                        blurRadius: 16,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  child: SosHoldButton(
+                    loading: isLoading,
+                    onTriggered: () async {
+                      try {
+                        final alert = await ref
+                            .read(sosControllerProvider.notifier)
+                            .triggerSos();
+                        if (!context.mounted) return;
+                        await showSosConfirmationSheet(context, alert: alert);
+                      } catch (error) {
+                        if (!context.mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              error.toString().replaceFirst('Exception: ', ''),
+                            ),
+                          ),
+                        );
+                      }
+                    },
+                  ),
+                ),
+        ],
+      ),
+    );
+  }
+}
+
+class _JourneySection extends StatelessWidget {
+  const _JourneySection({required this.planningAsync});
+
+  final AsyncValue<MobilePlanningData?> planningAsync;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Prochaine etape',
+          style: TextStyle(
+            fontSize: 14.5,
+            fontWeight: FontWeight.w700,
+            color: AppColors.primaryDark,
+          ),
+        ),
+        const SizedBox(height: 8),
+        AppCard(
+          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 13),
+          radius: AppRadii.lg,
+          child: _DailyFlowPanel(planningAsync: planningAsync),
+        ),
+      ],
     );
   }
 }
@@ -584,10 +972,10 @@ class _DailyFlowPanel extends StatelessWidget {
         ),
       ),
       error: (error, _) => _FlowCard(
-        title: 'Planning indisponible',
+        title: 'Planning unavailable',
         meta: error.toString(),
         icon: Icons.info_outline_rounded,
-        toneColor: const Color(0xFFE58E73),
+        toneColor: AppColors.red,
       ),
       data: (planning) {
         final today = planning?.plannings.isNotEmpty == true
@@ -595,25 +983,12 @@ class _DailyFlowPanel extends StatelessWidget {
             : null;
         final events = today?.evenements ?? const <MobilePlanningEvent>[];
         final currentEvent = _currentOrNextEvent(events);
-        final nextEvent = _nextEventAfter(events, currentEvent);
 
-        return Column(
-          children: [
-            _FlowCard(
-              title: currentEvent?.titre ?? 'Rien de partage pour aujourd hui',
-              meta: _eventMeta(currentEvent),
-              icon: Icons.route_outlined,
-              toneColor: const Color(0xFFD4AF37),
-            ),
-            const SizedBox(height: 12),
-            if (nextEvent != null)
-              _FlowCard(
-                title: nextEvent.titre,
-                meta: _eventMeta(nextEvent),
-                icon: Icons.north_east_rounded,
-                toneColor: const Color(0xFF2D7A4A),
-              ),
-          ],
+        return _FlowCard(
+          title: currentEvent?.titre ?? 'Nothing shared for today yet',
+          meta: _eventMeta(currentEvent) ?? 'Aucun lieu partage',
+          icon: Icons.route_outlined,
+          toneColor: const Color(0xFF1F6F54),
         );
       },
     );
@@ -629,59 +1004,115 @@ class _FlowCard extends StatelessWidget {
   });
 
   final String title;
-  final String? meta;
+  final String meta;
   final IconData icon;
   final Color toneColor;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.96),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.borderSoft),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: toneColor.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Icon(icon, color: toneColor),
+    final chipIcon = _homeEventIcon(icon);
+    final chipLabel = chipIcon == Icons.directions_bus_rounded
+        ? 'Transport'
+        : 'Etape';
+    return Row(
+      children: [
+        Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            color: toneColor.withValues(alpha: 0.10),
+            borderRadius: BorderRadius.circular(14),
           ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w800,
-                    height: 1.15,
-                  ),
+          child: Icon(icon, color: toneColor),
+        ),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 14.5,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
                 ),
-                if (meta != null && meta!.isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    meta!,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      height: 1.45,
-                      color: AppColors.textMuted,
-                    ),
-                  ),
-                ],
-              ],
+              ),
+              const SizedBox(height: 4),
+              Text(
+                meta,
+                style: const TextStyle(
+                  fontSize: 12.5,
+                  color: AppColors.textMuted,
+                ),
+              ),
+              const SizedBox(height: 8),
+              AppStatusChip(
+                label: chipLabel,
+                icon: chipIcon,
+                backgroundColor: toneColor.withValues(alpha: 0.10),
+                foregroundColor: toneColor,
+              ),
+            ],
+          ),
+        ),
+        Container(
+          width: 42,
+          height: 42,
+          decoration: BoxDecoration(
+            color: const Color(0xFFEAF5EE),
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(
+            Icons.chevron_right_rounded,
+            color: Color(0xFF1F6F54),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+IconData _homeEventIcon(IconData fallback) {
+  if (fallback == Icons.route_outlined) {
+    return Icons.directions_bus_rounded;
+  }
+  return fallback;
+}
+
+class _SoftScreenBackdrop extends StatelessWidget {
+  const _SoftScreenBackdrop();
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        Container(color: const Color(0xFFF7F7F3)),
+        Positioned(
+          top: -80,
+          left: -60,
+          child: Container(
+            width: 220,
+            height: 220,
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.05),
+              shape: BoxShape.circle,
             ),
           ),
-        ],
-      ),
+        ),
+        Positioned(
+          bottom: 130,
+          right: -70,
+          child: Container(
+            width: 220,
+            height: 220,
+            decoration: BoxDecoration(
+              color: AppColors.blue.withValues(alpha: 0.04),
+              shape: BoxShape.circle,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -710,20 +1141,22 @@ MobilePlanningEvent? _currentOrNextEvent(List<MobilePlanningEvent> events) {
 
 MobilePlanningEvent? _nextEventAfter(
   List<MobilePlanningEvent> events,
-  MobilePlanningEvent? current,
+  MobilePlanningEvent? currentEvent,
 ) {
-  if (current == null) return null;
-  final currentIndex = events.indexWhere((event) => event.id == current.id);
-  if (currentIndex < 0 || currentIndex >= events.length - 1) {
-    return null;
-  }
-  return events[currentIndex + 1];
+  if (events.isEmpty) return null;
+  if (currentEvent == null) return events.first;
+
+  final currentIndex = events.indexWhere((event) => event.id == currentEvent.id);
+  if (currentIndex == -1) return events.first;
+  if (currentIndex + 1 < events.length) return events[currentIndex + 1];
+  return currentEvent;
 }
 
 String? _primaryLocation(List<MobilePlanningEvent> events) {
   for (final event in events) {
     for (final lieu in event.lieux) {
-      if (lieu.trim().isNotEmpty) return lieu.trim();
+      final value = lieu.trim();
+      if (value.isNotEmpty) return value;
     }
   }
   return null;
@@ -731,12 +1164,42 @@ String? _primaryLocation(List<MobilePlanningEvent> events) {
 
 String? _eventMeta(MobilePlanningEvent? event) {
   if (event == null) return null;
+  final location = _primaryLocation([event]);
   final parts = <String>[
-    if (_primaryLocation([event]) != null) _primaryLocation([event])!,
+    if (location != null) location,
     if (event.heureDebutPrevue != null) _formatHour(event.heureDebutPrevue!),
   ];
   if (parts.isEmpty) return null;
   return parts.join(' · ');
+}
+
+String? _heroMeta(MobilePlanningEvent? event, MobilePlanningGroup? group) {
+  return _primaryLocation(event == null ? const [] : [event]) ?? group?.nom;
+}
+
+String? _heroPanelMeta(MobilePlanningEvent? event) {
+  if (event == null) return null;
+  final location = _primaryLocation([event]) ?? event.lieu?.trim();
+  if (location != null && location.isNotEmpty) {
+    return location;
+  }
+  if (event.heureDebutPrevue != null) {
+    return _formatHour(event.heureDebutPrevue!);
+  }
+  return null;
+}
+
+IconData _heroEventIcon(MobilePlanningEvent? event) {
+  switch (event?.type) {
+    case 'TRANSPORT':
+      return Icons.directions_bus_rounded;
+    case 'VISITE':
+      return Icons.explore_outlined;
+    case 'PRIERE':
+      return Icons.view_in_ar_outlined;
+    default:
+      return Icons.auto_awesome_rounded;
+  }
 }
 
 double _tripProgress(DateTime? start, DateTime? end, DateTime? currentDay) {

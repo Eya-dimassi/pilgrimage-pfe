@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
+import 'app_surfaces.dart';
 import 'brand_frame.dart';
 
 class RoleHomeTemplate extends StatelessWidget {
@@ -30,29 +31,20 @@ class RoleHomeTemplate extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 18),
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 18),
       children: [
-        Container(
-          padding: const EdgeInsets.all(22),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                AppColors.card,
-                accentColor.withValues(alpha: 0.08),
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(30),
-            border: Border.all(color: AppColors.borderSoft),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x12000000),
-                blurRadius: 30,
-                offset: Offset(0, 16),
-              ),
+        AppCard(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          radius: AppRadii.xl,
+          gradient: LinearGradient(
+            colors: [
+              AppColors.card,
+              accentColor.withValues(alpha: 0.10),
             ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
+          shadow: AppShadows.lifted,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -65,46 +57,39 @@ class RoleHomeTemplate extends StatelessWidget {
                       accentColor: accentColor,
                     ),
                   ),
-                  Container(
-                    width: 56,
-                    height: 56,
-                    decoration: BoxDecoration(
-                      color: AppColors.text,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Icon(
-                      icon,
-                      color: AppColors.background,
-                      size: 28,
-                    ),
+                  AppIconBadge(
+                    icon: icon,
+                    size: 56,
+                    backgroundColor: AppColors.primaryDark,
+                    foregroundColor: AppColors.goldBright,
                   ),
                 ],
               ),
-              const SizedBox(height: 18),
+              const SizedBox(height: AppSpacing.l),
               Text(
                 title,
                 style: const TextStyle(
-                  fontSize: 30,
+                  fontSize: 32,
                   height: 1.06,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w800,
                   letterSpacing: -1.0,
                 ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: AppSpacing.s),
               Text(
                 subtitle,
                 style: const TextStyle(
-                  fontSize: 14,
+                  fontSize: 14.5,
                   height: 1.5,
                   color: AppColors.textMuted,
                 ),
               ),
               if (headerExtra != null) ...[
-                const SizedBox(height: 18),
+                const SizedBox(height: AppSpacing.l),
                 headerExtra!,
               ],
               if (stats.isNotEmpty) ...[
-                const SizedBox(height: 18),
+                const SizedBox(height: AppSpacing.l),
                 Wrap(
                   spacing: 12,
                   runSpacing: 12,
@@ -117,28 +102,15 @@ class RoleHomeTemplate extends StatelessWidget {
           ),
         ),
         if (cards.isNotEmpty) ...[
-          const SizedBox(height: 22),
-          const Text(
-            'Fonctionnalites clefs',
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w700,
-              letterSpacing: -0.6,
-            ),
+          const SizedBox(height: AppSpacing.l),
+          const SectionTitle(
+            'Highlights',
+            subtitle:
+                'Useful shortcuts and clearer mobile cards built around your live trip data.',
           ),
-          const SizedBox(height: 8),
-          const Text(
-            'Des cartes plus claires, une palette plus douce et un langage visuel plus coherent sur mobile.',
-            style: TextStyle(
-              fontSize: 13,
-              height: 1.5,
-              color: AppColors.textMuted,
-            ),
-          ),
-          const SizedBox(height: 16),
           ...cards.map(
             (card) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.only(bottom: AppSpacing.sm),
               child: InfoCard(
                 card: card,
                 accentColor: accentColor,
@@ -166,39 +138,11 @@ class _RolePill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: accentColor.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: AppColors.borderSoft),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 8,
-              height: 8,
-              decoration: BoxDecoration(
-                color: accentColor,
-                shape: BoxShape.circle,
-              ),
-            ),
-            const SizedBox(width: 10),
-            Flexible(
-              child: Text(
-                label,
-                style: TextStyle(
-                  color: accentColor,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
+    return AppStatusChip(
+      label: label,
+      icon: Icons.auto_awesome_rounded,
+      backgroundColor: accentColor.withValues(alpha: 0.12),
+      foregroundColor: accentColor,
     );
   }
 }
@@ -217,21 +161,20 @@ class InfoCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final toneColor = card.toneColor ?? accentColor;
 
-    final content = Padding(
-      padding: const EdgeInsets.all(20),
+    return AppCard(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      radius: AppRadii.lg,
+      onTap: card.onTap,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 54,
-            height: 54,
-            decoration: BoxDecoration(
-              color: toneColor.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(18),
-            ),
-            child: Icon(card.icon, color: toneColor),
+          AppIconBadge(
+            icon: card.icon,
+            size: 54,
+            backgroundColor: toneColor.withValues(alpha: 0.12),
+            foregroundColor: toneColor,
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: AppSpacing.m),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -243,17 +186,17 @@ class InfoCard extends StatelessWidget {
                     foregroundColor: toneColor,
                     dotColor: toneColor,
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: AppSpacing.sm),
                 ],
                 Text(
                   card.title,
                   style: const TextStyle(
                     fontSize: 18,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w800,
                     letterSpacing: -0.4,
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: AppSpacing.s),
                 Text(
                   card.description,
                   style: const TextStyle(
@@ -265,30 +208,15 @@ class InfoCard extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: AppSpacing.s),
           if (card.onTap != null)
             Icon(
-              Icons.arrow_outward_rounded,
+              Icons.arrow_forward_ios_rounded,
               color: toneColor,
-              size: 18,
+              size: 16,
             ),
         ],
       ),
-    );
-
-    return Material(
-      color: AppColors.card.withValues(alpha: 0.95),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(26),
-        side: const BorderSide(color: AppColors.borderSoft),
-      ),
-      child: card.onTap == null
-          ? content
-          : InkWell(
-              onTap: card.onTap,
-              borderRadius: BorderRadius.circular(26),
-              child: content,
-            ),
     );
   }
 }
@@ -330,14 +258,15 @@ class _StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      constraints: const BoxConstraints(minWidth: 104),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: AppColors.section,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.border),
+    return AppCard(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.m,
+        vertical: AppSpacing.sm,
       ),
+      radius: AppRadii.md,
+      backgroundColor: AppColors.section,
+      borderColor: AppColors.border,
+      shadow: const [],
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,

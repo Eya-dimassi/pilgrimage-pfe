@@ -7,6 +7,7 @@ class MobilePlanningGroup {
     this.dateDepart,
     this.dateRetour,
     this.status,
+    this.nbPelerins,
   });
 
   final String id;
@@ -16,6 +17,7 @@ class MobilePlanningGroup {
   final DateTime? dateDepart;
   final DateTime? dateRetour;
   final String? status;
+  final int? nbPelerins;
 
   factory MobilePlanningGroup.fromJson(Map<String, dynamic> json) {
     return MobilePlanningGroup(
@@ -30,6 +32,32 @@ class MobilePlanningGroup {
           ? DateTime.tryParse(json['dateRetour'] as String)
           : null,
       status: json['status'] as String?,
+      nbPelerins: json['nbPelerins'] as int?,
+    );
+  }
+}
+
+class MobileGroupPelerin {
+  const MobileGroupPelerin({
+    required this.id,
+    required this.nom,
+    required this.prenom,
+    this.telephone,
+  });
+
+  final String id;
+  final String nom;
+  final String prenom;
+  final String? telephone;
+
+  String get fullName => '${prenom.trim()} ${nom.trim()}'.trim();
+
+  factory MobileGroupPelerin.fromJson(Map<String, dynamic> json) {
+    return MobileGroupPelerin(
+      id: json['id'] as String? ?? '',
+      nom: json['nom'] as String? ?? '',
+      prenom: json['prenom'] as String? ?? '',
+      telephone: json['telephone'] as String?,
     );
   }
 }
@@ -42,6 +70,7 @@ class MobilePlanningEvent {
     this.description,
     this.lieu,
     this.heureDebutPrevue,
+    this.etape,
     this.estValide = false,
     this.valideeAt,
     this.valideParGuideId,
@@ -53,9 +82,12 @@ class MobilePlanningEvent {
   final String? description;
   final String? lieu;
   final DateTime? heureDebutPrevue;
+  final String? etape;
   final bool estValide;
   final DateTime? valideeAt;
   final String? valideParGuideId;
+
+  bool get canBeValidated => type != 'PRIERE' && !estValide;
 
   List<String> get lieux {
     if (lieu == null || lieu!.trim().isEmpty) return const [];
@@ -76,6 +108,7 @@ class MobilePlanningEvent {
       heureDebutPrevue: json['heureDebutPrevue'] is String
           ? DateTime.tryParse(json['heureDebutPrevue'] as String)
           : null,
+      etape: json['etape'] as String?,
       estValide: json['estValide'] as bool? ?? false,
       valideeAt: json['valideeAt'] is String
           ? DateTime.tryParse(json['valideeAt'] as String)

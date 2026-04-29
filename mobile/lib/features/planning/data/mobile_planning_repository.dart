@@ -55,6 +55,20 @@ class MobilePlanningRepository {
     }
   }
 
+  Future<List<MobileGroupPelerin>> fetchGroupPelerins(String groupeId) async {
+    try {
+      final response = await _dio.get<List<dynamic>>(
+        ApiEndpoints.mobilePlanningGroupPelerins(groupeId),
+      );
+      return (response.data ?? const [])
+          .whereType<Map<String, dynamic>>()
+          .map(MobileGroupPelerin.fromJson)
+          .toList();
+    } on DioException catch (error) {
+      throw AuthException.fromDio(error);
+    }
+  }
+
   Future<void> validateEvent({
     required String groupeId,
     required String eventId,

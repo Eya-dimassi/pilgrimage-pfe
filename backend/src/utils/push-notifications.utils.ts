@@ -69,72 +69,81 @@ export async function sendPushToUsers(payload: PushPayload) {
     })
   }
 
-  const app = getFirebaseApp()
-  if (!app || uniqueUserIds.length === 0) {
-    return {
-      sentCount: 0,
-      failedCount: 0,
-      skipped: true,
+  try {
+    const app = getFirebaseApp()
+    if (!app || uniqueUserIds.length === 0) {
+      return {
+        sentCount: 0,
+        failedCount: 0,
+        skipped: true,
+      }
     }
-  }
 
-  const deviceTokens = await prisma.deviceToken.findMany({
-    where: {
-      utilisateurId: { in: uniqueUserIds },
-    },
-    select: {
-      id: true,
-      token: true,
-    },
-  })
-
-  const tokens = Array.from(new Set(deviceTokens.map((item) => item.token).filter(Boolean)))
-  if (!tokens.length) {
-    return {
-      sentCount: 0,
-      failedCount: 0,
-      skipped: true,
-    }
-  }
-
-  const response = await admin.messaging(app).sendEachForMulticast({
-    tokens,
-    notification: {
-      title: payload.title,
-      body: payload.body,
-    },
-    data: {
-      role: payload.role,
-      ...payload.data,
-    },
-    android: {
-      priority: 'high',
-      notification: {
-        channelId: 'high_importance_channel',
-      },
-    },
-  })
-
-  const invalidTokens = response.responses
-    .map((item, index) => ({ item, token: tokens[index] }))
-    .filter(({ item }) => !item.success)
-    .filter(({ item }) =>
-      item.error?.code === 'messaging/registration-token-not-registered' ||
-      item.error?.code === 'messaging/invalid-registration-token',
-    )
-    .map(({ token }) => token)
-
-  if (invalidTokens.length) {
-    await prisma.deviceToken.deleteMany({
+    const deviceTokens = await prisma.deviceToken.findMany({
       where: {
-        token: { in: invalidTokens },
+        utilisateurId: { in: uniqueUserIds },
+      },
+      select: {
+        id: true,
+        token: true,
       },
     })
-  }
 
-  return {
-    sentCount: response.successCount,
-    failedCount: response.failureCount,
-    skipped: false,
+    const tokens = Array.from(new Set(deviceTokens.map((item) => item.token).filter(Boolean)))
+    if (!tokens.length) {
+      return {
+        sentCount: 0,
+        failedCount: 0,
+        skipped: true,
+      }
+    }
+
+    const response = await admin.messaging(app).sendEachForMulticast({
+      tokens,
+      notification: {
+        title: payload.title,
+        body: payload.body,
+      },
+      data: {
+        role: payload.role,
+        ...payload.data,
+      },
+      android: {
+        priority: 'high',
+        notification: {
+          channelId: 'high_importance_channel',
+        },
+      },
+    })
+
+    const invalidTokens = response.responses
+      .map((item, index) => ({ item, token: tokens[index] }))
+      .filter(({ item }) => !item.success)
+      .filter(({ item }) =>
+        item.error?.code === 'messaging/registration-token-not-registered' ||
+        item.error?.code === 'messaging/invalid-registration-token',
+      )
+      .map(({ token }) => token)
+
+    if (invalidTokens.length) {
+      await prisma.deviceToken.deleteMany({
+        where: {
+          token: { in: invalidTokens },
+        },
+      })
+    }
+
+    return {
+      sentCount: response.successCount,
+      failedCount: response.failureCount,
+      skipped: false,
+    }
+  } catch (error) {
+    console.warn('Push delivery failed:', error)
+    return {
+      sentCount: 0,
+      failedCount: 0,
+      skipped: true,
+    }
   }
 }

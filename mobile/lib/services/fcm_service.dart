@@ -12,6 +12,7 @@ import '../firebase_options.dart';
 import 'local_notifications_service.dart';
 import 'notification_feed_refresh_service.dart';
 import 'notification_navigation_service.dart';
+import 'planning_feed_refresh_service.dart';
 
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -60,6 +61,9 @@ class FCMService {
 
     FirebaseMessaging.onMessage.listen((message) {
       NotificationFeedRefreshService.instance.bump();
+      if (_shouldRefreshPlanning(message.data)) {
+        PlanningFeedRefreshService.instance.bump();
+      }
       showFCMNotification(message);
     });
 
@@ -131,9 +135,28 @@ class FCMService {
 
   Future<void> _openMessage(RemoteMessage message) async {
     NotificationFeedRefreshService.instance.bump();
+    if (_shouldRefreshPlanning(message.data)) {
+      PlanningFeedRefreshService.instance.bump();
+    }
     final session = await _storage.readSession();
     final role = session?.user.role ?? 'PELERIN';
     NotificationNavigationService.openFromPayload(message.data, role: role);
+  }
+
+  bool _shouldRefreshPlanning(Map<String, dynamic> payload) {
+    final type = payload['type']?.toString().trim().toLowerCase();
+    final tab = payload['tab']?.toString().trim().toLowerCase();
+
+    if (payload['groupeId'] != null ||
+        payload['eventId'] != null ||
+        payload['etape'] != null) {
+      return true;
+    }
+
+    return type == 'planning_update' ||
+        type == 'upcoming_rendezvous' ||
+        type == 'planning' ||
+        tab == 'planning';
   }
 
   String get _platformLabel {

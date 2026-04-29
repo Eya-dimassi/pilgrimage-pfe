@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../theme/app_theme.dart';
 import '../../features/planning/domain/mobile_planning_models.dart';
+import '../../features/notifications/providers/mobile_notifications_provider.dart';
 import '../../features/planning/providers/mobile_planning_provider.dart';
 import 'adhan_panel.dart';
+import 'app_surfaces.dart';
 
 class HomeQuickAction {
   const HomeQuickAction({
@@ -31,6 +33,7 @@ class RoleJourneyHomeContent extends ConsumerWidget {
     required this.accentColor,
     this.roleToneLabel = '',
     this.quickActions = const [],
+    this.heroAssetPath = 'assets/images/mosque_guide.png',
   });
 
   final String firstName;
@@ -39,11 +42,12 @@ class RoleJourneyHomeContent extends ConsumerWidget {
   final Color accentColor;
   final String roleToneLabel;
   final List<HomeQuickAction> quickActions;
+  final String heroAssetPath;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedGroup = groupsAsync.valueOrNull?.isNotEmpty == true
-        ? groupsAsync.valueOrNull!.first
+        ? _pickBestGroup(groupsAsync.valueOrNull!)
         : null;
     final planningAsync = selectedGroup == null
         ? const AsyncValue<MobilePlanningData?>.data(null)
@@ -51,33 +55,178 @@ class RoleJourneyHomeContent extends ConsumerWidget {
               (value) => value,
             );
 
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 18),
+    Future<void> refreshHome() async {
+      ref.invalidate(mobilePlanningGroupsProvider);
+      ref.invalidate(mobileNotificationsProvider);
+      if (selectedGroup != null) {
+        ref.invalidate(mobilePlanningDetailProvider(selectedGroup.id));
+      }
+
+      await ref.read(mobilePlanningGroupsProvider.future);
+      if (selectedGroup != null) {
+        await ref.read(mobilePlanningDetailProvider(selectedGroup.id).future);
+      }
+      await ref.read(mobileNotificationsProvider.future);
+    }
+
+    return Stack(
       children: [
-        _RoleHero(
-          firstName: firstName,
-          fallbackGroupName: groupeNom,
-          group: selectedGroup,
-          planningAsync: planningAsync,
-        ),
-        const SizedBox(height: 14),
-        AdhanPanel(
-          accentColor: accentColor,
-          roleToneLabel: roleToneLabel,
-          compact: true,
-        ),
-        if (quickActions.isNotEmpty) ...[
-          const SizedBox(height: 14),
-          _QuickActionsRow(actions: quickActions),
-        ],
-        const SizedBox(height: 14),
-        _DailyFlowPanel(
-          planningAsync: planningAsync,
-          accentColor: accentColor,
+        const _SoftScreenBackdrop(),
+        RefreshIndicator(
+          color: accentColor,
+          onRefresh: refreshHome,
+          child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(18, 8, 18, 12),
+            children: [
+              _HomeHeader(
+                firstName: firstName,
+                groupeNom: groupeNom,
+              ),
+              const SizedBox(height: 12),
+              _RoleHero(
+                fallbackGroupName: groupeNom,
+                group: selectedGroup,
+                planningAsync: planningAsync,
+                heroAssetPath: heroAssetPath,
+              ),
+              const SizedBox(height: AppSpacing.m),
+              AdhanPanel(
+                accentColor: accentColor,
+                roleToneLabel: roleToneLabel,
+                compact: true,
+              ),
+              if (quickActions.isNotEmpty) ...[
+                const SizedBox(height: AppSpacing.m),
+                _QuickActionsRow(actions: quickActions),
+              ],
+              const SizedBox(height: AppSpacing.m),
+              const SectionTitle(
+                'Vue d ensemble',
+                subtitle:
+                    'Les etapes, lieux et reperes partages pour votre groupe aujourd hui.',
+                bottomPadding: AppSpacing.sm,
+                titleStyle: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.4,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              _DailyFlowPanel(
+                planningAsync: planningAsync,
+                accentColor: accentColor,
+              ),
+            ],
+          ),
         ),
       ],
     );
   }
+}
+
+class _HomeHeader extends StatelessWidget {
+  const _HomeHeader({
+    required this.firstName,
+    required this.groupeNom,
+  });
+
+  final String firstName;
+  final String? groupeNom;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Bonjour',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                firstName,
+                style: const TextStyle(
+                  fontSize: 31,
+                  fontWeight: FontWeight.w800,
+                  height: 0.98,
+                  letterSpacing: -0.8,
+                  color: AppColors.primaryDark,
+                ),
+              ),
+              if (groupeNom != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  groupeNom!,
+                  style: const TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF8A8F98),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+        Container(
+          width: 46,
+          height: 46,
+          decoration: const BoxDecoration(
+            color: Color(0xFF0F3D2E),
+            shape: BoxShape.circle,
+          ),
+          alignment: Alignment.center,
+          child: const Icon(
+            Icons.auto_awesome_rounded,
+            color: Colors.white,
+            size: 22,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+MobilePlanningGroup _pickBestGroup(List<MobilePlanningGroup> groups) {
+  int priority(MobilePlanningGroup group) {
+    switch (group.status) {
+      case 'EN_COURS':
+        return 0;
+      case 'PLANIFIE':
+        return 1;
+      case 'TERMINE':
+        return 2;
+      case 'ANNULE':
+        return 3;
+      default:
+        return 4;
+    }
+  }
+
+  final sortedGroups = [...groups]
+    ..sort((left, right) {
+      final priorityDiff = priority(left) - priority(right);
+      if (priorityDiff != 0) return priorityDiff;
+
+      final rightStart = right.dateDepart?.millisecondsSinceEpoch ?? 0;
+      final leftStart = left.dateDepart?.millisecondsSinceEpoch ?? 0;
+      if (rightStart != leftStart) return rightStart.compareTo(leftStart);
+
+      final rightEnd = right.dateRetour?.millisecondsSinceEpoch ?? 0;
+      final leftEnd = left.dateRetour?.millisecondsSinceEpoch ?? 0;
+      if (rightEnd != leftEnd) return rightEnd.compareTo(leftEnd);
+
+      return right.annee.compareTo(left.annee);
+    });
+
+  return sortedGroups.first;
 }
 
 class _QuickActionsRow extends StatelessWidget {
@@ -111,63 +260,64 @@ class _QuickActionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: AppColors.card,
-      borderRadius: BorderRadius.circular(22),
-      child: InkWell(
-        onTap: action.onTap,
-        borderRadius: BorderRadius.circular(22),
-        child: Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: AppColors.borderSoft),
+    return AppCard(
+      padding: const EdgeInsets.all(14),
+      radius: AppRadii.lg,
+      onTap: action.onTap,
+      gradient: LinearGradient(
+        colors: [
+          Colors.white,
+          action.toneColor.withValues(alpha: 0.06),
+        ],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      ),
+      child: Row(
+        children: [
+          AppIconBadge(
+            icon: action.icon,
+            size: 38,
+            backgroundColor: action.toneColor.withValues(alpha: 0.12),
+            foregroundColor: action.toneColor,
           ),
-          child: Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: action.toneColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(14),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  action.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
-                child: Icon(action.icon, color: action.toneColor),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      action.label,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w800,
-                      ),
+                if (action.description != null &&
+                    action.description!.trim().isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    action.description!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 10.5,
+                      color: AppColors.textMuted,
+                      fontWeight: FontWeight.w600,
                     ),
-                    if (action.description != null &&
-                        action.description!.trim().isNotEmpty) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        action.description!,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 11.5,
-                          color: AppColors.textMuted,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ],
+                  ),
+                ],
+              ],
+            ),
           ),
-        ),
+          const SizedBox(width: 6),
+          Icon(
+            Icons.chevron_right_rounded,
+            size: 18,
+            color: action.toneColor,
+          ),
+        ],
       ),
     );
   }
@@ -175,16 +325,16 @@ class _QuickActionCard extends StatelessWidget {
 
 class _RoleHero extends StatelessWidget {
   const _RoleHero({
-    required this.firstName,
     required this.fallbackGroupName,
     required this.group,
     required this.planningAsync,
+    required this.heroAssetPath,
   });
 
-  final String firstName;
   final String? fallbackGroupName;
   final MobilePlanningGroup? group;
   final AsyncValue<MobilePlanningData?> planningAsync;
+  final String heroAssetPath;
 
   @override
   Widget build(BuildContext context) {
@@ -195,70 +345,113 @@ class _RoleHero extends StatelessWidget {
     final currentEvent = _currentOrNextEvent(today?.evenements ?? const []);
     final nextEvent = _nextEventAfter(today?.evenements ?? const [], currentEvent);
     final groupLabel = group?.nom ?? fallbackGroupName ?? 'Votre groupe';
-    final tripPercent = _tripProgress(
-      group?.dateDepart,
-      group?.dateRetour,
-      today?.date,
-    );
-
     return Container(
-      padding: const EdgeInsets.all(22),
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
       decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(22),
         gradient: const LinearGradient(
           colors: [
-            Color(0xFF103B2C),
-            Color(0xFF175340),
+            Color(0xFF0F3D2E),
+            Color(0xFF156243),
+            Color(0xFF1E7A58),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(30),
-        boxShadow: const [
+        boxShadow: [
           BoxShadow(
-            color: Color(0x16000000),
-            blurRadius: 28,
-            offset: Offset(0, 16),
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Stack(
         children: [
-          Text(
-            'Bonjour',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.white.withValues(alpha: 0.82),
-              fontWeight: FontWeight.w600,
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(22),
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.white.withValues(alpha: 0.08),
+                    Colors.transparent,
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
             ),
           ),
-          const SizedBox(height: 6),
-          Text(
-            firstName,
-            style: const TextStyle(
-              fontSize: 34,
-              fontWeight: FontWeight.w800,
-              height: 1.0,
-              color: Colors.white,
+          Positioned(
+            right: 8,
+            top: 28,
+            child: Opacity(
+              opacity: 0.84,
+              child: AppHeroAsset(
+                assetPath: heroAssetPath,
+                width: 122,
+                height: 132,
+                scale: 1.14,
+                alignment: Alignment.bottomCenter,
+              ),
             ),
           ),
-          const SizedBox(height: 6),
-          Text(
-            groupLabel,
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.white.withValues(alpha: 0.74),
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 18),
-          _StageCard(
-            title: currentEvent?.titre ?? 'Aucun rendez-vous partage',
-            meta: _eventMeta(currentEvent),
-            progress: tripPercent,
-            progressLabel: '${(tripPercent * 100).round()}% du voyage',
-            nextTitle: nextEvent?.titre,
-            nextMeta: _eventMeta(nextEvent),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        AppStatusChip(
+                          label: group?.typeVoyage == 'HAJJ'
+                              ? 'HAJJ ${group?.annee ?? ''}'.trim()
+                              : 'OMRA ${group?.annee ?? ''}'.trim(),
+                          icon: Icons.auto_awesome_rounded,
+                          backgroundColor: Colors.white.withValues(alpha: 0.10),
+                          foregroundColor: const Color(0xFF72E0A5),
+                          compact: true,
+                        ),
+                        const SizedBox(height: 14),
+                        Text(
+                          currentEvent?.titre ?? 'Aucune etape partagee pour le moment',
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 17,
+                            fontWeight: FontWeight.w800,
+                            height: 1.18,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          _heroMeta(currentEvent, groupLabel) ?? 'Programme du jour',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.74),
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 120),
+                ],
+              ),
+              const SizedBox(height: 18),
+              _HeroEventPanel(
+                currentEvent: currentEvent,
+                nextEvent: nextEvent,
+                fallbackLocation: groupLabel,
+              ),
+            ],
           ),
         ],
       ),
@@ -266,124 +459,180 @@ class _RoleHero extends StatelessWidget {
   }
 }
 
-class _StageCard extends StatelessWidget {
-  const _StageCard({
-    required this.title,
-    required this.meta,
-    required this.progress,
-    required this.progressLabel,
-    required this.nextTitle,
-    required this.nextMeta,
+class _HeroEventPanel extends StatelessWidget {
+  const _HeroEventPanel({
+    required this.currentEvent,
+    required this.nextEvent,
+    required this.fallbackLocation,
   });
 
-  final String title;
-  final String? meta;
-  final double progress;
-  final String progressLabel;
-  final String? nextTitle;
-  final String? nextMeta;
+  final MobilePlanningEvent? currentEvent;
+  final MobilePlanningEvent? nextEvent;
+  final String fallbackLocation;
 
   @override
   Widget build(BuildContext context) {
+    final currentTitle = currentEvent?.titre ?? 'Programme du moment';
+    final currentMeta = _heroPanelMeta(currentEvent) ?? fallbackLocation;
+    final upcomingTitle = nextEvent?.titre ?? 'Aucune suite partagee';
+    final upcomingMeta = _heroPanelMeta(nextEvent) ?? 'En attente de la prochaine etape';
+
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 13),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.14),
-        ),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 26,
-              fontWeight: FontWeight.w800,
-              height: 1.05,
-              color: Colors.white,
-            ),
+          _HeroEventRow(
+            icon: _eventTypeIcon(currentEvent?.type),
+            title: currentTitle,
+            meta: currentMeta,
+            label: 'En cours',
           ),
-          if (meta != null) ...[
-            const SizedBox(height: 6),
-            Text(
-              meta!,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.white.withValues(alpha: 0.78),
-                fontWeight: FontWeight.w600,
+          if (nextEvent != null) ...[
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              child: Divider(
+                height: 1,
+                thickness: 1,
+                color: Colors.white.withValues(alpha: 0.10),
               ),
             ),
-          ],
-          const SizedBox(height: 16),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(999),
-            child: LinearProgressIndicator(
-              minHeight: 5,
-              value: progress,
-              backgroundColor: Colors.white.withValues(alpha: 0.12),
-              valueColor: const AlwaysStoppedAnimation(Color(0xFF48D48F)),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            progressLabel,
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.white.withValues(alpha: 0.82),
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          if (nextTitle != null) ...[
-            const SizedBox(height: 14),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(18),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.north_east_rounded,
-                    size: 18,
-                    color: Colors.white.withValues(alpha: 0.82),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          nextTitle!,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                          ),
-                        ),
-                        if (nextMeta != null) ...[
-                          const SizedBox(height: 2),
-                          Text(
-                            nextMeta!,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.white.withValues(alpha: 0.72),
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+            _HeroEventRow(
+              icon: _eventTypeIcon(nextEvent?.type),
+              title: upcomingTitle,
+              meta: upcomingMeta,
+              label: 'Ensuite',
+              trailingIcon: Icons.chevron_right_rounded,
             ),
           ],
         ],
       ),
+    );
+  }
+}
+
+class _HeroEventRow extends StatelessWidget {
+  const _HeroEventRow({
+    required this.icon,
+    required this.title,
+    required this.meta,
+    required this.label,
+    this.trailingIcon,
+  });
+
+  final IconData icon;
+  final String title;
+  final String meta;
+  final String label;
+  final IconData? trailingIcon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 34,
+          height: 34,
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          alignment: Alignment.center,
+          child: Icon(
+            icon,
+            size: 18,
+            color: Colors.white,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.68),
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  height: 1.2,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                meta,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.74),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (trailingIcon != null) ...[
+          const SizedBox(width: 8),
+          Icon(
+            trailingIcon,
+            size: 22,
+            color: Colors.white,
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _SoftScreenBackdrop extends StatelessWidget {
+  const _SoftScreenBackdrop();
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        Container(color: const Color(0xFFF7F7F3)),
+        Positioned(
+          top: -80,
+          left: -60,
+          child: Container(
+            width: 220,
+            height: 220,
+            decoration: BoxDecoration(
+              color: AppColors.primary.withValues(alpha: 0.05),
+              shape: BoxShape.circle,
+            ),
+          ),
+        ),
+        Positioned(
+          bottom: 130,
+          right: -70,
+          child: Container(
+            width: 220,
+            height: 220,
+            decoration: BoxDecoration(
+              color: AppColors.blue.withValues(alpha: 0.04),
+              shape: BoxShape.circle,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -407,37 +656,40 @@ class _DailyFlowPanel extends StatelessWidget {
         ),
       ),
       error: (error, _) => _FlowCard(
+        eventType: null,
         title: 'Planning indisponible',
         meta: error.toString(),
         icon: Icons.info_outline_rounded,
-        toneColor: const Color(0xFFE58E73),
+        toneColor: AppColors.red,
       ),
       data: (planning) {
         final today = planning?.plannings.isNotEmpty == true
             ? planning!.plannings.first
             : null;
         final events = today?.evenements ?? const <MobilePlanningEvent>[];
-        final currentEvent = _currentOrNextEvent(events);
-        final nextEvent = _nextEventAfter(events, currentEvent);
+          final currentEvent = _currentOrNextEvent(events);
+          final nextEvent = _nextEventAfter(events, currentEvent);
 
-        return Column(
-          children: [
-            _FlowCard(
-              title: currentEvent?.titre ?? 'Rien de partage pour aujourd hui',
-              meta: _eventMeta(currentEvent),
-              icon: Icons.route_outlined,
-              toneColor: accentColor,
-            ),
-            const SizedBox(height: 12),
-            if (nextEvent != null)
+          return Column(
+            children: [
               _FlowCard(
-                title: nextEvent.titre,
-                meta: _eventMeta(nextEvent),
-                icon: Icons.north_east_rounded,
-                toneColor: const Color(0xFF2D7A4A),
+                eventType: currentEvent?.type,
+                title: currentEvent?.titre ?? 'Aucune etape partagee pour aujourd hui',
+                meta: _eventMeta(currentEvent),
+                icon: _eventTypeIcon(currentEvent?.type),
+                toneColor: _eventTypeColor(currentEvent?.type),
               ),
-          ],
-        );
+              const SizedBox(height: 12),
+              if (nextEvent != null)
+                _FlowCard(
+                  eventType: nextEvent.type,
+                  title: nextEvent.titre,
+                  meta: _eventMeta(nextEvent),
+                  icon: _eventTypeIcon(nextEvent.type),
+                  toneColor: _eventTypeColor(nextEvent.type),
+                ),
+            ],
+          );
       },
     );
   }
@@ -445,12 +697,14 @@ class _DailyFlowPanel extends StatelessWidget {
 
 class _FlowCard extends StatelessWidget {
   const _FlowCard({
+    required this.eventType,
     required this.title,
     required this.meta,
     required this.icon,
     required this.toneColor,
   });
 
+  final String? eventType;
   final String title;
   final String? meta;
   final IconData icon;
@@ -458,25 +712,17 @@ class _FlowCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.96),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppColors.borderSoft),
-      ),
+    return AppCard(
+      padding: const EdgeInsets.all(14),
       child: Row(
         children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: toneColor.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Icon(icon, color: toneColor),
+          AppIconBadge(
+            icon: icon,
+            size: 40,
+            backgroundColor: toneColor.withValues(alpha: 0.12),
+            foregroundColor: toneColor,
           ),
-          const SizedBox(width: 14),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -484,22 +730,30 @@ class _FlowCard extends StatelessWidget {
                 Text(
                   title,
                   style: const TextStyle(
-                    fontSize: 17,
+                    fontSize: 14.5,
                     fontWeight: FontWeight.w800,
                     height: 1.15,
                   ),
                 ),
                 if (meta != null && meta!.isNotEmpty) ...[
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 3),
                   Text(
                     meta!,
                     style: const TextStyle(
-                      fontSize: 13,
-                      height: 1.45,
+                      fontSize: 11.5,
+                      height: 1.35,
                       color: AppColors.textMuted,
                     ),
                   ),
                 ],
+                const SizedBox(height: 7),
+                AppStatusChip(
+                  label: _eventTypeLabel(eventType),
+                  icon: icon,
+                  backgroundColor: toneColor.withValues(alpha: 0.12),
+                  foregroundColor: toneColor,
+                  compact: true,
+                ),
               ],
             ),
           ),
@@ -563,20 +817,65 @@ String? _eventMeta(MobilePlanningEvent? event) {
   return parts.join(' - ');
 }
 
-double _tripProgress(DateTime? start, DateTime? end, DateTime? currentDay) {
-  if (start == null || end == null || currentDay == null) return 0.0;
-  final normalizedStart = DateTime(start.year, start.month, start.day);
-  final normalizedEnd = DateTime(end.year, end.month, end.day);
-  final normalizedCurrent = DateTime(
-    currentDay.year,
-    currentDay.month,
-    currentDay.day,
-  );
-  final totalDays = normalizedEnd.difference(normalizedStart).inDays + 1;
-  if (totalDays <= 0) return 0.0;
-  final currentIndex =
-      normalizedCurrent.difference(normalizedStart).inDays + 1;
-  return (currentIndex / totalDays).clamp(0.0, 1.0);
+String? _heroMeta(MobilePlanningEvent? event, String fallbackLabel) {
+  return _primaryLocation(event == null ? const [] : [event]) ?? fallbackLabel;
+}
+
+String? _heroPanelMeta(MobilePlanningEvent? event) {
+  if (event == null) return null;
+  final location = _primaryLocation([event]) ?? event.lieu?.trim();
+  if (location != null && location.isNotEmpty) {
+    return location;
+  }
+  if (event.heureDebutPrevue != null) {
+    return _formatHour(event.heureDebutPrevue!);
+  }
+  return null;
+}
+
+IconData _eventTypeIcon(String? type) {
+  switch (type) {
+    case 'TRANSPORT':
+      return Icons.directions_bus_rounded;
+    case 'VISITE':
+      return Icons.explore_outlined;
+    case 'RITE':
+      return Icons.mosque_outlined;
+    case 'PRIERE':
+      return Icons.wb_twilight_outlined;
+    default:
+      return Icons.route_outlined;
+  }
+}
+
+Color _eventTypeColor(String? type) {
+  switch (type) {
+    case 'TRANSPORT':
+      return AppColors.blue;
+    case 'VISITE':
+      return AppColors.green;
+    case 'RITE':
+      return AppColors.gold;
+    case 'PRIERE':
+      return const Color(0xFFD4AF37);
+    default:
+      return AppColors.primary;
+  }
+}
+
+String _eventTypeLabel(String? type) {
+  switch (type) {
+    case 'TRANSPORT':
+      return 'Transport';
+    case 'VISITE':
+      return 'Visite';
+    case 'RITE':
+      return 'Rite';
+    case 'PRIERE':
+      return 'Priere';
+    default:
+      return 'Etape';
+  }
 }
 
 String _formatHour(DateTime value) {

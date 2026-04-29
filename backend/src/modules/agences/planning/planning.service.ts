@@ -395,13 +395,6 @@ export async function shiftPlanningVoyage(agenceId: string, groupeId: string, da
     }
   }
 
-  const shiftedDates = plannings.map((planning) => ({
-    id: planning.id,
-    nextDate: addDays(startOfASTDay(planning.date), offsetDays),
-  }))
-
-  shiftedDates.forEach((planning) => validatePlanningWindow(groupe, planning.nextDate))
-
   const shiftedDateDepart = groupe.dateDepart
     ? addDays(startOfASTDay(groupe.dateDepart), offsetDays)
     : null
@@ -412,8 +405,28 @@ export async function shiftPlanningVoyage(agenceId: string, groupeId: string, da
     ? addDays(startOfASTDay(groupe.hajjStartDate), offsetDays)
     : null
 
+  const shiftedGroupe = {
+    ...groupe,
+    dateDepart: shiftedDateDepart ?? groupe.dateDepart,
+    dateRetour: shiftedDateRetour ?? groupe.dateRetour,
+    hajjStartDate: shiftedHajjStartDate ?? groupe.hajjStartDate,
+  }
+  const shiftedDates = plannings.map((planning, index) => ({
+    id: planning.id,
+    nextDate: addDays(startOfASTDay(planning.date), offsetDays),
+    temporaryDate: new Date(Date.UTC(1900, 0, index + 1)),
+  }))
+
+  shiftedDates.forEach((planning) => validatePlanningWindow(shiftedGroupe, planning.nextDate))
+
   await prisma.$transaction(
     [
+      ...shiftedDates.map((planning) =>
+        prisma.planningQuotidien.update({
+          where: { id: planning.id },
+          data: { date: planning.temporaryDate },
+        }),
+      ),
       ...shiftedDates.map((planning) =>
         prisma.planningQuotidien.update({
           where: { id: planning.id },
