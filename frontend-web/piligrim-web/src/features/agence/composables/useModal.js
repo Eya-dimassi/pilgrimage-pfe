@@ -108,6 +108,7 @@ export function useModal() {
       form.value = {
         prenom: target.utilisateur?.prenom,
         nom: target.utilisateur?.nom,
+        email: target.utilisateur?.email,
         telephone: target.utilisateur?.telephone,
         nationalite: target.nationalite,
         numeroPasseport: target.numeroPasseport,
@@ -116,6 +117,7 @@ export function useModal() {
       form.value = {
         prenom: target.utilisateur?.prenom,
         nom: target.utilisateur?.nom,
+        email: target.utilisateur?.email,
         telephone: target.utilisateur?.telephone,
         specialite: target.specialite,
       }

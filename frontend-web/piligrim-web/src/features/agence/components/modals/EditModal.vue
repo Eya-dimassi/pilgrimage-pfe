@@ -4,6 +4,10 @@
       <template v-if="editType !== 'groupe'">
         <div class="form-field"><label>Prenom</label><input v-model="form.prenom" /></div>
         <div class="form-field"><label>Nom</label><input v-model="form.nom" /></div>
+        <div class="form-field">
+          <label>Email</label>
+          <input v-model="form.email" type="email" placeholder="email@exemple.com" />
+        </div>
         <div class="form-field full">
           <label>Telephone</label>
           <PhoneNumberField v-model="form.telephone" :id="`${editType}-edit-phone`" />
