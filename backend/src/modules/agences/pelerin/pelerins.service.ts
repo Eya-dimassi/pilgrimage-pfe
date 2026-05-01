@@ -273,6 +273,7 @@ export const updatePelerin = async (
   data: {
     nom?: string;
     prenom?: string;
+    email?: string;
     telephone?: string;
     nationalite?: string;
     numeroPasseport?: string;
@@ -282,47 +283,101 @@ export const updatePelerin = async (
   const pelerin = await prisma.pelerin.findFirst({ where: { id: pelerinId, agenceId } });
   if (!pelerin) throw new Error('Pèlerin introuvable');
 
-  const { nom, prenom, telephone, ...pelerinFields } = data;
+  const normalizedNom = data.nom === undefined ? undefined : data.nom.trim();
+  const normalizedPrenom = data.prenom === undefined ? undefined : data.prenom.trim();
+  const normalizedTelephone = data.telephone === undefined ? undefined : data.telephone.trim();
+  const normalizedEmail = data.email === undefined ? undefined : data.email.trim().toLowerCase();
+  const normalizedNationalite = data.nationalite === undefined ? undefined : data.nationalite.trim();
+  const normalizedNumeroPasseport =
+    data.numeroPasseport === undefined ? undefined : data.numeroPasseport.trim();
+  const normalizedDateNaissance =
+    data.dateNaissance === undefined ? undefined : data.dateNaissance.trim();
 
-  if (nom || prenom || telephone) {
-    await prisma.utilisateur.update({
-      where: { id: pelerin.utilisateurId },
-      data: {
-        ...(nom && { nom }),
-        ...(prenom && { prenom }),
-        ...(telephone && { telephone }),
-      },
-    });
+  if (normalizedNom !== undefined && !normalizedNom) {
+    throw new Error('Le nom ne peut pas être vide');
+  }
+  if (normalizedPrenom !== undefined && !normalizedPrenom) {
+    throw new Error('Le prénom ne peut pas être vide');
   }
 
-  return prisma.pelerin.update({
-    where: { id: pelerinId },
-    data: {
-      ...(pelerinFields.nationalite && { nationalite: pelerinFields.nationalite }),
-      ...(pelerinFields.numeroPasseport && { numeroPasseport: pelerinFields.numeroPasseport }),
-      ...(pelerinFields.dateNaissance && { dateNaissance: new Date(pelerinFields.dateNaissance) }),
-    },
-    include: {
-      utilisateur: {
-        select: { id: true, nom: true, prenom: true, email: true, telephone: true, actif: true },
+  if (normalizedEmail !== undefined) {
+    if (!normalizedEmail) throw new Error("L'email ne peut pas être vide");
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(normalizedEmail)) throw new Error('Format email invalide');
+
+    const existingUser = await prisma.utilisateur.findFirst({
+      where: {
+        email: normalizedEmail,
+        id: { not: pelerin.utilisateurId },
       },
-      groupes: {
-        where: { actif: true },
-        take: 1,
-        orderBy: { dateDebut: 'desc' },
-        include: {
-          groupe: { select: { id: true, nom: true } },
+      select: { id: true },
+    });
+
+    if (existingUser) throw new Error('Cet email est déjà utilisé');
+  }
+
+  let parsedDateNaissance: Date | null | undefined = undefined;
+  if (normalizedDateNaissance !== undefined) {
+    if (!normalizedDateNaissance) {
+      parsedDateNaissance = null;
+    } else {
+      const parsed = new Date(normalizedDateNaissance);
+      if (Number.isNaN(parsed.getTime())) {
+        throw new Error('Date de naissance invalide');
+      }
+      parsedDateNaissance = parsed;
+    }
+  }
+
+  const updatedPelerin = await prisma.$transaction(async (tx) => {
+    const utilisateurUpdateData: any = {};
+    if (normalizedNom !== undefined) utilisateurUpdateData.nom = normalizedNom;
+    if (normalizedPrenom !== undefined) utilisateurUpdateData.prenom = normalizedPrenom;
+    if (normalizedEmail !== undefined) utilisateurUpdateData.email = normalizedEmail;
+    if (normalizedTelephone !== undefined) utilisateurUpdateData.telephone = normalizedTelephone || null;
+
+    if (Object.keys(utilisateurUpdateData).length > 0) {
+      await tx.utilisateur.update({
+        where: { id: pelerin.utilisateurId },
+        data: utilisateurUpdateData,
+      });
+    }
+
+    const pelerinUpdateData: any = {};
+    if (normalizedNationalite !== undefined) pelerinUpdateData.nationalite = normalizedNationalite || null;
+    if (normalizedNumeroPasseport !== undefined) {
+      pelerinUpdateData.numeroPasseport = normalizedNumeroPasseport || null;
+    }
+    if (parsedDateNaissance !== undefined) pelerinUpdateData.dateNaissance = parsedDateNaissance;
+
+    const updated = await tx.pelerin.update({
+      where: { id: pelerinId },
+      data: pelerinUpdateData,
+      include: {
+        utilisateur: {
+          select: { id: true, nom: true, prenom: true, email: true, telephone: true, actif: true },
+        },
+        groupes: {
+          where: { actif: true },
+          take: 1,
+          orderBy: { dateDebut: 'desc' },
+          include: {
+            groupe: { select: { id: true, nom: true } },
+          },
         },
       },
-    },
-  }).then((p) => {
-    const membership = p.groupes?.[0] ?? null;
-    return {
-      ...p,
-      groupeId: membership?.groupeId ?? null,
-      groupe: membership?.groupe ?? null,
-    };
+    });
+
+    return updated;
   });
+
+  const membership = updatedPelerin.groupes?.[0] ?? null;
+  return {
+    ...updatedPelerin,
+    groupeId: membership?.groupeId ?? null,
+    groupe: membership?.groupe ?? null,
+  };
 };
 
 // ── DELETE ────────────────────────────────────────────────────────────────────
@@ -370,5 +425,4 @@ export const resendActivationEmail = async (pelerinId: string, agenceId: string)
 
   return { message: "Email d'activation renvoyé avec succès" };
 };
-
 
