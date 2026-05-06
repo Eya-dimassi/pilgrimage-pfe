@@ -1,7 +1,8 @@
-// backend/src/modules/agence/groupes/groupes.service.ts
+﻿// backend/src/modules/agence/groupes/groupes.service.ts
 
 import { addDays, startOfDay } from 'date-fns';
 import prisma from '../../../config/prisma';
+import { syncEffectiveStatuses, withEffectiveGroupStatus } from './group-status.utils';
 
 function mapGroupeForAgenceDashboard(groupe: any) {
   const guidesList = Array.isArray(groupe.guides)
@@ -219,7 +220,18 @@ export const getGroupes = async (agenceId: string) => {
     orderBy: { createdAt: 'desc' },
   });
 
-  return list.map(mapGroupeForAgenceDashboard);
+  const normalizedList = await syncEffectiveStatuses(
+    (id, currentStatus, nextStatus) =>
+      prisma.groupe.updateMany({
+        where: {
+          id,
+          ...(currentStatus ? { status: currentStatus as 'PLANIFIE' | 'EN_COURS' | 'TERMINE' | 'ANNULE' } : {}),
+        },
+        data: { status: nextStatus },
+      }),
+    list,
+  );
+  return normalizedList.map(mapGroupeForAgenceDashboard);
 };
 
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -265,7 +277,7 @@ export const getGroupeById = async (agenceId: string, groupeId: string) => {
     throw new Error('Groupe introuvable');
   }
   
-  return mapGroupeForAgenceDashboard(groupe);
+  return mapGroupeForAgenceDashboard(withEffectiveGroupStatus(groupe));
 };
 
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•

@@ -74,7 +74,7 @@ model DeviceToken {
 }
 
 model Notification {
-  id            String   @id @default(uuid())
+  id            String    @id @default(uuid())
   utilisateurId String
   title         String
   body          String
@@ -83,14 +83,29 @@ model Notification {
   groupeId      String?
   eventId       String?
   etape         String?
-  isRead        Boolean  @default(false)
+  isRead        Boolean   @default(false)
   readAt        DateTime?
-  createdAt     DateTime @default(now())
+  createdAt     DateTime  @default(now())
 
   utilisateur Utilisateur @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
 
   @@index([utilisateurId, createdAt(sort: Desc)])
   @@index([utilisateurId, isRead])
+}
+
+model RagChunk {
+  id         String                     @id @default(uuid())
+  text       String
+  source     String
+  section    String?
+  audience   String[]
+  language   String                     @default("fr")
+  tags       String[]
+  documentId String?
+  embedding  Unsupported("vector(768)")
+  createdAt  DateTime                   @default(now())
+
+  @@index([language])
 }
 
 // ======================================================
@@ -133,29 +148,29 @@ model Guide {
   utilisateur Utilisateur  @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
   agence      AgenceVoyage @relation(fields: [agenceId], references: [id])
 
-  groupes         GroupeGuide[]
+  groupes           GroupeGuide[]
   evenementsValides EvenementPlanning[]
-  appelsPresence  AppelPresence[]
-  incidents       Incident[]
-  alertesResolues AlerteSOS[]          @relation("GuideResolutionSOS")
+  appelsPresence    AppelPresence[]
+  incidents         Incident[]
+  alertesResolues   AlerteSOS[]         @relation("GuideResolutionSOS")
 
   @@index([agenceId])
 }
 
 model Groupe {
-  id          String       @id @default(uuid())
-  nom         String
-  description String?
-  annee       Int
-  typeVoyage  TypeVoyage   @default(HAJJ)
-  agenceId    String
-  nbMax       Int?
-  dateDepart  DateTime?
-  dateRetour  DateTime?
+  id            String       @id @default(uuid())
+  nom           String
+  description   String?
+  annee         Int
+  typeVoyage    TypeVoyage   @default(HAJJ)
+  agenceId      String
+  nbMax         Int?
+  dateDepart    DateTime?
+  dateRetour    DateTime?
   hajjStartDate DateTime?
-  status      StatutGroupe @default(PLANIFIE)
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  status        StatutGroupe @default(PLANIFIE)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
 
   agence AgenceVoyage @relation(fields: [agenceId], references: [id])
 
@@ -262,7 +277,6 @@ model FamillePelerin {
   @@index([pelerinId])
 }
 
-
 // ======================================================
 // SPRINT 2 — PLANNING QUOTIDIEN
 // ======================================================
@@ -287,18 +301,20 @@ model EvenementPlanning {
   planningQuotidienId String
   type                TypeEvenement
   titre               String
-  etape               EtapeVoyage? 
+  etape               EtapeVoyage?
   description         String?
   lieu                String?
   heureDebutPrevue    DateTime?
-  estValide        Boolean   @default(false)
-  valideParGuideId String?
-  valideeAt        DateTime?
+  status              StatutEvenement @default(PLANIFIE)
+  estValide           Boolean         @default(false)
+  valideParGuideId    String?
+  valideeAt           DateTime?
   createdAt           DateTime        @default(now())
   updatedAt           DateTime        @updatedAt
 
   planningQuotidien PlanningQuotidien @relation(fields: [planningQuotidienId], references: [id], onDelete: Cascade)
   validePar         Guide?            @relation(fields: [valideParGuideId], references: [id])
+
   @@index([planningQuotidienId])
   @@index([valideParGuideId])
   @@index([etape])
@@ -420,6 +436,13 @@ enum TypeVoyage {
 }
 
 enum StatutGroupe {
+  PLANIFIE
+  EN_COURS
+  TERMINE
+  ANNULE
+}
+
+enum StatutEvenement {
   PLANIFIE
   EN_COURS
   TERMINE

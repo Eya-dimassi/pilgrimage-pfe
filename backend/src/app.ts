@@ -13,6 +13,7 @@ import mobilePlanningRouter from './modules/mobile/planning/planning.router';
 import mobileNotificationsRouter from './modules/mobile/notifications/notifications.router';
 import mobileSosRouter from './modules/mobile/sos/sos.router';
 import mobileGuideSosRouter from './modules/mobile/guide-sos/guide-sos.router';
+import chatRouter from './modules/mobile/chat/chat.router';
 const app=express();
 
 app.use(cors());
@@ -38,5 +39,7 @@ app.use('/mobile/notifications', mobileNotificationsRouter);
 app.use('/mobile/sos', mobileSosRouter);
 app.use('/mobile/guide/sos', mobileGuideSosRouter);
 
+
+app.use('/mobile/chat', chatRouter);
 
 export default app;

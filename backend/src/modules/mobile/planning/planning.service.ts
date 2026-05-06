@@ -1,6 +1,11 @@
 import prisma from '../../../config/prisma'
 import { Prisma } from '../../../../generated/prisma/client'
 import { isSameASTDay, startOfASTDay } from '../../agences/planning/date.utils'
+import {
+  sortGroupsByEffectiveStatus,
+  syncEffectiveStatuses,
+  withEffectiveGroupStatus,
+} from '../../agences/groupes/group-status.utils'
 import { sendPushToUsers } from '../../../utils/push-notifications.utils'
 
 const MOBILE_GROUP_SELECT = {
@@ -41,38 +46,10 @@ type OrderedGroupEventRow = {
   planningDate: Date
 }
 
-function mobileGroupPriority(status?: string | null) {
-  switch (status) {
-    case 'EN_COURS':
-      return 0
-    case 'PLANIFIE':
-      return 1
-    case 'TERMINE':
-      return 2
-    case 'ANNULE':
-      return 3
-    default:
-      return 4
-  }
-}
-
 function sortMobileGroups<T extends { status?: string | null; dateDepart?: Date | null; dateRetour?: Date | null; annee?: number | null }>(
   groups: T[],
 ) {
-  return [...groups].sort((left, right) => {
-    const priorityDiff = mobileGroupPriority(left.status) - mobileGroupPriority(right.status)
-    if (priorityDiff !== 0) return priorityDiff
-
-    const leftStart = left.dateDepart?.getTime() ?? 0
-    const rightStart = right.dateDepart?.getTime() ?? 0
-    if (leftStart !== rightStart) return rightStart - leftStart
-
-    const leftEnd = left.dateRetour?.getTime() ?? 0
-    const rightEnd = right.dateRetour?.getTime() ?? 0
-    if (leftEnd !== rightEnd) return rightEnd - leftEnd
-
-    return (right.annee ?? 0) - (left.annee ?? 0)
-  })
+  return sortGroupsByEffectiveStatus(groups)
 }
 
 // Resolves the currently authenticated mobile user into the active groups they can consult.
@@ -91,8 +68,7 @@ export async function getMobilePlanningGroups(userId: string, role: string) {
       },
     })
 
-    return sortMobileGroups(
-      relations
+    const groups = relations
       .map((relation) => {
         const groupe = relation.groupe
         if (!groupe) return null
@@ -102,8 +78,19 @@ export async function getMobilePlanningGroups(userId: string, role: string) {
           nbPelerins: _count.membres,
         }
       })
-      .filter((groupe): groupe is NonNullable<typeof groupe> => Boolean(groupe)),
-    )
+      .filter((groupe): groupe is NonNullable<typeof groupe> => Boolean(groupe))
+
+    return sortMobileGroups(await syncEffectiveStatuses(
+      (id, currentStatus, nextStatus) =>
+        prisma.groupe.updateMany({
+          where: {
+            id,
+            ...(currentStatus ? { status: currentStatus as 'PLANIFIE' | 'EN_COURS' | 'TERMINE' | 'ANNULE' } : {}),
+          },
+          data: { status: nextStatus },
+        }),
+      groups,
+    ))
   }
 
   if (role === 'PELERIN') {
@@ -120,9 +107,21 @@ export async function getMobilePlanningGroups(userId: string, role: string) {
       },
     })
 
-    return relations
+    const groups = relations
       .map((relation) => relation.groupe)
       .filter((groupe): groupe is NonNullable<typeof groupe> => Boolean(groupe))
+
+    return sortMobileGroups(await syncEffectiveStatuses(
+      (id, currentStatus, nextStatus) =>
+        prisma.groupe.updateMany({
+          where: {
+            id,
+            ...(currentStatus ? { status: currentStatus as 'PLANIFIE' | 'EN_COURS' | 'TERMINE' | 'ANNULE' } : {}),
+          },
+          data: { status: nextStatus },
+        }),
+      groups,
+    ))
   }
 
   if (role === 'FAMILLE') {
@@ -137,8 +136,6 @@ export async function getMobilePlanningGroups(userId: string, role: string) {
           select: {
             groupes: {
               where: { actif: true },
-              orderBy: { dateDebut: 'desc' },
-              take: 1,
               select: {
                 groupe: {
                   select: MOBILE_GROUP_SELECT,
@@ -150,11 +147,34 @@ export async function getMobilePlanningGroups(userId: string, role: string) {
       },
     })
 
-    const groupes = relations
-      .map((relation) => relation.pelerin?.groupes?.[0]?.groupe ?? null)
+    const selectedGroups = relations
+      .map((relation) => {
+        const candidateGroups = relation.pelerin?.groupes
+          ?.map((membership) => membership.groupe)
+          .filter((groupe): groupe is NonNullable<typeof groupe> => Boolean(groupe)) ?? []
+
+        if (!candidateGroups.length) {
+          return null
+        }
+
+        return sortMobileGroups(candidateGroups.map((groupe) => withEffectiveGroupStatus(groupe)))[0]
+      })
       .filter((groupe): groupe is NonNullable<typeof groupe> => Boolean(groupe))
 
-    return Array.from(new Map(groupes.map((groupe) => [groupe.id, groupe])).values())
+    const normalizedGroups = await syncEffectiveStatuses(
+      (id, currentStatus, nextStatus) =>
+        prisma.groupe.updateMany({
+          where: {
+            id,
+            ...(currentStatus ? { status: currentStatus as 'PLANIFIE' | 'EN_COURS' | 'TERMINE' | 'ANNULE' } : {}),
+          },
+          data: { status: nextStatus },
+        }),
+      selectedGroups,
+    )
+    const dedupedGroups = Array.from(new Map(normalizedGroups.map((groupe) => [groupe.id, groupe])).values())
+
+    return sortMobileGroups(dedupedGroups)
   }
 
   throw new Error('Role mobile non pris en charge')
@@ -606,7 +626,7 @@ async function getWindowedPlanningForGroup(
   const planningsWithValidation = await attachEventValidation(visiblePlannings)
 
   return {
-    groupe,
+    groupe: withEffectiveGroupStatus(groupe),
     plannings: planningsWithValidation,
   }
 }
@@ -648,7 +668,7 @@ export async function getMobilePlanningForGroup(userId: string, role: string, gr
   const planningsWithValidation = await attachEventValidation(visiblePlannings)
 
   return {
-    groupe,
+    groupe: withEffectiveGroupStatus(groupe),
     plannings: planningsWithValidation,
   }
 }
