@@ -5,6 +5,7 @@ import prisma from '../../config/prisma';
 import { env } from '../../config/env';
 import { Role,StatutAgence} from '../../../generated/prisma/enums';
 import { createPasswordToken, verifyPasswordToken, consumePasswordToken, hashToken } from '../../utils/token.utils';
+import { sortGroupsByEffectiveStatus, syncEffectiveStatuses, withEffectiveGroupStatus } from '../agences/groupes/group-status.utils';
 import { sendPasswordResetEmail } from '../../utils/mailer.utils';
 
 
@@ -564,8 +565,6 @@ export const getFamilyAssociations = async (userId: string) => {
                   },
                   groupes: {
                     where: { actif: true },
-                    take: 1,
-                    orderBy: { dateDebut: 'desc' },
                     include: {
                       groupe: {
                         select: {
@@ -573,6 +572,9 @@ export const getFamilyAssociations = async (userId: string) => {
                           nom: true,
                           typeVoyage: true,
                           annee: true,
+                          status: true,
+                          dateDepart: true,
+                          dateRetour: true,
                         },
                       },
                     },
@@ -590,14 +592,53 @@ export const getFamilyAssociations = async (userId: string) => {
     throw new Error('Compte famille introuvable');
   }
 
-  return utilisateur.famille.associations.map((association) => ({
-    id: association.id,
-    pelerinId: association.pelerin.id,
-    codeUnique: association.pelerin.codeUnique,
-    nom: association.pelerin.utilisateur.nom,
-    prenom: association.pelerin.utilisateur.prenom,
-    groupe: association.pelerin.groupes[0]?.groupe ?? null,
-  }));
+  const selectedGroups = utilisateur.famille.associations
+    .map((association) => {
+      const candidateGroups = association.pelerin.groupes
+        .map((membership) => membership.groupe)
+        .filter((groupe): groupe is NonNullable<typeof groupe> => Boolean(groupe));
+
+      if (!candidateGroups.length) {
+        return null;
+      }
+
+      return sortGroupsByEffectiveStatus(
+        candidateGroups.map((groupe) => withEffectiveGroupStatus(groupe)),
+      )[0];
+    })
+    .filter((groupe): groupe is NonNullable<typeof groupe> => Boolean(groupe));
+
+  const normalizedGroups = await syncEffectiveStatuses(
+    (id, currentStatus, nextStatus) =>
+      prisma.groupe.updateMany({
+        where: {
+          id,
+          ...(currentStatus ? { status: currentStatus as 'PLANIFIE' | 'EN_COURS' | 'TERMINE' | 'ANNULE' } : {}),
+        },
+        data: { status: nextStatus },
+      }),
+    selectedGroups,
+  );
+  const selectedGroupById = new Map(normalizedGroups.map((groupe) => [groupe.id, groupe]));
+
+  return utilisateur.famille.associations.map((association) => {
+    const candidateGroups = association.pelerin.groupes
+      .map((membership) => membership.groupe)
+      .filter((groupe): groupe is NonNullable<typeof groupe> => Boolean(groupe));
+
+    const pickedGroup = candidateGroups.length
+      ? sortGroupsByEffectiveStatus(candidateGroups.map((groupe) => withEffectiveGroupStatus(groupe)))[0]
+      : null;
+
+    return {
+      id: association.id,
+      pelerinId: association.pelerin.id,
+      codeUnique: association.pelerin.codeUnique,
+      nom: association.pelerin.utilisateur.nom,
+      prenom: association.pelerin.utilisateur.prenom,
+      groupe: pickedGroup ? selectedGroupById.get(pickedGroup.id) ?? pickedGroup : null,
+    };
+  });
 };
 export const updateMe = async (
   userId: string,

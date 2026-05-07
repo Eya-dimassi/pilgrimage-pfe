@@ -14,7 +14,11 @@ import mobilePlanningRouter from './modules/mobile/planning/planning.router';
 import mobileNotificationsRouter from './modules/mobile/notifications/notifications.router';
 import mobileSosRouter from './modules/mobile/sos/sos.router';
 import mobileGuideSosRouter from './modules/mobile/guide-sos/guide-sos.router';
+<<<<<<< HEAD
 import mobilePresenceRouter from './modules/mobile/presence/presence.router';
+=======
+import chatRouter from './modules/mobile/chat/chat.router';
+>>>>>>> 142ee04f5c012e34df35548e78d4574bd3c5dea4
 const app=express();
 
 app.use(cors());

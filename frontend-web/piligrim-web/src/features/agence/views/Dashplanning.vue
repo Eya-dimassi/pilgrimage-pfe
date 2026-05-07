@@ -910,7 +910,7 @@ watch(selectedGroupId, () => {
   if (selectedGroupId.value) {
     loadPlanning()
   }
-})
+}, { immediate: true })
 </script>
 
 <style scoped>
