@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../planning/domain/mobile_planning_models.dart';
 import '../../planning/providers/mobile_planning_provider.dart';
+import '../../presence/screens/creer_appel_screen.dart';
 
 class GuideGroupePelerinsSheet extends ConsumerStatefulWidget {
   const GuideGroupePelerinsSheet({
@@ -120,6 +121,20 @@ class _GuideGroupePelerinsSheetState
                               ),
                             ),
                             const SizedBox(width: 6),
+                            IconButton(
+                              onPressed: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) => CreerAppelScreen(
+                                      groupeId: widget.groupeId,
+                                      groupeNom: widget.groupeNom,
+                                    ),
+                                  ),
+                                );
+                              },
+                              tooltip: 'Appel de presence',
+                              icon: const Icon(Icons.how_to_reg_rounded),
+                            ),
                             IconButton(
                               onPressed: () => ref.invalidate(
                                 mobilePlanningGroupPelerinsProvider(widget.groupeId),

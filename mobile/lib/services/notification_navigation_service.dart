@@ -40,13 +40,22 @@ class NotificationNavigationService {
       return directRoute;
     }
 
-    final tab = payload['tab']?.toString().trim();
-    if (tab != null && tab.isNotEmpty) {
-      return '${_basePathForRole(role)}?tab=$tab';
-    }
-
     final type = payload['type']?.toString().trim();
+    final appelId =
+        payload['appelId']?.toString().trim() ??
+        payload['eventId']?.toString().trim();
     switch (type) {
+      case 'presence_call':
+      case 'presence_update':
+        if (appelId != null && appelId.isNotEmpty) {
+          if (role == 'GUIDE') {
+            return '/guide-presence/$appelId';
+          }
+          if (role == 'PELERIN') {
+            return '/pelerin-presence/$appelId';
+          }
+        }
+        return '${_basePathForRole(role)}?tab=alerts';
       case 'planning_update':
       case 'upcoming_rendezvous':
       case 'planning':
@@ -54,6 +63,10 @@ class NotificationNavigationService {
       case 'notification':
       case 'alert':
       default:
+        final tab = payload['tab']?.toString().trim();
+        if (tab != null && tab.isNotEmpty) {
+          return '${_basePathForRole(role)}?tab=$tab';
+        }
         return '${_basePathForRole(role)}?tab=alerts';
     }
   }

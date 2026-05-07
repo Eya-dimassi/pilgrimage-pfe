@@ -784,6 +784,9 @@ class _NotificationRow extends ConsumerWidget {
         return Icons.alarm_rounded;
       case 'alert':
         return Icons.priority_high_rounded;
+      case 'presence_call':
+      case 'presence_update':
+        return Icons.how_to_reg_rounded;
       default:
         return Icons.notifications_none_rounded;
     }
@@ -806,6 +809,12 @@ class _NotificationRow extends ConsumerWidget {
         return (
           background: AppColors.redSoft,
           foreground: AppColors.red,
+        );
+      case 'presence_call':
+      case 'presence_update':
+        return (
+          background: AppColors.blueSoft,
+          foreground: AppColors.blue,
         );
       default:
         return (

@@ -13,6 +13,8 @@ import '../features/auth/screens/login_screen.dart';
 import '../features/famille/screens/famille_home_screen.dart';
 import '../features/guide/screens/guide_home_screen.dart';
 import '../features/pelerin/screens/pelerin_home_screen.dart';
+import '../features/presence/screens/appel_presence_screen.dart';
+import '../features/presence/screens/pelerin_presence_screen.dart';
 import '../services/notification_navigation_service.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
@@ -65,6 +67,23 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           initialTabIndex: _tabIndexFromState(state),
         ),
       ),
+      GoRoute(
+        path: '/pelerin-presence',
+        builder: (context, state) => const PelerinPresenceScreen(),
+      ),
+      GoRoute(
+        path: '/guide-presence/:appelId',
+        builder: (context, state) => AppelPresenceScreen(
+          appelId: state.pathParameters['appelId'] ?? '',
+          groupeNom: state.uri.queryParameters['groupeNom'] ?? '',
+        ),
+      ),
+      GoRoute(
+        path: '/pelerin-presence/:appelId',
+        builder: (context, state) => PelerinPresenceScreen(
+          appelId: state.pathParameters['appelId'],
+        ),
+      ),
     ],
     redirect: (context, state) {
       final authState = ref.read(authProvider);
@@ -75,6 +94,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final isForgotPassword = location == '/forgot-password';
       final isFamilySignup = location == '/family-signup';
       final isProfileEdit = location == '/profile-edit';
+      final isGuidePresence = location == '/guide-presence' || location.startsWith('/guide-presence/');
+      final isPelerinPresence =
+          location == '/pelerin-presence' || location.startsWith('/pelerin-presence/');
 
       if (authState.isLoading) {
         return isSplash ? null : '/splash';
@@ -101,7 +123,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         return targetPath;
       }
 
-      if (!isProfileEdit && location != targetPath) {
+      final role = session.user.role;
+      final isRoleScopedExtraRoute =
+          (role == 'GUIDE' && isGuidePresence) ||
+          (role == 'PELERIN' && isPelerinPresence);
+
+      if (!isProfileEdit && !isRoleScopedExtraRoute && location != targetPath) {
         return targetPath;
       }
 

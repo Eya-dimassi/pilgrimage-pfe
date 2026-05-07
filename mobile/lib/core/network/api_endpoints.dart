@@ -3,7 +3,7 @@ class ApiEndpoints {
 
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://10.0.2.2:3000',
+    defaultValue: 'http://192.168.1.18:3000',
   );
 
   static const String login = '/auth/login';
@@ -41,4 +41,37 @@ class ApiEndpoints {
 
   static String mobileGuideSosResolve(String sosId) =>
       '/mobile/guide/sos/$sosId/resolve';
+
+  static String creerAppelPresence() => '/guide/presence/appels';
+  
+  // Récupérer un appel de présence
+  static String getAppelPresence(String appelId) => '/guide/presence/appels/$appelId';
+  
+  // Marquer une présence individuelle
+  static String marquerPresence(String confirmationId) => 
+      '/guide/presence/confirmations/$confirmationId';
+  
+  // Marquer plusieurs présences en masse
+  static String marquerPresenceBulk(String appelId) => 
+      '/guide/presence/appels/$appelId/bulk';
+  
+  // Clôturer un appel
+  static String cloturerAppel(String appelId) => 
+      '/guide/presence/appels/$appelId/cloturer';
+  
+  // Historique des appels d'un groupe
+  static String getHistoriqueAppels(String groupeId) => 
+      '/guide/presence/groupes/$groupeId/historique';
+  
+  // Stats d'un pèlerin
+  static String getStatsPelerin(String pelerinId) => 
+      '/guide/presence/pelerins/$pelerinId/stats';
+
+  static const String mobilePelerinPresenceActive = '/mobile/presence/active';
+
+  static String mobilePelerinPresenceAppel(String appelId) =>
+      '/mobile/presence/appels/$appelId';
+
+  static String mobilePelerinPresenceConfirmation(String confirmationId) =>
+      '/mobile/presence/confirmations/$confirmationId';
 }
