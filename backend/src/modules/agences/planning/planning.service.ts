@@ -1,7 +1,7 @@
 import { addDays, isWithinInterval, parseISO } from 'date-fns'
 import prisma from '../../../config/prisma'
 import { buildHajjPlan, buildUmrahPlan, type TemplateDay } from './planning.templates'
-import { diffInASTDays, formatASTDateKey, isSameASTDay, startOfASTDay } from './date.utils'
+import { diffInASTDays, formatASTDateKey, isSameASTDay, setASTTime, startOfASTDay } from './date.utils'
 import { sendPushToUsers } from '../../../utils/push-notifications.utils'
 
 const PLANNING_WINDOW_MARGIN_DAYS = 1
@@ -15,13 +15,21 @@ const HIJRI_HAJJ_LABELS: Record<number, string> = {
   13: '13 Dhul Hijja',
 }
 
+const AST_TIME_ZONE = 'Asia/Riyadh'
+const AST_DAY_LABEL_FORMATTER = new Intl.DateTimeFormat('fr-FR', {
+  timeZone: AST_TIME_ZONE,
+  weekday: 'long',
+  day: '2-digit',
+  month: 'long',
+})
+const AST_MONTH_SHORT_FORMATTER = new Intl.DateTimeFormat('fr-FR', {
+  timeZone: AST_TIME_ZONE,
+  month: 'short',
+})
+
 type PlanningPayload = {
   date: string | Date
   titre?: string
-}
-
-type ShiftPlanningPayload = {
-  offsetDays: number
 }
 
 type EventPayload = {
@@ -88,12 +96,27 @@ function normalizeLieu(value?: string | string[] | null) {
 
 function buildTemplateEventData(event: TemplateDay['events'][number]) {
   return {
+    key: event.key,
     titre: event.titre,
     type: event.type,
+    heureRendezVous: event.heureRendezVous,
     description: event.description ?? null,
     lieu: normalizeLieu(event.lieu),
-    etape: event.etape ?? null, // ← new
+    etape: event.etape ?? null,
   }
+}
+
+function resolveTemplateEventDateTime(currentDate: Date, heureRendezVous: string, eventKey: string) {
+  const trimmed = String(heureRendezVous ?? '').trim()
+  const match = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(trimmed)
+
+  if (!match) {
+    throw new Error(`heureRendezVous invalide pour l'evenement ${eventKey}`)
+  }
+
+  const hours = Number(match[1])
+  const minutes = Number(match[2])
+  return setASTTime(currentDate, hours, minutes)
 }
 
 function getTripLength(groupe: Awaited<ReturnType<typeof getOwnedGroupe>>) {
@@ -131,9 +154,9 @@ function buildTripDays(groupe: Awaited<ReturnType<typeof getOwnedGroupe>>) {
   date: currentDate,
   primaryDayLabel,
   secondaryDayLabel,
-  label: currentDate.toLocaleDateString('fr-FR', { weekday: 'long', day: '2-digit', month: 'long' }),
-  calendarDay: String(currentDate.getUTCDate()).padStart(2, '0'),
-  monthShort: currentDate.toLocaleDateString('fr-FR', { month: 'short' }),
+  label: AST_DAY_LABEL_FORMATTER.format(currentDate),
+  calendarDay: formatASTDateKey(currentDate).slice(-2),
+  monthShort: AST_MONTH_SHORT_FORMATTER.format(currentDate),
   locationLabel: '',
 }
   })
@@ -231,25 +254,13 @@ function buildTemplateDayCreateOperation(groupeId: string, templateDay: Template
               titre: event.titre,
               description: event.description,
               lieu: event.lieu,
-              heureDebutPrevue: null,
+              heureDebutPrevue: resolveTemplateEventDateTime(currentDate, event.heureRendezVous, event.key),
               etape: event.etape ?? null,
             })),
           }
         : undefined,
     },
   })
-}
-
-function normalizeShiftOffset(value: number) {
-  if (!Number.isInteger(value) || value === 0) {
-    throw new Error('offsetDays doit etre un entier non nul')
-  }
-
-  if (Math.abs(value) > 14) {
-    throw new Error('offsetDays est trop eleve')
-  }
-
-  return value
 }
 
 // Returns the selected group's planning days with their events for the planning workspace.
@@ -351,11 +362,25 @@ export async function updatePlanningDay(
   })
 }
 
-// Deletes a planning day and all its related events through cascade rules.
+// Clears one planning day by removing all its events.
 export async function deletePlanningDay(agenceId: string, planningId: string) {
-  await getOwnedPlanning(agenceId, planningId)
-  await prisma.planningQuotidien.delete({ where: { id: planningId } })
-  return { message: 'Planning supprime avec succes', planningId }
+  const planning = await getOwnedPlanning(agenceId, planningId)
+  const planningDay = startOfASTDay(planning.date)
+  const todayAST = startOfASTDay(new Date())
+
+  if (planningDay.getTime() <= todayAST.getTime()) {
+    throw new Error("Vous ne pouvez vider qu'une journee future")
+  }
+
+  const result = await prisma.evenementPlanning.deleteMany({
+    where: { planningQuotidienId: planningId },
+  })
+
+  return {
+    message: 'Journee videe avec succes',
+    planningId,
+    deletedEvents: result.count,
+  }
 }
 
 // Deletes the entire planning of one group by removing all of its planning days.
@@ -373,85 +398,6 @@ export async function deletePlanningVoyage(agenceId: string, groupeId: string) {
   }
 }
 
-export async function shiftPlanningVoyage(agenceId: string, groupeId: string, data: ShiftPlanningPayload) {
-  const groupe = await getOwnedGroupe(agenceId, groupeId)
-  const offsetDays = normalizeShiftOffset(data.offsetDays)
-
-  const plannings = await prisma.planningQuotidien.findMany({
-    where: { groupeId },
-    orderBy: { date: 'asc' },
-    select: {
-      id: true,
-      date: true,
-    },
-  })
-
-  if (!plannings.length) {
-    return {
-      message: 'Aucune journee a deplacer',
-      groupeId,
-      offsetDays,
-      shiftedDays: 0,
-    }
-  }
-
-  const shiftedDateDepart = groupe.dateDepart
-    ? addDays(startOfASTDay(groupe.dateDepart), offsetDays)
-    : null
-  const shiftedDateRetour = groupe.dateRetour
-    ? addDays(startOfASTDay(groupe.dateRetour), offsetDays)
-    : null
-  const shiftedHajjStartDate = groupe.hajjStartDate
-    ? addDays(startOfASTDay(groupe.hajjStartDate), offsetDays)
-    : null
-
-  const shiftedGroupe = {
-    ...groupe,
-    dateDepart: shiftedDateDepart ?? groupe.dateDepart,
-    dateRetour: shiftedDateRetour ?? groupe.dateRetour,
-    hajjStartDate: shiftedHajjStartDate ?? groupe.hajjStartDate,
-  }
-  const shiftedDates = plannings.map((planning, index) => ({
-    id: planning.id,
-    nextDate: addDays(startOfASTDay(planning.date), offsetDays),
-    temporaryDate: new Date(Date.UTC(1900, 0, index + 1)),
-  }))
-
-  shiftedDates.forEach((planning) => validatePlanningWindow(shiftedGroupe, planning.nextDate))
-
-  await prisma.$transaction(
-    [
-      ...shiftedDates.map((planning) =>
-        prisma.planningQuotidien.update({
-          where: { id: planning.id },
-          data: { date: planning.temporaryDate },
-        }),
-      ),
-      ...shiftedDates.map((planning) =>
-        prisma.planningQuotidien.update({
-          where: { id: planning.id },
-          data: { date: planning.nextDate },
-        }),
-      ),
-      prisma.groupe.update({
-        where: { id: groupeId },
-        data: {
-          ...(shiftedDateDepart && { dateDepart: shiftedDateDepart }),
-          ...(shiftedDateRetour && { dateRetour: shiftedDateRetour }),
-          ...(groupe.typeVoyage === 'HAJJ' && { hajjStartDate: shiftedHajjStartDate }),
-        },
-      }),
-    ],
-  )
-
-  return {
-    message: 'Planning deplace avec succes',
-    groupeId,
-    offsetDays,
-    shiftedDays: shiftedDates.length,
-  }
-}
-
 // Creates one event inside a planning day using only the rendez-vous time.
 export async function createPlanningEvent(agenceId: string, planningId: string, data: EventPayload) {
   const planning = await getOwnedPlanning(agenceId, planningId)
@@ -461,6 +407,13 @@ export async function createPlanningEvent(agenceId: string, planningId: string, 
   }
 
   const heureDebutPrevue = normalizeDateTime(data.heureDebutPrevue, 'heureDebutPrevue')
+  const planningDay = startOfASTDay(planning.date)
+  const todayAST = startOfASTDay(new Date())
+
+  if (planningDay.getTime() < todayAST.getTime()) {
+    throw new Error("Impossible d'ajouter un evenement dans une journee deja passee")
+  }
+
   validatePlanningWindow(planning.groupe, normalizeDateOnly(planning.date))
 
   if (!isSameASTDay(heureDebutPrevue, planning.date)) {
@@ -514,7 +467,19 @@ export async function updatePlanningEvent(
 
 // Deletes one event from a planning day.
 export async function deletePlanningEvent(agenceId: string, eventId: string) {
-  await getOwnedEvent(agenceId, eventId)
+  const evenement = await getOwnedEvent(agenceId, eventId)
+  const now = new Date()
+  const todayAST = startOfASTDay(now)
+  const planningDay = startOfASTDay(evenement.planningQuotidien.date)
+
+  if (planningDay.getTime() < todayAST.getTime()) {
+    throw new Error("Impossible de supprimer un evenement d'une journee passee")
+  }
+
+  if (evenement.heureDebutPrevue && evenement.heureDebutPrevue.getTime() <= now.getTime()) {
+    throw new Error("Impossible de supprimer un evenement dont l'heure est deja passee")
+  }
+
   await prisma.evenementPlanning.delete({ where: { id: eventId } })
   return { message: 'Evenement supprime avec succes', eventId }
 }
@@ -625,7 +590,6 @@ export async function generatePlanningTemplate(agenceId: string, groupeId: strin
   }
 }
 // Validates one event as a guide. Only assigned active guides can validate.
-// Prayers are never validated.
 export async function validerEvenement(utilisateurId: string, eventId: string) {
   const guide = await prisma.guide.findUnique({
     where: { utilisateurId },
@@ -683,7 +647,6 @@ export async function validerEvenement(utilisateurId: string, eventId: string) {
   })
 
   if (!evenement) throw new Error('Evenement introuvable ou acces non autorise')
-  if (evenement.type === 'PRIERE') throw new Error('Les prieres ne sont pas soumises a validation')
   if (evenement.estValide) return evenement
 
   const updatedEvent = await prisma.evenementPlanning.update({
@@ -761,3 +724,4 @@ export async function getProgressionRituels(agenceId: string, groupeId: string) 
     })),
   }
 }
+

@@ -2,6 +2,38 @@ import prisma from '../../../../config/prisma'
 import { sendPushToUsers } from '../../../../utils/push-notifications.utils'
 
 export class PresenceService {
+  private static readonly AUTO_CLOSE_DELAY_MS = 60 * 60 * 1000
+
+  private static isAutoCloseDue(appelDate: Date) {
+    return Date.now() - appelDate.getTime() >= PresenceService.AUTO_CLOSE_DELAY_MS
+  }
+
+  private static async closeAppelById(appelId: string) {
+    const closedAt = new Date()
+
+    return prisma.$transaction(async (tx) => {
+      await tx.confirmationPresence.updateMany({
+        where: {
+          appelPresenceId: appelId,
+          statut: 'EN_ATTENTE',
+        },
+        data: {
+          statut: 'ABSENT',
+          confirmeMode: 'AUTOMATIQUE',
+          confirmeAt: closedAt,
+        },
+      })
+
+      return tx.appelPresence.update({
+        where: { id: appelId },
+        data: {
+          statut: 'CLOTURE',
+          clotureAt: closedAt,
+        },
+      })
+    })
+  }
+
   /**
    * Creer un appel de presence pour un groupe
    */
@@ -18,7 +50,7 @@ export class PresenceService {
       throw new Error('Vous n\'etes pas assigne a ce groupe')
     }
 
-    const appelEnCours = await prisma.appelPresence.findFirst({
+    let appelEnCours = await prisma.appelPresence.findFirst({
       where: {
         groupeId,
         statut: 'EN_COURS',
@@ -43,6 +75,11 @@ export class PresenceService {
         date: 'desc',
       },
     })
+
+    if (appelEnCours && PresenceService.isAutoCloseDue(appelEnCours.date)) {
+      await PresenceService.closeAppelById(appelEnCours.id)
+      appelEnCours = null
+    }
 
     if (appelEnCours) {
       return {
@@ -152,7 +189,7 @@ export class PresenceService {
    * Recuperer un appel de presence
    */
   static async getAppelPresence(guideId: string, appelId: string) {
-    const appel = await prisma.appelPresence.findFirst({
+    let appel = await prisma.appelPresence.findFirst({
       where: {
         id: appelId,
         guideId,
@@ -187,6 +224,45 @@ export class PresenceService {
 
     if (!appel) {
       throw new Error('Appel de presence introuvable')
+    }
+
+    if (appel.statut === 'EN_COURS' && PresenceService.isAutoCloseDue(appel.date)) {
+      await PresenceService.closeAppelById(appel.id)
+      appel = await prisma.appelPresence.findFirst({
+        where: {
+          id: appelId,
+          guideId,
+        },
+        include: {
+          groupe: {
+            select: {
+              id: true,
+              nom: true,
+            },
+          },
+          confirmations: {
+            include: {
+              pelerin: {
+                include: {
+                  utilisateur: {
+                    select: {
+                      nom: true,
+                      prenom: true,
+                    },
+                  },
+                },
+              },
+            },
+            orderBy: [
+              { statut: 'asc' },
+              { pelerin: { utilisateur: { nom: 'asc' } } },
+            ],
+          },
+        },
+      })
+      if (!appel) {
+        throw new Error('Appel de presence introuvable')
+      }
     }
 
     const stats = {
@@ -224,6 +300,11 @@ export class PresenceService {
         },
       },
       include: {
+        appelPresence: {
+          select: {
+            date: true,
+          },
+        },
         pelerin: {
           include: {
             utilisateur: {
@@ -239,6 +320,11 @@ export class PresenceService {
 
     if (!confirmation) {
       throw new Error('Confirmation introuvable ou appel cloture')
+    }
+
+    if (PresenceService.isAutoCloseDue(confirmation.appelPresence.date)) {
+      await PresenceService.closeAppelById(confirmation.appelPresenceId)
+      throw new Error('Appel cloture automatiquement apres 1 heure')
     }
 
     const updated = await prisma.confirmationPresence.update({
@@ -295,6 +381,11 @@ export class PresenceService {
       throw new Error('Appel introuvable ou deja cloture')
     }
 
+    if (PresenceService.isAutoCloseDue(appel.date)) {
+      await PresenceService.closeAppelById(appelId)
+      throw new Error('Appel cloture automatiquement apres 1 heure')
+    }
+
     const updates = await prisma.$transaction(
       data.confirmations.map((item) =>
         prisma.confirmationPresence.updateMany({
@@ -336,29 +427,107 @@ export class PresenceService {
       throw new Error('Appel introuvable ou deja cloture')
     }
 
-    await prisma.confirmationPresence.updateMany({
-      where: {
-        appelPresenceId: appelId,
-        statut: 'EN_ATTENTE',
-      },
-      data: {
-        statut: 'ABSENT',
-        confirmeMode: 'AUTOMATIQUE',
-        confirmeAt: new Date(),
-      },
-    })
-
-    const updated = await prisma.appelPresence.update({
-      where: { id: appelId },
-      data: {
-        statut: 'CLOTURE',
-        clotureAt: new Date(),
-      },
-    })
+    const updated = await PresenceService.closeAppelById(appelId)
 
     return {
       message: 'Appel de presence cloture',
       appel: updated,
+    }
+  }
+
+  /**
+   * Reinitialiser les absents et renvoyer une notification aux pelerins concernes
+   */
+  static async reinitialiserAbsents(guideId: string, appelId: string) {
+    const appel = await prisma.appelPresence.findFirst({
+      where: {
+        id: appelId,
+        guideId,
+        statut: 'EN_COURS',
+      },
+      include: {
+        groupe: {
+          select: {
+            id: true,
+            nom: true,
+          },
+        },
+        confirmations: {
+          where: { statut: 'ABSENT' },
+          include: {
+            pelerin: {
+              include: {
+                utilisateur: {
+                  select: {
+                    id: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    })
+
+    if (!appel) {
+      throw new Error('Appel introuvable ou deja cloture')
+    }
+
+    if (PresenceService.isAutoCloseDue(appel.date)) {
+      await PresenceService.closeAppelById(appelId)
+      throw new Error('Appel cloture automatiquement apres 1 heure')
+    }
+
+    if (appel.confirmations.length === 0) {
+      return {
+        message: 'Aucun pelerin absent a reinitialiser',
+        updated: 0,
+      }
+    }
+
+    const absentConfirmationIds = appel.confirmations.map((confirmation) => confirmation.id)
+    const pelerinUserIds = Array.from(
+      new Set(
+        appel.confirmations
+          .map((confirmation) => confirmation.pelerin.utilisateur.id)
+          .filter(Boolean),
+      ),
+    )
+
+    const result = await prisma.confirmationPresence.updateMany({
+      where: {
+        id: { in: absentConfirmationIds },
+        appelPresenceId: appelId,
+        statut: 'ABSENT',
+      },
+      data: {
+        statut: 'EN_ATTENTE',
+        confirmeMode: null,
+        confirmeAt: null,
+        note: null,
+      },
+    })
+
+    if (pelerinUserIds.length > 0) {
+      await sendPushToUsers({
+        userIds: pelerinUserIds,
+        role: 'PELERIN',
+        title: 'Rappel de presence',
+        body: 'Merci de confirmer votre presence pour l\'appel en cours.',
+        data: {
+          type: 'presence_call_reminder',
+          tab: 'alerts',
+          groupeId: appel.groupe.id,
+          eventId: appel.id,
+          etape: 'PRESENCE',
+        },
+      })
+    }
+
+    return {
+      message: `${result.count} absent(s) reinitialise(s)`,
+      updated: result.count,
+      notified: pelerinUserIds.length,
     }
   }
 

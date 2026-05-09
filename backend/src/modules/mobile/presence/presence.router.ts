@@ -49,8 +49,7 @@ router.get('/appels/:appelId', async (req: AuthRequest, res: Response) => {
 router.put('/confirmations/:confirmationId', async (req: AuthRequest, res: Response) => {
   try {
     const confirmationId = String(req.params.confirmationId)
-    const note = req.body?.note as string | undefined
-    const result = await confirmPresenceAsPelerin(req.user!.id, confirmationId, note)
+    const result = await confirmPresenceAsPelerin(req.user!.id, confirmationId)
     return res.status(200).json({
       success: true,
       data: result,

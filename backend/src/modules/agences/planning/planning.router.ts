@@ -42,20 +42,6 @@ router.post('/:id/plannings/generate-template', authenticate, requireRole('AGENC
   }
 });
 
-// POST /agence/groupes/:id/plannings/shift
-router.post('/:id/plannings/shift', authenticate, requireRole('AGENCE'), async (req: AuthRequest, res: Response) => {
-  try {
-    const result = await planningService.shiftPlanningVoyage(
-      req.user!.agenceId!,
-      String(req.params.id),
-      req.body,
-    );
-    return res.status(200).json(result);
-  } catch (error: any) {
-    return res.status(400).json({ message: error.message });
-  }
-});
-
 // DELETE /agence/groupes/:id/plannings
 router.delete('/:id/plannings', authenticate, requireRole('AGENCE'), async (req: AuthRequest, res: Response) => {
   try {

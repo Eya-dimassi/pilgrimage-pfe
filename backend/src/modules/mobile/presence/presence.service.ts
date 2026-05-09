@@ -1,6 +1,38 @@
 import prisma from '../../../config/prisma'
 import { sendPushToUsers } from '../../../utils/push-notifications.utils'
 
+const AUTO_CLOSE_DELAY_MS = 60 * 60 * 1000
+
+function isAutoCloseDue(appelDate: Date) {
+  return Date.now() - appelDate.getTime() >= AUTO_CLOSE_DELAY_MS
+}
+
+async function closeAppelById(appelId: string) {
+  const closedAt = new Date()
+
+  await prisma.$transaction(async (tx) => {
+    await tx.confirmationPresence.updateMany({
+      where: {
+        appelPresenceId: appelId,
+        statut: 'EN_ATTENTE',
+      },
+      data: {
+        statut: 'ABSENT',
+        confirmeMode: 'AUTOMATIQUE',
+        confirmeAt: closedAt,
+      },
+    })
+
+    await tx.appelPresence.update({
+      where: { id: appelId },
+      data: {
+        statut: 'CLOTURE',
+        clotureAt: closedAt,
+      },
+    })
+  })
+}
+
 type PresenceCallPayload = {
   appel: {
     id: string
@@ -82,7 +114,7 @@ function mapPresencePayload(confirmation: {
 }
 
 export async function getActivePresenceCallForPelerin(userId: string) {
-  const confirmation = await prisma.confirmationPresence.findFirst({
+  let confirmation = await prisma.confirmationPresence.findFirst({
     where: {
       pelerin: {
         utilisateurId: userId,
@@ -124,11 +156,55 @@ export async function getActivePresenceCallForPelerin(userId: string) {
     return null
   }
 
+  if (confirmation.appelPresence.statut === 'EN_COURS' && isAutoCloseDue(confirmation.appelPresence.date)) {
+    await closeAppelById(confirmation.appelPresence.id)
+    confirmation = await prisma.confirmationPresence.findFirst({
+      where: {
+        pelerin: {
+          utilisateurId: userId,
+        },
+        appelPresence: {
+          statut: 'EN_COURS',
+        },
+      },
+      include: {
+        appelPresence: {
+          include: {
+            groupe: {
+              select: {
+                id: true,
+                nom: true,
+              },
+            },
+            guide: {
+              include: {
+                utilisateur: {
+                  select: {
+                    nom: true,
+                    prenom: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        appelPresence: {
+          date: 'desc',
+        },
+      },
+    })
+    if (!confirmation) {
+      return null
+    }
+  }
+
   return mapPresencePayload(confirmation)
 }
 
 export async function getPresenceCallForPelerin(userId: string, appelId: string) {
-  const confirmation = await prisma.confirmationPresence.findFirst({
+  let confirmation = await prisma.confirmationPresence.findFirst({
     where: {
       pelerin: {
         utilisateurId: userId,
@@ -163,13 +239,49 @@ export async function getPresenceCallForPelerin(userId: string, appelId: string)
     throw new Error('Appel de presence introuvable')
   }
 
+  if (confirmation.appelPresence.statut === 'EN_COURS' && isAutoCloseDue(confirmation.appelPresence.date)) {
+    await closeAppelById(confirmation.appelPresence.id)
+    confirmation = await prisma.confirmationPresence.findFirst({
+      where: {
+        pelerin: {
+          utilisateurId: userId,
+        },
+        appelPresenceId: appelId,
+      },
+      include: {
+        appelPresence: {
+          include: {
+            groupe: {
+              select: {
+                id: true,
+                nom: true,
+              },
+            },
+            guide: {
+              include: {
+                utilisateur: {
+                  select: {
+                    nom: true,
+                    prenom: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    })
+    if (!confirmation) {
+      throw new Error('Appel de presence introuvable')
+    }
+  }
+
   return mapPresencePayload(confirmation)
 }
 
 export async function confirmPresenceAsPelerin(
   userId: string,
   confirmationId: string,
-  note?: string,
 ) {
   const confirmation = await prisma.confirmationPresence.findFirst({
     where: {
@@ -220,6 +332,11 @@ export async function confirmPresenceAsPelerin(
     throw new Error('Confirmation introuvable ou appel cloture')
   }
 
+  if (isAutoCloseDue(confirmation.appelPresence.date)) {
+    await closeAppelById(confirmation.appelPresence.id)
+    throw new Error('Appel cloture automatiquement apres 1 heure')
+  }
+
   if (confirmation.statut === 'PRESENT') {
     return {
       message: 'Presence deja confirmee',
@@ -239,7 +356,6 @@ export async function confirmPresenceAsPelerin(
       statut: 'PRESENT',
       confirmeMode: 'MANUEL',
       confirmeAt: new Date(),
-      note: note?.trim() || null,
     },
   })
 

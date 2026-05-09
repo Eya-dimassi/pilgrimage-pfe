@@ -176,6 +176,30 @@ router.post('/appels/:appelId/cloturer', async (req: AuthRequest, res: Response)
 })
 
 /**
+ * POST /guide/presence/appels/:appelId/reinitialiser-absents
+ */
+router.post('/appels/:appelId/reinitialiser-absents', async (req: AuthRequest, res: Response) => {
+  try {
+    const guideId = await getGuideId(req, res)
+    if (!guideId) return
+
+    const appelId = String(req.params.appelId)
+    const result = await PresenceService.reinitialiserAbsents(guideId, appelId)
+
+    return res.status(200).json({
+      success: true,
+      data: result,
+    })
+  } catch (error: any) {
+    console.error('Error in reinitialiserAbsents route:', error)
+    return res.status(400).json({
+      success: false,
+      message: error.message || 'Erreur lors de la reinitialisation des absents',
+    })
+  }
+})
+
+/**
  * GET /guide/presence/groupes/:groupeId/historique
  */
 router.get('/groupes/:groupeId/historique', async (req: AuthRequest, res: Response) => {
