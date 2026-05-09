@@ -193,6 +193,9 @@
 
               <div class="planning-event-side">
                 <div class="planning-event-badges">
+                  <span :class="['planning-status-pill', getEventStatusClass(event)]">
+                    {{ getEventStatusLabel(event) }}
+                  </span>
                   <span :class="['planning-type-pill', `is-${event.type.toLowerCase()}`]">
                     {{ formatEventType(event.type) }}
                   </span>
@@ -352,6 +355,12 @@ const EVENT_TYPE_LABELS = {
   REPOS: 'Repos',
   AUTRE: 'Autre',
 }
+const EVENT_STATUS_LABELS = {
+  PLANIFIE: 'Planifié',
+  EN_COURS: 'En cours',
+  TERMINE: 'Terminé',
+  ANNULE: 'Annulé',
+}
 
 const EVENT_LOCATION_OPTIONS = [
   'MAKKAH',
@@ -430,6 +439,35 @@ function formatShortDate(value) {
 
 function formatEventType(value) {
   return EVENT_TYPE_LABELS[value] ?? value
+}
+
+function resolveEventStatus(event) {
+  const rawStatus = String(event?.status ?? event?.statut ?? event?.validation?.status ?? '').toUpperCase()
+
+  if (rawStatus === 'ANNULE') return rawStatus
+  if (rawStatus === 'TERMINE') return rawStatus
+  if (event?.estValide || event?.valideeAt || event?.valideParGuideId) return 'TERMINE'
+  if (rawStatus === 'EN_COURS') return 'EN_COURS'
+
+  const eventDateKey = toDateKey(event?.heureDebutPrevue ?? selectedPlanning.value?.date)
+  if (eventDateKey && todayDateKey.value && eventDateKey === todayDateKey.value) {
+    return 'EN_COURS'
+  }
+
+  return 'PLANIFIE'
+}
+
+function getEventStatusLabel(event) {
+  const status = resolveEventStatus(event)
+  return EVENT_STATUS_LABELS[status] ?? EVENT_STATUS_LABELS.PLANIFIE
+}
+
+function getEventStatusClass(event) {
+  const status = resolveEventStatus(event)
+  if (status === 'EN_COURS') return 'is-running'
+  if (status === 'TERMINE') return 'is-done'
+  if (status === 'ANNULE') return 'is-canceled'
+  return 'is-planned'
 }
 
 function formatEventTime(value) {
@@ -1442,11 +1480,43 @@ watch(selectedGroupId, () => {
   border: 1px solid transparent;
 }
 
+.planning-status-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 24px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+  border: 1px solid transparent;
+}
+
 .planning-event-badges {
   display: inline-flex;
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+}
+
+.planning-status-pill.is-planned {
+  background: rgba(140, 122, 100, 0.14);
+  color: #6c5d4d;
+}
+
+.planning-status-pill.is-running {
+  background: rgba(54, 137, 255, 0.16);
+  color: #1c63ba;
+}
+
+.planning-status-pill.is-done {
+  background: rgba(57, 177, 102, 0.18);
+  color: #237b43;
+}
+
+.planning-status-pill.is-canceled {
+  background: rgba(220, 82, 73, 0.16);
+  color: #a53730;
 }
 
 .planning-type-pill.is-priere {
