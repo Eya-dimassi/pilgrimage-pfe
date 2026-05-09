@@ -391,6 +391,12 @@ export function useModal() {
   async function doAssignerGuide({ groupeId, guideId }) {
     if (!groupeId || !guideId) return
 
+    const guideToAssign = guides.value.find((item) => item.id === guideId)
+    if (guideToAssign?.disponibilite === 'INDISPONIBLE') {
+      showToast("Ce guide est indisponible et ne peut pas etre affecte a un groupe.", 'error')
+      return
+    }
+
     try {
       const groupeIndex = groupes.value.findIndex((item) => item.id === groupeId)
       const existingGroupe = groupeIndex >= 0 ? groupes.value[groupeIndex] : null

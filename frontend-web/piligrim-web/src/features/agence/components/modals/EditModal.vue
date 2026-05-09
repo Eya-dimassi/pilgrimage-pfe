@@ -75,8 +75,14 @@
             </div>
 
             <label v-for="guide in filteredGuides" :key="guide.id" class="multi-select-option">
-              <input type="checkbox" :value="guide.id" v-model="form.guideIds" />
+              <input
+                type="checkbox"
+                :value="guide.id"
+                v-model="form.guideIds"
+                :disabled="isGuideLocked(guide)"
+              />
               <span>{{ guide.utilisateur?.prenom }} {{ guide.utilisateur?.nom }}</span>
+              <span v-if="guide.disponibilite === 'INDISPONIBLE'" class="cell-sub">(Indisponible)</span>
             </label>
           </div>
         </div>
@@ -150,5 +156,11 @@ const guideSelectedLabel = computed(() => {
   }
   return `${count} guides selectionnes`
 })
+
+function isGuideLocked(guide) {
+  const selectedIds = selectedGuideIds.value
+  if (selectedIds.includes(guide.id)) return false
+  return guide.disponibilite === 'INDISPONIBLE'
+}
 </script>
 

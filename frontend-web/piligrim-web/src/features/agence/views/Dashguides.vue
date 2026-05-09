@@ -1,5 +1,5 @@
 <template>
-  <div class="view-section">
+  <div class="view-section guides-view">
     <div class="section-topbar">
       <div class="search-wrap">
         <AppIcon class="search-icon" name="search" :size="15" />
@@ -57,6 +57,7 @@
             <th>Specialite</th>
             <th>Groupes</th>
             <th>Statut</th>
+            <th>Disponibilite</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -78,7 +79,6 @@
 
             <td>
               <div class="cell-name">{{ guide.utilisateur?.telephone || '-' }}</div>
-              <div class="cell-sub">{{ guide.utilisateur?.email }}</div>
             </td>
 
             <td>
@@ -110,7 +110,7 @@
                 v-else
                 @click="assigningId = guide.id"
                 class="group-assign-btn"
-                :disabled="availableGroupes.length === 0"
+                :disabled="!isGuideAssignable(guide)"
                 :title="groupAssignTitle(guide)"
               >
                 <template v-if="guide._count?.groupes > 0">
@@ -130,6 +130,10 @@
 
             <td>
               <StatusPill :tone="guideStatusClass(guide)">{{ guideStatusLabel(guide) }}</StatusPill>
+            </td>
+
+            <td>
+              <StatusPill :tone="guideAvailabilityClass(guide)">{{ guideAvailabilityLabel(guide) }}</StatusPill>
             </td>
 
             <td>
@@ -184,7 +188,6 @@
 import { computed, ref } from 'vue'
 import AppIcon from '@/components/AppIcon.vue'
 import StatusPill from '@/features/agence/components/dashboard/StatusPill.vue'
-import { useGuideStatus } from '@/features/agence/composables/useGuideStatus'
 import { useSearchFilter } from '@/features/agence/composables/useSearchFilter'
 import { getInitials } from '@/features/agence/utils/initials'
 
@@ -209,15 +212,14 @@ const props = defineProps({
 
 const emit = defineEmits(['create', 'detail', 'edit', 'delete', 'resend', 'assign'])
 
-const { guideStatusClass, guideStatusLabel } = useGuideStatus()
-
 const assigningId = ref(null)
 const assignLoadingId = ref(null)
 
 const filterConfigs = computed(() => [
   { key: 'all', label: 'Tous', predicate: () => true },
   { key: 'actif', label: 'Actifs', predicate: (guide) => guide.isActivated && guide.utilisateur?.actif },
-  { key: 'pending', label: 'En attente', predicate: (guide) => !guide.isActivated  },
+  { key: 'pending', label: 'En attente', predicate: (guide) => !guide.isActivated },
+  { key: 'available', label: 'Disponibles', predicate: (guide) => guide.disponibilite !== 'INDISPONIBLE' },
   { key: 'assigned', label: 'Assignes', predicate: (guide) => guide._count?.groupes > 0 },
 ])
 
@@ -232,6 +234,7 @@ const emptyMessage = computed(() => {
   if (search.value) return `Aucun resultat pour "${search.value}"`
   if (activeFilter.value === 'actif') return 'Aucun guide actif pour le moment'
   if (activeFilter.value === 'pending') return "Aucun guide en attente d'activation"
+  if (activeFilter.value === 'available') return 'Aucun guide disponible pour le moment'
   if (activeFilter.value === 'assigned') return 'Aucun guide assigne a un groupe'
   return 'Aucun guide pour le moment'
 })
@@ -240,6 +243,7 @@ const emptyHint = computed(() => {
   if (search.value) return 'Essayez un autre terme de recherche'
   if (activeFilter.value === 'pending') return "Renvoyez l'email d'activation si necessaire"
   if (activeFilter.value === 'actif') return 'Les guides actifs ont defini leur mot de passe'
+  if (activeFilter.value === 'available') return 'Ces guides peuvent etre affectes aux groupes'
   return 'Ajoutez votre premier guide pour commencer'
 })
 
@@ -252,12 +256,42 @@ const availableGroupes = computed(() =>
 )
 
 function groupAssignTitle(guide) {
+  if (guide.disponibilite === 'INDISPONIBLE') return 'Ce guide est indisponible'
   if (!guide.utilisateur?.actif) return "Ce guide n'a pas encore active son compte"
   if (availableGroupes.value.length === 0) return 'Aucun groupe disponible'
   return 'Affecter ce guide a un groupe'
 }
 
+function isGuideAssignable(guide) {
+  return (
+    guide.disponibilite !== 'INDISPONIBLE' &&
+    Boolean(guide.utilisateur?.actif) &&
+    availableGroupes.value.length > 0
+  )
+}
+
+function guideStatusLabel(guide) {
+  return guide.isActivated ? 'Actif' : 'En attente'
+}
+
+function guideStatusClass(guide) {
+  return guide.isActivated ? 'active' : 'pending'
+}
+
+function guideAvailabilityLabel(guide) {
+  return guide.disponibilite === 'INDISPONIBLE' ? 'Indisponible' : 'Disponible'
+}
+
+function guideAvailabilityClass(guide) {
+  return guide.disponibilite === 'INDISPONIBLE' ? 'suspended' : 'active'
+}
+
 async function handleAssign(guide, groupeId) {
+  if (!isGuideAssignable(guide)) {
+    assigningId.value = null
+    return
+  }
+
   if (!groupeId) {
     assigningId.value = null
     return
@@ -273,3 +307,58 @@ async function handleAssign(guide, groupeId) {
   }
 }
 </script>
+
+<style scoped>
+.guides-view {
+  gap: 12px;
+}
+
+.guides-view .section-topbar {
+  gap: 10px;
+}
+
+.guides-view .filter-tabs {
+  gap: 5px;
+}
+
+.guides-view .filter-tab {
+  padding: 5px 12px;
+  font-size: 12.5px;
+}
+
+.guides-view .data-table th {
+  padding: 8px 12px;
+}
+
+.guides-view .data-table td {
+  padding: 10px 12px;
+}
+
+.guides-view .cell-user {
+  gap: 8px;
+}
+
+.guides-view .cell-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  font-size: 11px;
+}
+
+.guides-view .cell-name {
+  font-size: 13px;
+}
+
+.guides-view .cell-sub {
+  font-size: 11.5px;
+}
+
+.guides-view .action-btns {
+  gap: 4px;
+}
+
+.guides-view .act-btn {
+  width: 28px;
+  height: 28px;
+}
+</style>
