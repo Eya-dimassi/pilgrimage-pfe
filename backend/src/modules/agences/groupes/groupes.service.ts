@@ -63,6 +63,13 @@ export const createGroupe = async (
     if (inactiveGuide) {
       throw new Error("Ce guide n'a pas encore activÃ© son compte");
     }
+
+    const unavailableGuide = guides.find(
+      (g) => g.disponibilite === 'INDISPONIBLE',
+    );
+    if (unavailableGuide) {
+      throw new Error('Impossible d affecter un guide indisponible a un groupe');
+    }
   }
 
   const parsedDateDepart = data.dateDepart ? new Date(data.dateDepart) : undefined;
@@ -350,6 +357,13 @@ export const updateGroupe = async (
     const inactiveGuide = guides.find((g) => !g.utilisateur.actif);
     if (inactiveGuide) {
       throw new Error("Ce guide n'a pas encore activÃ© son compte");
+    }
+
+    const unavailableGuide = guides.find(
+      (g) => g.disponibilite === 'INDISPONIBLE',
+    );
+    if (unavailableGuide) {
+      throw new Error('Impossible d affecter un guide indisponible a un groupe');
     }
   }
 

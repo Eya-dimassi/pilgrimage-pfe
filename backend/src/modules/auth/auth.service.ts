@@ -231,6 +231,8 @@ export const getMe =async(userId: string) => {
         select: {
           agenceId: true,
           specialite: true,
+          disponibilite: true,
+          disponibiliteMajAt: true,
         },
       },
       pelerin: {
@@ -297,6 +299,8 @@ export const getMe =async(userId: string) => {
     agenceId,
     lienParente: utilisateur.famille?.lienParente ?? null,
     specialite: utilisateur.guide?.specialite ?? null,
+    disponibilite: utilisateur.guide?.disponibilite ?? null,
+    disponibiliteMajAt: utilisateur.guide?.disponibiliteMajAt ?? null,
     codeUnique: utilisateur.pelerin?.codeUnique ?? null,
     dateNaissance: utilisateur.pelerin?.dateNaissance ?? null,
     nationalite: utilisateur.pelerin?.nationalite ?? null,
@@ -649,6 +653,7 @@ export const updateMe = async (
     telephone?: string | null;
     lienParente?: string | null;
     specialite?: string | null;
+    disponibilite?: 'DISPONIBLE' | 'INDISPONIBLE' | null;
     dateNaissance?: string | Date | null;
     nationalite?: string | null;
     numeroPasseport?: string | null;
@@ -686,6 +691,7 @@ export const updateMe = async (
   const normalizedTelephone = data.telephone?.trim();
   const normalizedLienParente = data.lienParente?.trim();
   const normalizedSpecialite = data.specialite?.trim();
+  const normalizedDisponibilite = data.disponibilite?.trim().toUpperCase();
   const normalizedNationalite = data.nationalite?.trim();
   const normalizedNumeroPasseport = data.numeroPasseport?.trim();
   const normalizedPhotoUrl = data.photoUrl?.trim();
@@ -726,6 +732,15 @@ export const updateMe = async (
     }
   }
 
+  if (
+    data.disponibilite !== undefined &&
+    data.disponibilite !== null &&
+    normalizedDisponibilite !== 'DISPONIBLE' &&
+    normalizedDisponibilite !== 'INDISPONIBLE'
+  ) {
+    throw new Error('Disponibilite guide invalide');
+  }
+
   await prisma.utilisateur.update({
     where: { id: userId },
     data: {
@@ -752,11 +767,21 @@ export const updateMe = async (
   }
 
   if (utilisateur.role === 'GUIDE' && utilisateur.guide) {
+    const shouldUpdateDisponibilite =
+      data.disponibilite !== undefined &&
+      data.disponibilite !== null &&
+      (normalizedDisponibilite === 'DISPONIBLE' ||
+        normalizedDisponibilite === 'INDISPONIBLE');
+
     await prisma.guide.update({
       where: { id: utilisateur.guide.id },
       data: {
         specialite:
           data.specialite !== undefined ? normalizedSpecialite || null : undefined,
+        disponibilite: shouldUpdateDisponibilite
+          ? (normalizedDisponibilite as 'DISPONIBLE' | 'INDISPONIBLE')
+          : undefined,
+        disponibiliteMajAt: shouldUpdateDisponibilite ? new Date() : undefined,
       },
     });
   }

@@ -399,7 +399,11 @@ export const deleteGuide = async (guideId: string, agenceId: string) => {
 export const getAvailableGuides = async (agenceId: string) => {
   const guides = await prisma.guide.findMany({
     where: {
-      agenceId
+      agenceId,
+      disponibilite: 'DISPONIBLE',
+      utilisateur: {
+        actif: true,
+      },
     },
     include: {
       utilisateur: {
