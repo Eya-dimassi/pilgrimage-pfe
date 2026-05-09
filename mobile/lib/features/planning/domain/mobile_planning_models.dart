@@ -95,8 +95,8 @@ class MobilePlanningEvent {
   bool get isCancelled => status == 'ANNULE';
   bool get isResolved => isCompleted || isCancelled;
 
-  bool get canBeCompleted => type != 'PRIERE' && !isResolved;
-  bool get canBeCancelled => type != 'PRIERE' && !isResolved;
+  bool get canBeCompleted => !isResolved;
+  bool get canBeCancelled => !isResolved;
 
   List<String> get lieux {
     if (lieu == null || lieu!.trim().isEmpty) return const [];

@@ -1266,8 +1266,7 @@ class _TimelineEventTile extends StatelessWidget {
     final description = event.description?.trim();
     final hasDescription = description?.isNotEmpty == true;
     final hasLongDescription = _isLongEventDescription(description);
-    final showActionRow = event.type != 'PRIERE' &&
-        (canComplete || canCancel);
+    final showActionRow = canComplete || canCancel;
     final statusAccent = _eventStatusColor(event);
     final statusSoft = _eventStatusSoftColor(event);
     final statusIcon = _eventStatusIcon(event);
