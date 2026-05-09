@@ -1,0 +1,60 @@
+[
+  {
+    "id": "family_faq_001",
+    "language": "fr",
+    "audience": ["famille"],
+    "tags": ["famille", "sante", "preparation"],
+    "question": "Que doit preparer un pelerin avant le voyage sur le plan de la sante ?",
+    "answer": "Il est conseille de verifier les vaccins et exigences de sante applicables, consulter un medecin en cas de maladie chronique, emporter une quantite suffisante de medicaments et garder un resume medical ou une ordonnance.",
+    "sources": [
+      "https://www.moh.gov.sa/en/HealthAwareness/Pilgrims-Health/Pages/Pre-Hajj-Health-Guidelines.aspx",
+      "https://www.moh.gov.sa/en/HealthAwareness/MedicalTools/Pages/PilgrimsHealth.aspx"
+    ]
+  },
+  {
+    "id": "family_faq_002",
+    "language": "fr",
+    "audience": ["famille"],
+    "tags": ["famille", "chaleur", "urgence"],
+    "question": "Quels signes doivent alerter la famille sur un probleme lie a la chaleur ?",
+    "answer": "Les signes d'alerte generaux cites dans les conseils sanitaires comprennent les maux de tete, la soif intense, les vertiges, la faiblesse, la nausee et la transpiration importante. En cas de malaise, il faut rechercher un endroit frais, boire de l'eau et demander une aide medicale si l'etat ne s'ameliore pas.",
+    "sources": [
+      "https://www.moh.gov.sa/en/HealthAwareness/Pilgrims-Health/Pages/Thermal-injuries-during-Hajj.aspx"
+    ]
+  },
+  {
+    "id": "family_faq_003",
+    "language": "fr",
+    "audience": ["famille"],
+    "tags": ["famille", "omra", "rituels"],
+    "question": "Quelles sont les grandes etapes de la Omra ?",
+    "answer": "De maniere generale, la Omra comprend l'entree en ihram, le tawaf autour de la Kaaba, le sa'i entre Safa et Marwa, puis la sortie de l'etat d'ihram selon les regles applicables.",
+    "sources": [
+      "https://haj.gov.sa/fr/Awareness-Center/Awareness-Guides/Umrah-An-Information-Guide?fileLang=fr",
+      "https://pep.gov.sa/en/news/877"
+    ]
+  },
+  {
+    "id": "family_faq_004",
+    "language": "fr",
+    "audience": ["famille"],
+    "tags": ["famille", "services", "officiel"],
+    "question": "Vers quels services officiels orienter un proche pour les informations generales ?",
+    "answer": "Pour les informations generales et officielles, il est prudent d'orienter le proche vers les plateformes et guides officiels du Ministere du Hajj et de la Omra ainsi que vers Nusuk pour les demarches et informations pratiques associees.",
+    "sources": [
+      "https://haj.gov.sa/",
+      "https://travel.state.gov/content/travel/en/international-travel/before-you-go/travelers-with-special-considerations/hajj-umrah.html"
+    ]
+  },
+  {
+    "id": "family_faq_005",
+    "language": "fr",
+    "audience": ["famille"],
+    "tags": ["famille", "hygiene", "securite"],
+    "question": "Quels conseils d'hygiene simples peuvent aider pendant le pelerinage ?",
+    "answer": "Les recommandations generales incluent le lavage frequent des mains, l'usage d'objets personnels sans partage, le port du masque dans les foules selon les recommandations sanitaires, et l'attention a l'hygiene corporelle et bucco-dentaire.",
+    "sources": [
+      "https://www.moh.gov.sa/en/HealthAwareness/Pilgrims-Health/Pages/General-Guidelines-for-Personal-Hygiene.aspx"
+    ]
+  }
+]
