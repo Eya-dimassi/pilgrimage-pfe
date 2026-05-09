@@ -38,6 +38,9 @@ class RoleProfileTemplate extends StatelessWidget {
     final specialite = user.specialite?.isNotEmpty == true
         ? user.specialite!
         : 'Non renseigne';
+    final disponibiliteGuide = user.disponibilite == 'INDISPONIBLE'
+        ? 'Indisponible'
+        : 'Disponible';
     final groupeNom = user.groupeNom?.isNotEmpty == true
         ? user.groupeNom!
         : 'Non attribue';
@@ -169,6 +172,12 @@ class RoleProfileTemplate extends StatelessWidget {
                 icon: Icons.workspace_premium_outlined,
                 title: 'Specialite',
                 subtitle: specialite,
+              ),
+            if (user.role == 'GUIDE')
+              _ProfileTile(
+                icon: Icons.event_available_outlined,
+                title: 'Disponibilite',
+                subtitle: disponibiliteGuide,
               ),
             if (user.role == 'PELERIN') ...[
               _ProfileTile(

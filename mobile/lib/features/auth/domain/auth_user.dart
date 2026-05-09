@@ -14,6 +14,8 @@ class AuthUser {
     this.numeroPasseport,
     this.photoUrl,
     this.specialite,
+    this.disponibilite,
+    this.disponibiliteMajAt,
     this.groupeNom,
   });
 
@@ -31,6 +33,8 @@ class AuthUser {
   final String? numeroPasseport;
   final String? photoUrl;
   final String? specialite;
+  final String? disponibilite;
+  final DateTime? disponibiliteMajAt;
   final String? groupeNom;
 
   AuthUser copyWith({
@@ -48,6 +52,8 @@ class AuthUser {
     String? numeroPasseport,
     String? photoUrl,
     String? specialite,
+    String? disponibilite,
+    DateTime? disponibiliteMajAt,
     String? groupeNom,
   }) {
     return AuthUser(
@@ -65,6 +71,8 @@ class AuthUser {
       numeroPasseport: numeroPasseport ?? this.numeroPasseport,
       photoUrl: photoUrl ?? this.photoUrl,
       specialite: specialite ?? this.specialite,
+      disponibilite: disponibilite ?? this.disponibilite,
+      disponibiliteMajAt: disponibiliteMajAt ?? this.disponibiliteMajAt,
       groupeNom: groupeNom ?? this.groupeNom,
     );
   }
@@ -92,6 +100,10 @@ class AuthUser {
       numeroPasseport: json['numeroPasseport'] as String?,
       photoUrl: json['photoUrl'] as String?,
       specialite: json['specialite'] as String?,
+      disponibilite: json['disponibilite'] as String?,
+      disponibiliteMajAt: json['disponibiliteMajAt'] is String
+          ? DateTime.tryParse(json['disponibiliteMajAt'] as String)
+          : null,
       groupeNom: json['groupeNom'] as String?,
     );
   }
@@ -112,6 +124,8 @@ class AuthUser {
       'numeroPasseport': numeroPasseport,
       'photoUrl': photoUrl,
       'specialite': specialite,
+      'disponibilite': disponibilite,
+      'disponibiliteMajAt': disponibiliteMajAt?.toIso8601String(),
       'groupeNom': groupeNom,
     };
   }

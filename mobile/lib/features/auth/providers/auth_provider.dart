@@ -40,6 +40,11 @@ class AuthController extends AsyncNotifier<AuthSession?> {
               currentUser.numeroPasseport ?? savedSession.user.numeroPasseport,
           photoUrl: currentUser.photoUrl ?? savedSession.user.photoUrl,
           specialite: currentUser.specialite ?? savedSession.user.specialite,
+          disponibilite:
+              currentUser.disponibilite ?? savedSession.user.disponibilite,
+          disponibiliteMajAt:
+              currentUser.disponibiliteMajAt ??
+              savedSession.user.disponibiliteMajAt,
           groupeNom: currentUser.groupeNom ?? savedSession.user.groupeNom,
         ),
       );
@@ -101,6 +106,11 @@ class AuthController extends AsyncNotifier<AuthSession?> {
               currentUser.numeroPasseport ?? session.user.numeroPasseport,
           photoUrl: currentUser.photoUrl ?? session.user.photoUrl,
           specialite: currentUser.specialite ?? session.user.specialite,
+          disponibilite:
+              currentUser.disponibilite ?? session.user.disponibilite,
+          disponibiliteMajAt:
+              currentUser.disponibiliteMajAt ??
+              session.user.disponibiliteMajAt,
           groupeNom: currentUser.groupeNom ?? session.user.groupeNom,
         ),
       );
@@ -219,6 +229,9 @@ class AuthController extends AsyncNotifier<AuthSession?> {
             currentUser.numeroPasseport ?? session.user.numeroPasseport,
         photoUrl: currentUser.photoUrl ?? session.user.photoUrl,
         specialite: currentUser.specialite ?? session.user.specialite,
+        disponibilite: currentUser.disponibilite ?? session.user.disponibilite,
+        disponibiliteMajAt:
+            currentUser.disponibiliteMajAt ?? session.user.disponibiliteMajAt,
         groupeNom: currentUser.groupeNom ?? session.user.groupeNom,
       ),
     );
@@ -234,6 +247,7 @@ class AuthController extends AsyncNotifier<AuthSession?> {
     String? telephone,
     String? lienParente,
     String? specialite,
+    String? disponibilite,
     DateTime? dateNaissance,
     String? nationalite,
     String? numeroPasseport,
@@ -266,6 +280,7 @@ class AuthController extends AsyncNotifier<AuthSession?> {
       telephone: request.telephone,
       lienParente: request.lienParente,
       specialite: request.specialite,
+      disponibilite: disponibilite,
       dateNaissance: request.dateNaissance,
       nationalite: request.nationalite,
       numeroPasseport: request.numeroPasseport,

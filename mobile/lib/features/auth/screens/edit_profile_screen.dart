@@ -41,6 +41,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
   bool _isSubmitting = false;
   bool _initialized = false;
+  bool _guideDisponible = true;
   String _selectedLienParente = 'Autre';
   DateTime? _selectedDateNaissance;
 
@@ -76,6 +77,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     _nationaliteController.text = user.nationalite ?? '';
     _numeroPasseportController.text = user.numeroPasseport ?? '';
     _photoUrlController.text = user.photoUrl ?? '';
+    _guideDisponible = user.disponibilite != 'INDISPONIBLE';
     _selectedDateNaissance = user.dateNaissance;
     _dateNaissanceController.text = _formatDate(user.dateNaissance);
     if (user.lienParente != null &&
@@ -129,6 +131,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
             lienParente: user.role == 'FAMILLE' ? _selectedLienParente : null,
             specialite:
                 user.role == 'GUIDE' ? _specialiteController.text : null,
+            disponibilite: user.role == 'GUIDE'
+                ? (_guideDisponible ? 'DISPONIBLE' : 'INDISPONIBLE')
+                : null,
             dateNaissance:
                 user.role == 'PELERIN' ? _selectedDateNaissance : null,
             nationalite:
@@ -294,6 +299,34 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 decoration: const InputDecoration(
                   labelText: 'Specialite',
                   prefixIcon: Icon(Icons.workspace_premium_outlined),
+                ),
+              ),
+              const SizedBox(height: 12),
+              SwitchListTile.adaptive(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+                value: _guideDisponible,
+                onChanged: (value) {
+                  setState(() {
+                    _guideDisponible = value;
+                  });
+                },
+                activeColor: AppColors.green,
+                title: const Text(
+                  'Disponible',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.text,
+                  ),
+                ),
+                subtitle: Text(
+                  _guideDisponible
+                      ? 'Vous pouvez etre affecte a un groupe.'
+                      : 'Vous ne serez pas affecte a un groupe.',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textMuted,
+                  ),
                 ),
               ),
             ],
