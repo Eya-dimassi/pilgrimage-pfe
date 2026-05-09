@@ -73,16 +73,9 @@
             <span>Créer une journée</span>
           </button>
           <button
-            class="planning-action-button"
-            :disabled="saving || !plannedDaysCount"
-            @click="openShiftModal"
-          >
-            <AppIcon name="arrow-right-left" :size="16" />
-            <span>Décaler</span>
-          </button>
-          <button
             class="planning-action-button planning-action-button--primary"
-            :disabled="saving || !selectedDateKey"
+            :disabled="saving || !selectedDateKey || !canAddEventOnSelectedDay"
+            :title="canAddEventOnSelectedDay ? '' : addEventBlockedReason"
             @click="selectedPlanning ? openEventModal() : createSelectedDayQuick()"
           >
             <AppIcon name="plus" :size="16" />
@@ -143,9 +136,14 @@
               <AppIcon name="edit" :size="15" />
               <span>Modifier la journée</span>
             </button>
-            <button class="planning-secondary-button" @click="deleteDay(selectedPlanning)">
+            <button
+              class="planning-secondary-button"
+              :disabled="saving || !canClearSelectedPlanning"
+              :title="canClearSelectedPlanning ? '' : clearDayBlockedReason"
+              @click="clearDay(selectedPlanning)"
+            >
               <AppIcon name="trash" :size="15" />
-              <span>Supprimer la journée</span>
+              <span>Vider la journée</span>
             </button>
           </div>
         </div>
@@ -221,7 +219,12 @@
             <p class="planning-empty-copy">Ajoutez les lieux, activités et l’heure de rendez-vous prévue pour ce jour.</p>
           </div>
 
-          <button class="planning-primary-wide" @click="openEventModal()">
+          <button
+            class="planning-primary-wide"
+            :disabled="saving || !canAddEventOnSelectedDay"
+            :title="canAddEventOnSelectedDay ? '' : addEventBlockedReason"
+            @click="openEventModal()"
+          >
             <AppIcon name="plus" :size="16" />
             Ajouter un événement
           </button>
@@ -234,7 +237,12 @@
             <p class="planning-empty-copy">Ajoutez directement un événement et la journée sera créée automatiquement pour cette date.</p>
           </div>
 
-          <button class="planning-primary-wide" @click="createSelectedDayQuick()">
+          <button
+            class="planning-primary-wide"
+            :disabled="saving || !canAddEventOnSelectedDay"
+            :title="canAddEventOnSelectedDay ? '' : addEventBlockedReason"
+            @click="createSelectedDayQuick()"
+          >
             <AppIcon name="plus" :size="16" />
             Ajouter un événement
           </button>
@@ -262,26 +270,6 @@
         <button class="btn-secondary" @click="closeDayModal">Annuler</button>
         <button class="btn-primary" :disabled="saving" @click="submitDay">
           {{ saving ? 'Sauvegarde...' : 'Sauvegarder' }}
-        </button>
-      </template>
-    </DashboardModalShell>
-
-    <DashboardModalShell
-      v-if="showShiftModal"
-      title="Décaler le planning"
-      :error="modalError"
-      @close="closeShiftModal"
-    >
-      <div class="form-grid">
-        <div class="form-field full">
-          <label>Décalage en jours</label>
-          <input v-model.number="shiftForm.offsetDays" type="number" min="-14" max="14" step="1" />
-        </div>
-      </div>
-      <template #actions>
-        <button class="btn-secondary" @click="closeShiftModal">Annuler</button>
-        <button class="btn-primary" :disabled="saving" @click="submitShift">
-          {{ saving ? 'Décalage...' : 'Décaler' }}
         </button>
       </template>
     </DashboardModalShell>
@@ -350,7 +338,6 @@ import {
   deleteAgencePlanningEvent,
   fetchAgencePlanning,
   generateAgencePlanningTemplate,
-  shiftAgencePlanning,
   updateAgenceGroupe,
   updateAgencePlanningDay,
   updateAgencePlanningEvent,
@@ -374,6 +361,33 @@ const EVENT_LOCATION_OPTIONS = [
   'MEDINA',
 ]
 
+const RIYADH_TIME_ZONE = 'Asia/Riyadh'
+const RIYADH_DATE_KEY_FORMATTER = new Intl.DateTimeFormat('en-US-u-nu-latn', {
+  timeZone: RIYADH_TIME_ZONE,
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+})
+const RIYADH_SHORT_DATE_FORMATTER = new Intl.DateTimeFormat('fr-FR', {
+  timeZone: RIYADH_TIME_ZONE,
+  day: '2-digit',
+  month: 'short',
+})
+const RIYADH_TIME_FORMATTER = new Intl.DateTimeFormat('fr-FR', {
+  timeZone: RIYADH_TIME_ZONE,
+  hour: '2-digit',
+  minute: '2-digit',
+  hour12: false,
+})
+const RIYADH_WEEKDAY_FORMATTER = new Intl.DateTimeFormat('fr-FR', {
+  timeZone: RIYADH_TIME_ZONE,
+  weekday: 'long',
+})
+const RIYADH_MONTH_SHORT_FORMATTER = new Intl.DateTimeFormat('fr-FR', {
+  timeZone: RIYADH_TIME_ZONE,
+  month: 'short',
+})
+
 const props = defineProps({
   groupes: {
     type: Array,
@@ -388,10 +402,13 @@ const props = defineProps({
 function toDateKey(value) {
   const date = parsePlanningDate(value)
   if (Number.isNaN(date.getTime())) return ''
-  const astDate = new Date(date.getTime() + 3 * 60 * 60 * 1000)
-  const year = astDate.getUTCFullYear()
-  const month = String(astDate.getUTCMonth() + 1).padStart(2, '0')
-  const day = String(astDate.getUTCDate()).padStart(2, '0')
+
+  const parts = RIYADH_DATE_KEY_FORMATTER.formatToParts(date)
+  const year = parts.find((part) => part.type === 'year')?.value ?? ''
+  const month = parts.find((part) => part.type === 'month')?.value ?? ''
+  const day = parts.find((part) => part.type === 'day')?.value ?? ''
+  if (!year || !month || !day) return ''
+
   return `${year}-${month}-${day}`
 }
 
@@ -400,14 +417,15 @@ function parsePlanningDate(value) {
   const raw = String(value ?? '').trim()
   if (!raw) return new Date('')
   if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
-    return new Date(`${raw}T00:00:00`)
+    return new Date(`${raw}T00:00:00+03:00`)
   }
   return new Date(raw)
 }
 
 function formatShortDate(value) {
   const date = parsePlanningDate(value)
-  return date.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })
+  if (Number.isNaN(date.getTime())) return ''
+  return RIYADH_SHORT_DATE_FORMATTER.format(date)
 }
 
 function formatEventType(value) {
@@ -418,7 +436,7 @@ function formatEventTime(value) {
   if (!value) return ''
   const date = parsePlanningDate(value)
   if (Number.isNaN(date.getTime())) return ''
-  return date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+  return RIYADH_TIME_FORMATTER.format(date)
 }
 
 function splitLieux(value) {
@@ -433,12 +451,11 @@ function formatEventCount(value) {
   return value > 1 ? `${value} événements` : `${value} événement`
 }
 
-function formatDateTimeLocal(value) {
+function formatEventTimeInput(value) {
   if (!value) return ''
   const date = parsePlanningDate(value)
   if (Number.isNaN(date.getTime())) return ''
-  const tzOffset = date.getTimezoneOffset() * 60000
-  return new Date(date.getTime() - tzOffset).toISOString().slice(0, 16)
+  return RIYADH_TIME_FORMATTER.format(date)
 }
 
 function getPreferredDateKey(plannings, availableDays, fallbackDateKey = '') {
@@ -463,11 +480,9 @@ const planningData = ref({ groupe: null, plannings: [], tripDays: [] })
 const selectedDateKey = ref('')
 const showDayModal = ref(false)
 const showEventModal = ref(false)
-const showShiftModal = ref(false)
 const editingDayId = ref('')
 const editingEventId = ref('')
 const dayForm = ref({ date: '', titre: '' })
-const shiftForm = ref({ offsetDays: 1 })
 const eventForm = ref({
   type: 'TRANSPORT',
   titre: '',
@@ -505,6 +520,22 @@ function getDayLocationLabel(day) {
 }
 const selectedPlanning = computed(() => planningByDate.value[selectedDateKey.value] ?? null)
 const selectedDay = computed(() => tripDays.value.find((item) => item.dateKey === selectedDateKey.value) ?? null)
+const todayDateKey = computed(() => toDateKey(new Date()))
+const canClearSelectedPlanning = computed(() => {
+  if (!selectedPlanning.value) return false
+  const planningDateKey = toDateKey(selectedPlanning.value.date)
+  if (!planningDateKey || !todayDateKey.value) return false
+  return planningDateKey > todayDateKey.value
+})
+const canAddEventOnSelectedDay = computed(() => {
+  if (!selectedDateKey.value || !todayDateKey.value) return false
+  return selectedDateKey.value >= todayDateKey.value
+})
+const addEventBlockedReason = computed(() => "Impossible d'ajouter un evenement dans une journee deja passee.")
+const clearDayBlockedReason = computed(() => {
+  if (!selectedPlanning.value) return ''
+  return "Vous ne pouvez vider qu'une journee future (date > aujourd'hui)."
+})
 const selectedDayDateLabel = computed(() => {
   if (!selectedDay.value) return 'Sélectionnez une date'
   return selectedDay.value.secondaryDayLabel
@@ -528,7 +559,6 @@ const tripRangeLabel = computed(() => {
   if (!selectedGroup.value?.dateDepart || !selectedGroup.value?.dateRetour) return 'Dates à définir'
   return `${formatShortDate(selectedGroup.value.dateDepart)} → ${formatShortDate(selectedGroup.value.dateRetour)}`
 })
-const plannedDaysCount = computed(() => planningData.value.plannings?.length ?? 0)
 const suggestedDayTitle = computed(() => {
   if (!selectedDay.value) return 'Journée du voyage'
   return selectedDay.value.primaryDayLabel
@@ -554,13 +584,13 @@ function getEventFallbackDescription(event) {
 function getWeekdayLabel(day) {
   const date = parsePlanningDate(day?.date)
   if (Number.isNaN(date.getTime())) return day?.label ?? ''
-  return date.toLocaleDateString('fr-FR', { weekday: 'long' })
+  return RIYADH_WEEKDAY_FORMATTER.format(date)
 }
 
 function getDayMonthShort(day) {
   const date = parsePlanningDate(day?.date)
   if (Number.isNaN(date.getTime())) return day?.monthShort ?? ''
-  return date.toLocaleDateString('fr-FR', { month: 'short' }).replace('.', '')
+  return RIYADH_MONTH_SHORT_FORMATTER.format(date).replace('.', '')
 }
 
 async function saveHajjStartDate() {
@@ -624,17 +654,6 @@ function closeDayModal() {
   modalError.value = ''
 }
 
-function openShiftModal() {
-  modalError.value = ''
-  shiftForm.value = { offsetDays: 1 }
-  showShiftModal.value = true
-}
-
-function closeShiftModal() {
-  showShiftModal.value = false
-  modalError.value = ''
-}
-
 function openEventModal(event = null) {
   modalError.value = ''
   editingEventId.value = event?.id ?? ''
@@ -643,7 +662,7 @@ function openEventModal(event = null) {
     titre: event?.titre ?? '',
     description: event?.description ?? '',
     lieu: event?.lieu ?? '',
-    heure: event?.heureDebutPrevue ? formatDateTimeLocal(event.heureDebutPrevue).slice(11, 16) : '',
+    heure: event?.heureDebutPrevue ? formatEventTimeInput(event.heureDebutPrevue) : '',
   }
   showEventModal.value = true
 }
@@ -710,6 +729,11 @@ async function createSelectedDayQuick() {
     return
   }
 
+  if (!canAddEventOnSelectedDay.value) {
+    showToast(addEventBlockedReason.value, 'error')
+    return
+  }
+
   if (selectedPlanning.value) {
     openEventModal()
     return
@@ -742,32 +766,14 @@ async function createSelectedDayQuick() {
   }
 }
 
-async function submitShift() {
-  const offsetDays = Number(shiftForm.value.offsetDays)
-
-  if (!Number.isInteger(offsetDays) || offsetDays === 0) {
-    modalError.value = 'Le décalage doit être un entier non nul'
-    return
-  }
-
-  saving.value = true
-  modalError.value = ''
-
-  try {
-    const result = await shiftAgencePlanning(selectedGroupId.value, { offsetDays })
-    closeShiftModal()
-    await loadPlanning()
-    showToast(`${result.shiftedDays} journée(s) décalée(s)`)
-  } catch (err) {
-    modalError.value = err.response?.data?.message || err.message
-  } finally {
-    saving.value = false
-  }
-}
-
 async function submitEvent() {
   if (!selectedPlanning.value) {
     modalError.value = "Créez d'abord la journée de planning"
+    return
+  }
+
+  if (!canAddEventOnSelectedDay.value) {
+    modalError.value = addEventBlockedReason.value
     return
   }
 
@@ -811,12 +817,17 @@ async function submitEvent() {
   }
 }
 
-async function deleteDay(planning) {
-  if (!window.confirm('Supprimer cette journée de planning ?')) return
+async function clearDay(planning) {
+  if (!canClearSelectedPlanning.value) {
+    showToast(clearDayBlockedReason.value, 'error')
+    return
+  }
+
+  if (!window.confirm('Vider cette journée de planning ? Tous les événements seront supprimés.')) return
 
   try {
     await deleteAgencePlanningDay(planning.id)
-    showToast('Journée supprimée')
+    showToast('Journée vidée')
     await loadPlanning()
   } catch (err) {
     showToast(err.response?.data?.message || err.message, 'error')

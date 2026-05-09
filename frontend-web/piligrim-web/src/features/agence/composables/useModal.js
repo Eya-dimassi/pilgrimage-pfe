@@ -1,5 +1,6 @@
-﻿import { ref } from 'vue'
+import { ref } from 'vue'
 import { groupes, guides, pelerins, useAgenceData } from './useAgenceData'
+import { toASTDateKey } from '../utils/astDate'
 
 const TOAST_DURATION_MS = 8500
 
@@ -73,10 +74,7 @@ export function useModal() {
   }
 
   function dateToInput(value) {
-    if (!value) return ''
-    const date = value instanceof Date ? value : new Date(value)
-    if (Number.isNaN(date.getTime())) return ''
-    return date.toISOString().slice(0, 10)
+    return toASTDateKey(value)
   }
 
   function openModal(type) {
@@ -211,7 +209,7 @@ export function useModal() {
     }
 
     if (form.value.typeVoyage === 'HAJJ' && form.value.hajjStartDate && form.value.dateDepart && form.value.hajjStartDate < form.value.dateDepart) {
-      modalError.value = 'La date du 8 Dhul Hijja doit Ãªtre comprise dans la durÃ©e du voyage'
+      modalError.value = 'La date du 8 Dhul Hijja doit etre comprise dans la duree du voyage'
       return
     }
 

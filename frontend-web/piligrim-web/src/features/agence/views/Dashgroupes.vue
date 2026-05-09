@@ -166,7 +166,7 @@
                 Guides assignes
               </div>
 
-              <div v-if="(groupe.guides?.length ?? 0) > 0">
+              <div v-if="(groupe.guides?.length ?? 0) > 0" class="guide-list">
                 <div v-for="guide in groupe.guides" :key="guide.id" class="guide-detail-row">
                   <div class="cell-avatar green-av" style="width: 30px; height: 30px; font-size: 11px">
                     {{ initials(guide.utilisateur?.prenom, guide.utilisateur?.nom) }}
@@ -204,26 +204,28 @@
                 Aucun pelerin - utilisez "Affecter pelerin" depuis la vue Pelerins
               </div>
 
-              <div v-for="pelerin in groupe.pelerins" :key="pelerin.id" class="pelerin-detail-row">
-                <div class="cell-avatar" style="width: 30px; height: 30px; font-size: 11px">
-                  {{ initials(pelerin.utilisateur?.prenom, pelerin.utilisateur?.nom) }}
-                </div>
-
-                <div class="pelerin-detail-info">
-                  <div class="cell-name" style="font-size: 13px">
-                    {{ pelerin.utilisateur?.prenom }} {{ pelerin.utilisateur?.nom }}
+              <div class="pelerin-list">
+                <div v-for="pelerin in groupe.pelerins" :key="pelerin.id" class="pelerin-detail-row">
+                  <div class="cell-avatar" style="width: 30px; height: 30px; font-size: 11px">
+                    {{ initials(pelerin.utilisateur?.prenom, pelerin.utilisateur?.nom) }}
                   </div>
-                  <div class="cell-sub">{{ pelerin.utilisateur?.email }}</div>
-                </div>
 
-                <button
-                  @click="$emit('remove-pelerin', { groupeId: groupe.id, pelerinId: pelerin.id })"
-                  class="act-btn act-btn-danger"
-                  title="Retirer du groupe"
-                  style="width: 26px; height: 26px; flex-shrink: 0"
-                >
-                  <AppIcon name="x" :size="12" />
-                </button>
+                  <div class="pelerin-detail-info">
+                    <div class="cell-name" style="font-size: 13px">
+                      {{ pelerin.utilisateur?.prenom }} {{ pelerin.utilisateur?.nom }}
+                    </div>
+                    <div class="cell-sub">{{ pelerin.utilisateur?.email }}</div>
+                  </div>
+
+                  <button
+                    @click="$emit('remove-pelerin', { groupeId: groupe.id, pelerinId: pelerin.id })"
+                    class="act-btn act-btn-danger"
+                    title="Retirer du groupe"
+                    style="width: 26px; height: 26px; flex-shrink: 0"
+                  >
+                    <AppIcon name="x" :size="12" />
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -248,6 +250,7 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import AppIcon from '@/components/AppIcon.vue'
 import { getInitials } from '@/features/agence/utils/initials'
 import { exportGroupePdf as doExportGroupePdf } from '@/features/agence/utils/exportGroupePdf'
+import { formatASTShortDate } from '@/features/agence/utils/astDate'
 
 const props = defineProps({
   groupes: {
@@ -287,7 +290,7 @@ const filters = computed(() => [
   { key: 'noguide', label: 'Sans guide', count: props.groupes.filter((g) => !g.guide).length },
   {
     key: 'nopelerin',
-    label: 'Vides',
+    label: 'Sans pelerins',
     count: props.groupes.filter((g) => (g._count?.pelerins ?? 0) === 0).length,
   },
 ])
@@ -378,10 +381,7 @@ function initials(prenom, nom) {
 }
 
 function formatDate(value) {
-  if (!value) return ''
-  const date = value instanceof Date ? value : new Date(value)
-  if (Number.isNaN(date.getTime())) return ''
-  return date.toLocaleDateString('fr-FR', { year: 'numeric', month: 'short', day: '2-digit' })
+  return formatASTShortDate(value)
 }
 
 function dateRangeText(groupe) {

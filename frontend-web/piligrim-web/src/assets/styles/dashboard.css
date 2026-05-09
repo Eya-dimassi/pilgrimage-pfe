@@ -1424,6 +1424,13 @@
   gap: 8px;
 }
 
+.guide-list,
+.pelerin-list {
+  max-height: 150px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
 .group-details-label {
   display: flex;
   align-items: center;

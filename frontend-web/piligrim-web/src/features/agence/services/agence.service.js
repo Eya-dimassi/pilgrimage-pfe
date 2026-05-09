@@ -131,11 +131,6 @@ export async function generateAgencePlanningTemplate(groupeId) {
   return data
 }
 
-export async function shiftAgencePlanning(groupeId, form) {
-  const { data } = await api.post(`/agence/groupes/${groupeId}/plannings/shift`, form)
-  return data
-}
-
 export async function deleteAgencePlanning(groupeId) {
   const { data } = await api.delete(`/agence/groupes/${groupeId}/plannings`)
   return data

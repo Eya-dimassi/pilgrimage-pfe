@@ -1,3 +1,5 @@
+import { formatASTDateTime, formatASTShortDate } from './astDate'
+
 function escapeHtml(value) {
   return String(value ?? '')
     .replaceAll('&', '&amp;')
@@ -8,10 +10,7 @@ function escapeHtml(value) {
 }
 
 function formatDate(value) {
-  if (!value) return ''
-  const date = value instanceof Date ? value : new Date(value)
-  if (Number.isNaN(date.getTime())) return ''
-  return date.toLocaleDateString('fr-FR', { year: 'numeric', month: 'short', day: '2-digit' })
+  return formatASTShortDate(value)
 }
 
 function statusLabel(status) {
@@ -188,7 +187,7 @@ function buildHtml({ groupe, agencyName, exportedAt }) {
 }
 
 export function exportGroupePdf(groupe, options = {}) {
-  const exportedAt = new Date().toLocaleString('fr-FR')
+  const exportedAt = formatASTDateTime(new Date())
   let fallbackAgencyName = ''
   try {
     const raw = JSON.parse(localStorage.getItem('user') || '{}')
