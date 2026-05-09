@@ -73,27 +73,33 @@ class ConfirmationCard extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
             child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                Expanded(
-                  child: _StatutButton(
-                    targetStatut: 'PRESENT',
-                    currentStatut: currentStatut,
-                    icon: Icons.check_circle,
-                    label: 'Present',
-                    color: Colors.green,
-                    onPressed: () => onStatutChanged('PRESENT'),
-                  ),
+                _StatutIconButton(
+                  targetStatut: 'PRESENT',
+                  currentStatut: currentStatut,
+                  icon: Icons.check_circle,
+                  tooltip: 'Present',
+                  color: Colors.green,
+                  onPressed: () => onStatutChanged('PRESENT'),
                 ),
                 const SizedBox(width: 8),
-                Expanded(
-                  child: _StatutButton(
-                    targetStatut: 'ABSENT',
-                    currentStatut: currentStatut,
-                    icon: Icons.cancel,
-                    label: 'Absent',
-                    color: Colors.red,
-                    onPressed: () => onStatutChanged('ABSENT'),
-                  ),
+                _StatutIconButton(
+                  targetStatut: 'EXCUSE',
+                  currentStatut: currentStatut,
+                  icon: Icons.info,
+                  tooltip: 'Excuse',
+                  color: Colors.orange,
+                  onPressed: () => onStatutChanged('EXCUSE'),
+                ),
+                const SizedBox(width: 8),
+                _StatutIconButton(
+                  targetStatut: 'ABSENT',
+                  currentStatut: currentStatut,
+                  icon: Icons.cancel,
+                  tooltip: 'Absent',
+                  color: Colors.red,
+                  onPressed: () => onStatutChanged('ABSENT'),
                 ),
               ],
             ),
@@ -110,26 +116,26 @@ class ConfirmationCard extends StatelessWidget {
       case 'ABSENT':
         return Colors.red;
       case 'EXCUSE':
-        return Colors.red;
+        return Colors.orange;
       default:
         return theme.colorScheme.surfaceVariant;
     }
   }
 }
 
-class _StatutButton extends StatelessWidget {
+class _StatutIconButton extends StatelessWidget {
   final String targetStatut;
   final String currentStatut;
   final IconData icon;
-  final String label;
+  final String tooltip;
   final Color color;
   final VoidCallback onPressed;
 
-  const _StatutButton({
+  const _StatutIconButton({
     required this.targetStatut,
     required this.currentStatut,
     required this.icon,
-    required this.label,
+    required this.tooltip,
     required this.color,
     required this.onPressed,
   });
@@ -138,19 +144,19 @@ class _StatutButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final isSelected = currentStatut == targetStatut;
 
-    return ElevatedButton.icon(
-      onPressed: onPressed,
-      icon: Icon(icon, size: 16),
-      label: Text(
-        label,
-        style: const TextStyle(fontSize: 11),
-        overflow: TextOverflow.ellipsis,
-      ),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: isSelected ? color : Colors.grey.shade200,
-        foregroundColor: isSelected ? Colors.white : Colors.grey.shade700,
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
-        elevation: isSelected ? 2 : 0,
+    return Tooltip(
+      message: tooltip,
+      child: Ink(
+        decoration: ShapeDecoration(
+          color: isSelected ? color : Colors.grey.shade200,
+          shape: const CircleBorder(),
+        ),
+        child: IconButton(
+          onPressed: onPressed,
+          icon: Icon(icon),
+          color: isSelected ? Colors.white : Colors.grey.shade700,
+          visualDensity: VisualDensity.compact,
+        ),
       ),
     );
   }

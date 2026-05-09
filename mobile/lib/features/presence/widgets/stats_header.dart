@@ -44,6 +44,12 @@ class StatsHeader extends StatelessWidget {
             value: stats.absents.toString(),
             color: Colors.red.shade700,
           ),
+          _StatChip(
+            icon: Icons.info,
+            label: 'Excuses',
+            value: stats.excuses.toString(),
+            color: Colors.orange.shade700,
+          ),
         ],
       ),
     );

@@ -109,7 +109,7 @@ class _AppelPresenceScreenState extends ConsumerState<AppelPresenceScreen> {
         if (data.appel.statut == 'EN_COURS')
           QuickActionsBar(
             onMarquerTousPresents: () => _marquerTousPresents(context),
-            onReinitialiser: () => _resetLocal(context),
+            onRelancerAbsents: () => _reinitialiserAbsents(context),
           ),
         Expanded(
           child: data.appel.confirmations.isEmpty
@@ -253,11 +253,54 @@ class _AppelPresenceScreenState extends ConsumerState<AppelPresenceScreen> {
     );
   }
 
-  void _resetLocal(BuildContext context) {
-    _clearLocalChanges();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Modifications annulees')),
+  Future<void> _reinitialiserAbsents(BuildContext context) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Relancer les absents'),
+        content: const Text(
+          'Les pelerins ABSENT seront remis EN_ATTENTE et recevront une notification de rappel.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Annuler'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Relancer'),
+          ),
+        ],
+      ),
     );
+
+    if (confirm != true || !mounted) return;
+
+    try {
+      final repository = ref.read(presenceRepositoryProvider);
+      final result = await repository.reinitialiserAbsents(widget.appelId);
+      ref.invalidate(appelPresenceProvider(widget.appelId));
+      _clearLocalChanges();
+
+      if (mounted) {
+        final updated = result['updated'] ?? 0;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('$updated absent(s) reinitialise(s) et notifie(s)'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _sauvegarderPresences(BuildContext context) async {
@@ -326,7 +369,7 @@ class _AppelPresenceScreenState extends ConsumerState<AppelPresenceScreen> {
     required Map<String, String> localStatuts,
     required Map<String, String?> localNotes,
   }) {
-    const allowedStatuts = {'PRESENT', 'ABSENT'};
+    const allowedStatuts = {'PRESENT', 'ABSENT', 'EXCUSE'};
     final byId = <String, ConfirmationPresence>{
       for (final confirmation in data.appel.confirmations)
         confirmation.id: confirmation,

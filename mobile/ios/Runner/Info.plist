@@ -49,5 +49,11 @@
 	<string>Nous avons besoin de votre position pour envoyer les secours</string>
 	<key>NSLocationAlwaysUsageDescription</key>
 	<string>Nous avons besoin de votre position pour envoyer les secours</string>
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>en</string>
+		<string>ar</string>
+		<string>fr</string>
+	</array>
 </dict>
 </plist>

@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 
 class QuickActionsBar extends StatelessWidget {
   final VoidCallback onMarquerTousPresents;
-  final VoidCallback onReinitialiser;
+  final VoidCallback onRelancerAbsents;
 
   const QuickActionsBar({
     super.key,
     required this.onMarquerTousPresents,
-    required this.onReinitialiser,
+    required this.onRelancerAbsents,
   });
 
   @override
@@ -38,9 +38,9 @@ class QuickActionsBar extends StatelessWidget {
           const SizedBox(width: 8),
           Expanded(
             child: OutlinedButton.icon(
-              onPressed: onReinitialiser,
-              icon: const Icon(Icons.refresh, size: 18),
-              label: const Text('Reinitialiser'),
+              onPressed: onRelancerAbsents,
+              icon: const Icon(Icons.notifications_active_outlined, size: 18),
+              label: const Text('Relancer absents'),
             ),
           ),
         ],

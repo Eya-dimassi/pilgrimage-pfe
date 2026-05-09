@@ -87,6 +87,14 @@ class PresenceRepository {
     }
   }
 
+  Future<Map<String, dynamic>> reinitialiserAbsents(String appelId) async {
+    try {
+      return await remoteDataSource.reinitialiserAbsents(appelId);
+    } on DioException catch (e) {
+      throw PresenceException.fromDio(e);
+    }
+  }
+
   /// Appel actif pour le pelerin connecte
   Future<PelerinPresenceCall?> getPelerinAppelActif() async {
     try {
@@ -111,12 +119,10 @@ class PresenceRepository {
   /// Confirmer sa presence (Je suis present)
   Future<Map<String, dynamic>> confirmerPresencePelerin({
     required String confirmationId,
-    String? note,
   }) async {
     try {
       return await remoteDataSource.confirmerPresencePelerin(
         confirmationId: confirmationId,
-        note: note,
       );
     } on DioException catch (e) {
       throw PresenceException.fromDio(e);

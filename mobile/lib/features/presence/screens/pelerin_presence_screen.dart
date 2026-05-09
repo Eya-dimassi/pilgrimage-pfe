@@ -23,7 +23,6 @@ class PelerinPresenceScreen extends ConsumerStatefulWidget {
 
 class _PelerinPresenceScreenState extends ConsumerState<PelerinPresenceScreen> {
   bool _isConfirming = false;
-  final _noteController = TextEditingController();
   Timer? _refreshTimer;
 
   @override
@@ -37,7 +36,6 @@ class _PelerinPresenceScreenState extends ConsumerState<PelerinPresenceScreen> {
   @override
   void dispose() {
     _refreshTimer?.cancel();
-    _noteController.dispose();
     super.dispose();
   }
 
@@ -135,16 +133,6 @@ class _PelerinPresenceScreenState extends ConsumerState<PelerinPresenceScreen> {
                   'Votre statut: ${call.confirmation.statut}',
                   style: theme.textTheme.titleMedium,
                 ),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: _noteController,
-                  maxLines: 3,
-                  decoration: const InputDecoration(
-                    labelText: 'Note (optionnelle)',
-                    hintText: 'Ex: Je suis a l\'entree du bus',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
                 const SizedBox(height: 12),
                 SizedBox(
                   width: double.infinity,
@@ -186,7 +174,6 @@ class _PelerinPresenceScreenState extends ConsumerState<PelerinPresenceScreen> {
       final repository = ref.read(presenceRepositoryProvider);
       await repository.confirmerPresencePelerin(
         confirmationId: call.confirmation.id,
-        note: _noteController.text.trim(),
       );
 
       _refresh();

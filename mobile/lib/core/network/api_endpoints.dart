@@ -43,28 +43,26 @@ class ApiEndpoints {
       '/mobile/guide/sos/$sosId/resolve';
 
   static String creerAppelPresence() => '/guide/presence/appels';
-  
-  // Récupérer un appel de présence
-  static String getAppelPresence(String appelId) => '/guide/presence/appels/$appelId';
-  
-  // Marquer une présence individuelle
-  static String marquerPresence(String confirmationId) => 
+
+  static String getAppelPresence(String appelId) =>
+      '/guide/presence/appels/$appelId';
+
+  static String marquerPresence(String confirmationId) =>
       '/guide/presence/confirmations/$confirmationId';
-  
-  // Marquer plusieurs présences en masse
-  static String marquerPresenceBulk(String appelId) => 
+
+  static String marquerPresenceBulk(String appelId) =>
       '/guide/presence/appels/$appelId/bulk';
-  
-  // Clôturer un appel
-  static String cloturerAppel(String appelId) => 
+
+  static String cloturerAppel(String appelId) =>
       '/guide/presence/appels/$appelId/cloturer';
-  
-  // Historique des appels d'un groupe
-  static String getHistoriqueAppels(String groupeId) => 
+
+  static String reinitialiserAbsents(String appelId) =>
+      '/guide/presence/appels/$appelId/reinitialiser-absents';
+
+  static String getHistoriqueAppels(String groupeId) =>
       '/guide/presence/groupes/$groupeId/historique';
-  
-  // Stats d'un pèlerin
-  static String getStatsPelerin(String pelerinId) => 
+
+  static String getStatsPelerin(String pelerinId) =>
       '/guide/presence/pelerins/$pelerinId/stats';
 
   static const String mobilePelerinPresenceActive = '/mobile/presence/active';
