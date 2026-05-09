@@ -1,4 +1,5 @@
 import { addDays, isWithinInterval, parseISO } from 'date-fns'
+import { Prisma } from '../../../../generated/prisma/client'
 import prisma from '../../../config/prisma'
 import { buildHajjPlan, buildUmrahPlan, type TemplateDay } from './planning.templates'
 import { diffInASTDays, formatASTDateKey, isSameASTDay, setASTTime, startOfASTDay } from './date.utils'
@@ -38,6 +39,16 @@ type EventPayload = {
   description?: string
   lieu?: string | string[]
   heureDebutPrevue?: string | Date
+}
+
+type EventValidationStatus = 'PLANIFIE' | 'EN_COURS' | 'TERMINE' | 'ANNULE'
+
+type EventValidationRow = {
+  id: string
+  status: EventValidationStatus | null
+  estValide: boolean
+  valideeAt: Date | null
+  valideParGuideId: string | null
 }
 
 const GROUP_PLANNING_SELECT = {
@@ -84,6 +95,41 @@ function planningEventOrderBy() {
     { heureDebutPrevue: 'asc' as const },
     { createdAt: 'asc' as const },
   ]
+}
+
+function isCompletedEventStatus(status: EventValidationStatus | null | undefined) {
+  return status === 'TERMINE'
+}
+
+async function attachEventValidation<T extends { evenements: Array<{ id: string }> }>(
+  plannings: T[],
+) {
+  const eventIds = plannings.flatMap((planning) => planning.evenements.map((event) => event.id))
+
+  if (!eventIds.length) {
+    return plannings
+  }
+
+  const rows = await prisma.$queryRaw<EventValidationRow[]>`
+    SELECT "id", "status", "estValide", "valideeAt", "valideParGuideId"
+    FROM "EvenementPlanning"
+    WHERE "id" IN (${Prisma.join(eventIds)})
+  `
+  const validationByEventId = new Map(rows.map((row) => [row.id, row]))
+
+  return plannings.map((planning) => ({
+    ...planning,
+    evenements: planning.evenements.map((event) => {
+      const validation = validationByEventId.get(event.id)
+      return {
+        ...event,
+        status: validation?.status ?? null,
+        estValide: isCompletedEventStatus(validation?.status) || Boolean(validation?.estValide),
+        valideeAt: validation?.valideeAt ?? null,
+        valideParGuideId: validation?.valideParGuideId ?? null,
+      }
+    }),
+  }))
 }
 
 // Converts one or many lieux values into the single DB string format used by events.
@@ -276,10 +322,11 @@ export async function getPlanningVoyage(agenceId: string, groupeId: string) {
     },
     orderBy: { date: 'asc' },
   })
+  const planningsWithValidation = await attachEventValidation(plannings)
 
   return {
     groupe,
-    plannings,
+    plannings: planningsWithValidation,
     tripDays: buildTripDays(groupe),
   }
 }
