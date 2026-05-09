@@ -6,7 +6,7 @@ import '../data/guide_sos_repository.dart';
 import '../domain/guide_sos_alert.dart';
 
 final guideSosProvider = FutureProvider<List<GuideSosAlert>>((ref) async {
-  final session = ref.watch(authProvider).valueOrNull;
+  final session = ref.watch(authProvider.select((state) => state.valueOrNull));
   if (session == null || session.user.role != 'GUIDE') {
     return const [];
   }

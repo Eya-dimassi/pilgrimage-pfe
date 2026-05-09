@@ -441,6 +441,7 @@ class AppHeroAsset extends StatelessWidget {
     required this.height,
     this.scale = 1.0,
     this.alignment = Alignment.bottomRight,
+    this.fit = BoxFit.cover,
   });
 
   final String assetPath;
@@ -448,6 +449,7 @@ class AppHeroAsset extends StatelessWidget {
   final double height;
   final double scale;
   final Alignment alignment;
+  final BoxFit fit;
 
   @override
   Widget build(BuildContext context) {
@@ -466,7 +468,7 @@ class AppHeroAsset extends StatelessWidget {
             assetPath,
             width: scaledWidth,
             height: scaledHeight,
-            fit: BoxFit.cover,
+            fit: fit,
             alignment: alignment,
           ),
         ),

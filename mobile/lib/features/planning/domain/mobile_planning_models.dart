@@ -1,3 +1,5 @@
+import '../../../core/utils/saudi_time.dart';
+
 class MobilePlanningGroup {
   const MobilePlanningGroup({
     required this.id,
@@ -71,6 +73,7 @@ class MobilePlanningEvent {
     this.lieu,
     this.heureDebutPrevue,
     this.etape,
+    this.status,
     this.estValide = false,
     this.valideeAt,
     this.valideParGuideId,
@@ -83,11 +86,17 @@ class MobilePlanningEvent {
   final String? lieu;
   final DateTime? heureDebutPrevue;
   final String? etape;
+  final String? status;
   final bool estValide;
   final DateTime? valideeAt;
   final String? valideParGuideId;
 
-  bool get canBeValidated => type != 'PRIERE' && !estValide;
+  bool get isCompleted => status == 'TERMINE' || (status == null && estValide);
+  bool get isCancelled => status == 'ANNULE';
+  bool get isResolved => isCompleted || isCancelled;
+
+  bool get canBeCompleted => type != 'PRIERE' && !isResolved;
+  bool get canBeCancelled => type != 'PRIERE' && !isResolved;
 
   List<String> get lieux {
     if (lieu == null || lieu!.trim().isEmpty) return const [];
@@ -109,6 +118,7 @@ class MobilePlanningEvent {
           ? DateTime.tryParse(json['heureDebutPrevue'] as String)
           : null,
       etape: json['etape'] as String?,
+      status: json['status'] as String?,
       estValide: json['estValide'] as bool? ?? false,
       valideeAt: json['valideeAt'] is String
           ? DateTime.tryParse(json['valideeAt'] as String)
@@ -188,4 +198,303 @@ class MobilePlanningGroupHistoryItem {
           : null,
     );
   }
+}
+
+MobilePlanningGroup pickBestPlanningGroup(List<MobilePlanningGroup> groups) {
+  if (groups.isEmpty) {
+    throw StateError('Cannot pick a group from an empty list.');
+  }
+
+  int priority(MobilePlanningGroup group) {
+    switch (group.status) {
+      case 'EN_COURS':
+        return 0;
+      case 'PLANIFIE':
+        return 1;
+      case 'TERMINE':
+        return 2;
+      case 'ANNULE':
+        return 3;
+      default:
+        return 4;
+    }
+  }
+
+  final sortedGroups = [...groups]
+    ..sort((left, right) {
+      final priorityDiff = priority(left) - priority(right);
+      if (priorityDiff != 0) return priorityDiff;
+
+      final rightStart = right.dateDepart?.millisecondsSinceEpoch ?? 0;
+      final leftStart = left.dateDepart?.millisecondsSinceEpoch ?? 0;
+      if (rightStart != leftStart) return rightStart.compareTo(leftStart);
+
+      final rightEnd = right.dateRetour?.millisecondsSinceEpoch ?? 0;
+      final leftEnd = left.dateRetour?.millisecondsSinceEpoch ?? 0;
+      if (rightEnd != leftEnd) return rightEnd.compareTo(leftEnd);
+
+      return right.annee.compareTo(left.annee);
+    });
+
+  return sortedGroups.first;
+}
+
+List<MobilePlanningDay> sortPlanningDaysByDate(
+  List<MobilePlanningDay> plannings,
+) {
+  final sortedPlannings = [...plannings]
+    ..sort((left, right) => left.date.compareTo(right.date));
+
+  return sortedPlannings;
+}
+
+List<MobilePlanningEvent> sortPlanningEventsByTime(
+  List<MobilePlanningEvent> events,
+) {
+  final sortedEvents = [...events]
+    ..sort((left, right) {
+      final leftHasTime = left.heureDebutPrevue != null;
+      final rightHasTime = right.heureDebutPrevue != null;
+      if (leftHasTime != rightHasTime) {
+        return leftHasTime ? -1 : 1;
+      }
+
+      final leftTime = left.heureDebutPrevue?.millisecondsSinceEpoch ?? 0;
+      final rightTime = right.heureDebutPrevue?.millisecondsSinceEpoch ?? 0;
+      if (leftTime != rightTime) return leftTime.compareTo(rightTime);
+
+      return left.id.compareTo(right.id);
+    });
+
+  return sortedEvents;
+}
+
+MobilePlanningDay? findPlanningDayForDate(
+  List<MobilePlanningDay> plannings,
+  DateTime targetDay, {
+  bool preferWithEvents = false,
+}) {
+  if (plannings.isEmpty) return null;
+
+  final normalizedTargetDay = SaudiTime.dayOf(targetDay);
+  final sortedPlannings = sortPlanningDaysByDate(plannings);
+
+  if (preferWithEvents) {
+    for (final planning in sortedPlannings) {
+      if (planning.evenements.isNotEmpty &&
+          SaudiTime.isSameDay(planning.date, normalizedTargetDay)) {
+        return planning;
+      }
+    }
+  }
+
+  for (final planning in sortedPlannings) {
+    if (SaudiTime.isSameDay(planning.date, normalizedTargetDay)) {
+      return planning;
+    }
+  }
+
+  return null;
+}
+
+MobilePlanningDay? pickDefaultPlanningDay(
+  List<MobilePlanningDay> plannings, {
+  DateTime? referenceDay,
+  bool exactDayOnly = false,
+}) {
+  if (plannings.isEmpty) return null;
+
+  final normalizedReferenceDay = SaudiTime.dayOf(referenceDay ?? SaudiTime.now());
+  final sortedPlannings = sortPlanningDaysByDate(plannings);
+  final exactMatch = findPlanningDayForDate(
+    sortedPlannings,
+    normalizedReferenceDay,
+  );
+  if (exactMatch != null) return exactMatch;
+  if (exactDayOnly) return null;
+
+  for (final planning in sortedPlannings) {
+    final planningDay = SaudiTime.dayOf(planning.date);
+    if (planningDay.isAfter(normalizedReferenceDay)) {
+      return planning;
+    }
+  }
+
+  return sortedPlannings.last;
+}
+
+MobilePlanningEvent? pickCurrentOrNextPlanningEvent(
+  List<MobilePlanningEvent> events, {
+  DateTime? now,
+}) {
+  if (events.isEmpty) return null;
+
+  final currentTime = now ?? SaudiTime.now();
+  final sortedEvents = sortPlanningEventsByTime(events);
+
+  for (var index = 0; index < sortedEvents.length; index += 1) {
+    final event = sortedEvents[index];
+    final start = event.heureDebutPrevue;
+    final nextStart = index + 1 < sortedEvents.length
+        ? sortedEvents[index + 1].heureDebutPrevue
+        : null;
+
+    if (start == null) {
+      return event;
+    }
+
+    final isCurrent =
+        !start.isAfter(currentTime) &&
+        (nextStart == null || nextStart.isAfter(currentTime));
+    if (isCurrent || start.isAfter(currentTime)) {
+      return event;
+    }
+  }
+
+  return null;
+}
+
+MobilePlanningEvent? pickNextPlanningEventAfter(
+  List<MobilePlanningEvent> events,
+  MobilePlanningEvent? currentEvent,
+) {
+  if (events.isEmpty || currentEvent == null) return null;
+
+  final sortedEvents = sortPlanningEventsByTime(events);
+  final currentIndex = sortedEvents.indexWhere(
+    (event) => event.id == currentEvent.id,
+  );
+  if (currentIndex < 0 || currentIndex >= sortedEvents.length - 1) {
+    return null;
+  }
+
+  return sortedEvents[currentIndex + 1];
+}
+
+MobilePlanningEvent? pickNextPlanningEventPreview(
+  List<MobilePlanningDay> plannings, {
+  DateTime? anchorDay,
+  MobilePlanningEvent? currentEvent,
+}) {
+  if (plannings.isEmpty) return null;
+
+  final normalizedAnchorDay = SaudiTime.dayOf(anchorDay ?? SaudiTime.now());
+  final sortedPlannings = sortPlanningDaysByDate(plannings);
+  final planningForAnchorDay = findPlanningDayForDate(
+    sortedPlannings,
+    normalizedAnchorDay,
+  );
+
+  if (planningForAnchorDay != null && currentEvent != null) {
+    final nextTodayEvent = pickNextPlanningEventAfter(
+      planningForAnchorDay.evenements,
+      currentEvent,
+    );
+    if (nextTodayEvent != null) {
+      return nextTodayEvent;
+    }
+  }
+
+  for (final planning in sortedPlannings) {
+    final planningDay = SaudiTime.dayOf(planning.date);
+    if (!planningDay.isAfter(normalizedAnchorDay)) {
+      continue;
+    }
+
+    final sortedEvents = sortPlanningEventsByTime(planning.evenements);
+    if (sortedEvents.isNotEmpty) {
+      return sortedEvents.first;
+    }
+  }
+
+  return null;
+}
+
+List<MobilePlanningDay> expandPlanningDaysInRange(
+  List<MobilePlanningDay> plannings, {
+  required DateTime rangeStart,
+  required DateTime rangeEnd,
+}) {
+  final normalizedStart = SaudiTime.dayOf(rangeStart);
+  final normalizedEnd = SaudiTime.dayOf(rangeEnd);
+  if (normalizedEnd.isBefore(normalizedStart)) {
+    return sortPlanningDaysByDate(plannings);
+  }
+
+  final sortedPlannings = sortPlanningDaysByDate(plannings);
+  final planningByDayKey = <String, MobilePlanningDay>{
+    for (final planning in sortedPlannings)
+      _planningDayKey(planning.date): planning,
+  };
+
+  final expandedDays = <MobilePlanningDay>[];
+  var cursor = normalizedStart;
+  while (!cursor.isAfter(normalizedEnd)) {
+    final key = _planningDayKey(cursor);
+    expandedDays.add(
+      planningByDayKey[key] ??
+          MobilePlanningDay(
+            id: 'virtual-$key',
+            date: cursor,
+            titre: null,
+            evenements: const [],
+          ),
+    );
+    cursor = cursor.add(const Duration(days: 1));
+  }
+
+  return expandedDays;
+}
+
+List<MobilePlanningDay> expandPlanningDaysForPlanningView({
+  required List<MobilePlanningDay> plannings,
+  required DateTime referenceDay,
+  required DateTime? tripStart,
+  required DateTime? tripEnd,
+  required bool fullTrip,
+  required int daysBefore,
+  required int daysAfter,
+}) {
+  final normalizedReferenceDay = SaudiTime.dayOf(referenceDay);
+
+  if (fullTrip) {
+    if (tripStart == null || tripEnd == null) {
+      return sortPlanningDaysByDate(plannings);
+    }
+    return expandPlanningDaysInRange(
+      plannings,
+      rangeStart: tripStart,
+      rangeEnd: tripEnd,
+    );
+  }
+
+  var windowStart = normalizedReferenceDay.subtract(Duration(days: daysBefore));
+  var windowEnd = normalizedReferenceDay.add(Duration(days: daysAfter));
+
+  if (tripStart != null) {
+    final normalizedTripStart = SaudiTime.dayOf(tripStart);
+    if (windowStart.isBefore(normalizedTripStart)) {
+      windowStart = normalizedTripStart;
+    }
+  }
+
+  if (tripEnd != null) {
+    final normalizedTripEnd = SaudiTime.dayOf(tripEnd);
+    if (windowEnd.isAfter(normalizedTripEnd)) {
+      windowEnd = normalizedTripEnd;
+    }
+  }
+
+  return expandPlanningDaysInRange(
+    plannings,
+    rangeStart: windowStart,
+    rangeEnd: windowEnd,
+  );
+}
+
+String _planningDayKey(DateTime value) {
+  final day = SaudiTime.dayOf(value);
+  final month = day.month.toString().padLeft(2, '0');
+  final date = day.day.toString().padLeft(2, '0');
+  return '${day.year}-$month-$date';
 }

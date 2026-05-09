@@ -146,7 +146,7 @@ int _tabIndexFromState(GoRouterState state) {
       return 1;
     case 'alerts':
       return 2;
-    case 'profile':
+    case 'chat':
       return 3;
     default:
       return 0;

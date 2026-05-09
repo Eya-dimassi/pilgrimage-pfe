@@ -70,32 +70,18 @@ class BrandWordmark extends StatelessWidget {
           width: markSize,
           height: markSize,
           decoration: BoxDecoration(
-            color: AppColors.primaryDark,
+            color: Colors.white,
             borderRadius: BorderRadius.circular(markSize * 0.34),
+            border: Border.all(color: AppColors.borderSoft),
             boxShadow: AppShadows.soft,
           ),
-          alignment: Alignment.center,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              Icon(
-                Icons.mosque_rounded,
-                size: markSize * 0.42,
-                color: AppColors.goldBright,
-              ),
-              Positioned(
-                top: markSize * 0.18,
-                right: markSize * 0.2,
-                child: Container(
-                  width: markSize * 0.12,
-                  height: markSize * 0.12,
-                  decoration: const BoxDecoration(
-                    color: AppColors.goldBright,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              ),
-            ],
+          padding: EdgeInsets.all(markSize * 0.1),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(markSize * 0.24),
+            child: Image.asset(
+              'assets/images/logo.png',
+              fit: BoxFit.contain,
+            ),
           ),
         ),
         const SizedBox(width: AppSpacing.sm),

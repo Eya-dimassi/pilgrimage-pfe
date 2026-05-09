@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../../core/utils/saudi_time.dart';
+import '../../../core/utils/trip_progress.dart';
 import '../../../core/widgets/app_surfaces.dart';
+import '../../auth/providers/auth_provider.dart';
 import '../data/mobile_planning_repository.dart';
 import '../domain/mobile_planning_models.dart';
 import '../providers/mobile_planning_provider.dart';
@@ -34,7 +38,14 @@ class MobilePlanningScreen extends ConsumerStatefulWidget {
 class _MobilePlanningScreenState extends ConsumerState<MobilePlanningScreen> {
   String? _selectedGroupId;
   String? _selectedPlanningId;
-  final Set<String> _validatingEventIds = <String>{};
+  String? _activeUserId;
+  final Set<String> _updatingEventIds = <String>{};
+
+  @override
+  void initState() {
+    super.initState();
+    _activeUserId = ref.read(authProvider).valueOrNull?.user.id;
+  }
 
   @override
   void didUpdateWidget(covariant MobilePlanningScreen oldWidget) {
@@ -49,6 +60,14 @@ class _MobilePlanningScreenState extends ConsumerState<MobilePlanningScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final activeUserId = ref.watch(authProvider.select((state) => state.valueOrNull?.user.id));
+    if (_activeUserId != activeUserId) {
+      _activeUserId = activeUserId;
+      _selectedGroupId = null;
+      _selectedPlanningId = null;
+      _updatingEventIds.clear();
+    }
+
     final groupsAsync = ref.watch(mobilePlanningGroupsProvider);
     final isDayOnly = widget.view == PlanningRoleView.famille;
     final showGroupTabs = widget.view == PlanningRoleView.guide;
@@ -91,21 +110,39 @@ class _MobilePlanningScreenState extends ConsumerState<MobilePlanningScreen> {
                 ref.refresh(mobilePlanningDetailProvider(selectedGroup.id)),
           ),
           data: (planningData) {
+            final visiblePlannings = expandPlanningDaysForPlanningView(
+              plannings: planningData.plannings,
+              referenceDay: SaudiTime.now(),
+              tripStart: planningData.groupe.dateDepart,
+              tripEnd: planningData.groupe.dateRetour,
+              fullTrip: widget.view == PlanningRoleView.guide,
+              daysBefore: widget.view == PlanningRoleView.pelerin ? 1 : 0,
+              daysAfter: widget.view == PlanningRoleView.pelerin ? 1 : 0,
+            );
+
             if (!isDayOnly) {
-              _ensureSelectedPlanning(planningData.plannings);
+              _ensureSelectedPlanning(visiblePlannings);
             }
 
+            final exactTodayPlanning = findPlanningDayForDate(
+              visiblePlannings,
+              SaudiTime.now(),
+            );
             final selectedIndex = isDayOnly
-                ? (planningData.plannings.isEmpty ? -1 : 0)
-                : planningData.plannings.indexWhere(
+                ? exactTodayPlanning == null
+                    ? -1
+                    : visiblePlannings.indexWhere(
+                        (planning) => planning.id == exactTodayPlanning.id,
+                      )
+                : visiblePlannings.indexWhere(
                     (planning) => planning.id == _selectedPlanningId,
                   );
             final selectedDay = isDayOnly
-                ? (planningData.plannings.isEmpty
-                      ? null
-                      : planningData.plannings.first)
+                ? (selectedIndex >= 0
+                      ? visiblePlannings[selectedIndex]
+                      : null)
                 : (selectedIndex >= 0
-                      ? planningData.plannings[selectedIndex]
+                      ? visiblePlannings[selectedIndex]
                       : null);
             final selectedTripDayNumber = selectedDay == null
                 ? 0
@@ -113,7 +150,7 @@ class _MobilePlanningScreenState extends ConsumerState<MobilePlanningScreen> {
             final selectedDayNumber = selectedDay == null
                 ? 0
                 : _planningDisplayDayNumber(
-                    planningData.plannings,
+                    visiblePlannings,
                     selectedDay,
                     fallbackStartDate: planningData.groupe.dateDepart,
                   );
@@ -151,14 +188,20 @@ class _MobilePlanningScreenState extends ConsumerState<MobilePlanningScreen> {
                     accentColor: widget.accentColor,
                   ),
                   const SizedBox(height: AppSpacing.m),
-                  if (planningData.plannings.isEmpty)
+                  if (visiblePlannings.isEmpty)
                     _PlanningEmptyState(
                       title: widget.view == PlanningRoleView.famille
                           ? 'Aucun planning aujourd hui'
-                          : 'Aucune journee planifiee',
+                          : 'Aucune journee disponible',
                       message: widget.view == PlanningRoleView.famille
                           ? 'Le groupe n a pas encore de programme partage pour aujourd hui.'
-                          : 'L agence n a pas encore prepare le planning de ce groupe.',
+                          : 'Aucune journee du voyage n est disponible pour le moment.',
+                    )
+                  else if (isDayOnly && selectedDay == null)
+                    const _PlanningEmptyState(
+                      title: 'Aucun planning aujourd hui',
+                      message:
+                          'Le groupe n a pas encore de programme partage pour aujourd hui.',
                     )
                   else ...[
                     if (!isDayOnly) ...[
@@ -166,21 +209,21 @@ class _MobilePlanningScreenState extends ConsumerState<MobilePlanningScreen> {
                         hasPrevious: selectedIndex > 0,
                         hasNext:
                             selectedIndex >= 0 &&
-                            selectedIndex < planningData.plannings.length - 1,
+                            selectedIndex < visiblePlannings.length - 1,
                         onPrevious: selectedIndex > 0
                             ? () {
                                 setState(() {
                                   _selectedPlanningId =
-                                      planningData.plannings[selectedIndex - 1].id;
+                                      visiblePlannings[selectedIndex - 1].id;
                                 });
                               }
                             : null,
                         onNext: selectedIndex >= 0 &&
-                                selectedIndex < planningData.plannings.length - 1
+                                selectedIndex < visiblePlannings.length - 1
                             ? () {
                                 setState(() {
                                   _selectedPlanningId =
-                                      planningData.plannings[selectedIndex + 1].id;
+                                      visiblePlannings[selectedIndex + 1].id;
                                 });
                               }
                             : null,
@@ -190,15 +233,15 @@ class _MobilePlanningScreenState extends ConsumerState<MobilePlanningScreen> {
                         height: 120,
                         child: ListView.separated(
                           scrollDirection: Axis.horizontal,
-                          itemCount: planningData.plannings.length,
+                          itemCount: visiblePlannings.length,
                           separatorBuilder: (_, __) =>
                               const SizedBox(width: AppSpacing.s),
                           itemBuilder: (context, index) {
-                            final day = planningData.plannings[index];
+                            final day = visiblePlannings[index];
                             return _PlanningDayCard(
                               planning: day,
                               dayNumber: _planningDisplayDayNumber(
-                                planningData.plannings,
+                                visiblePlannings,
                                 day,
                                 fallbackStartDate:
                                     planningData.groupe.dateDepart,
@@ -228,11 +271,12 @@ class _MobilePlanningScreenState extends ConsumerState<MobilePlanningScreen> {
                         planning: selectedDay,
                         dayNumber: selectedDayNumber,
                         isGuide: widget.view == PlanningRoleView.guide,
-                        validatingEventIds: _validatingEventIds,
-                        onValidateEvent: widget.view == PlanningRoleView.guide
-                            ? (event) => _validateEvent(
+                        updatingEventIds: _updatingEventIds,
+                        onUpdateEventStatus: widget.view == PlanningRoleView.guide
+                            ? (event, status) => _updateEventStatus(
                                   groupeId: selectedGroup.id,
                                   event: event,
+                                  status: status,
                                 )
                             : null,
                       ),
@@ -256,7 +300,7 @@ class _MobilePlanningScreenState extends ConsumerState<MobilePlanningScreen> {
       }
     }
 
-    return _pickBestGroup(groups);
+    return pickBestPlanningGroup(groups);
   }
 
   void _ensureSelectedGroup(List<MobilePlanningGroup> groups) {
@@ -277,7 +321,7 @@ class _MobilePlanningScreenState extends ConsumerState<MobilePlanningScreen> {
 
     final stillExists = groups.any((group) => group.id == _selectedGroupId);
     if (_selectedGroupId == null || !stillExists) {
-      final nextGroup = _pickBestGroup(groups);
+      final nextGroup = pickBestPlanningGroup(groups);
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         setState(() {
@@ -288,45 +332,6 @@ class _MobilePlanningScreenState extends ConsumerState<MobilePlanningScreen> {
     }
   }
 
-  MobilePlanningGroup _pickBestGroup(List<MobilePlanningGroup> groups) {
-    if (groups.isEmpty) {
-      throw StateError('Cannot pick a group from an empty list.');
-    }
-
-    int priority(MobilePlanningGroup group) {
-      switch (group.status) {
-        case 'EN_COURS':
-          return 0;
-        case 'PLANIFIE':
-          return 1;
-        case 'TERMINE':
-          return 2;
-        case 'ANNULE':
-          return 3;
-        default:
-          return 4;
-      }
-    }
-
-    final sortedGroups = [...groups]
-      ..sort((left, right) {
-        final priorityDiff = priority(left) - priority(right);
-        if (priorityDiff != 0) return priorityDiff;
-
-        final rightStart = right.dateDepart?.millisecondsSinceEpoch ?? 0;
-        final leftStart = left.dateDepart?.millisecondsSinceEpoch ?? 0;
-        if (rightStart != leftStart) return rightStart.compareTo(leftStart);
-
-        final rightEnd = right.dateRetour?.millisecondsSinceEpoch ?? 0;
-        final leftEnd = left.dateRetour?.millisecondsSinceEpoch ?? 0;
-        if (rightEnd != leftEnd) return rightEnd.compareTo(leftEnd);
-
-        return right.annee.compareTo(left.annee);
-      });
-
-    return sortedGroups.first;
-  }
-
   void _ensureSelectedPlanning(List<MobilePlanningDay> plannings) {
     if (plannings.isEmpty) return;
 
@@ -335,7 +340,11 @@ class _MobilePlanningScreenState extends ConsumerState<MobilePlanningScreen> {
     );
     if (_selectedPlanningId != null && stillExists) return;
 
-    final nextPlanning = _pickBestPlanning(plannings);
+    final nextPlanning = pickDefaultPlanningDay(
+      plannings,
+      referenceDay: SaudiTime.now(),
+    );
+    if (nextPlanning == null) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       setState(() {
@@ -344,56 +353,48 @@ class _MobilePlanningScreenState extends ConsumerState<MobilePlanningScreen> {
     });
   }
 
-  MobilePlanningDay _pickBestPlanning(List<MobilePlanningDay> plannings) {
-    if (widget.view == PlanningRoleView.pelerin) {
-      final todayAst = _startOfAstDay(DateTime.now());
-
-      for (final planning in plannings) {
-        final planningDayAst = _startOfAstDay(planning.date);
-        if (planningDayAst.isAtSameMomentAs(todayAst)) {
-          return planning;
-        }
-        if (planningDayAst.isAfter(todayAst)) {
-          return planning;
-        }
-      }
-
-      return plannings.last;
-    }
-
-    return plannings.first;
-  }
-
-  Future<void> _validateEvent({
+  Future<void> _updateEventStatus({
     required MobilePlanningEvent event,
     required String groupeId,
+    required String status,
   }) async {
-    if (!event.canBeValidated || _validatingEventIds.contains(event.id)) return;
+    if (_updatingEventIds.contains(event.id)) return;
+    if (status == 'TERMINE' && !event.canBeCompleted) return;
+    if (status == 'ANNULE' && !event.canBeCancelled) return;
 
-    setState(() => _validatingEventIds.add(event.id));
+    setState(() => _updatingEventIds.add(event.id));
 
     try {
-      await ref.read(mobilePlanningRepositoryProvider).validateEvent(
+      await ref.read(mobilePlanningRepositoryProvider).updateEventStatus(
             groupeId: groupeId,
             eventId: event.id,
+            status: status,
           );
       PlanningFeedRefreshService.instance.bump();
       ref.invalidate(mobilePlanningDetailProvider(groupeId));
       await ref.read(mobilePlanningDetailProvider(groupeId).future);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Etape validee')),
+          SnackBar(
+            content: Text(
+              status == 'ANNULE' ? 'Etape annulee' : 'Etape terminee',
+            ),
+          ),
         );
       }
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Validation impossible: $error')),
+          SnackBar(
+            content: Text(
+              '${status == 'ANNULE' ? 'Annulation impossible' : 'Mise a jour impossible'}: $error',
+            ),
+          ),
         );
       }
     } finally {
       if (mounted) {
-        setState(() => _validatingEventIds.remove(event.id));
+        setState(() => _updatingEventIds.remove(event.id));
       }
     }
   }
@@ -411,6 +412,7 @@ class _MobilePlanningScreenState extends ConsumerState<MobilePlanningScreen> {
           accentColor: accentColor,
           illustrationAssetPath: 'assets/images/mosque_guide.png',
           plannedDaysCount: planningData.plannings.length,
+          currentDayDate: selectedDay?.date,
           currentTripDay: selectedDay == null
               ? null
               : _tripDayNumber(
@@ -422,8 +424,9 @@ class _MobilePlanningScreenState extends ConsumerState<MobilePlanningScreen> {
         return _TripSummaryCard(
           groupe: planningData.groupe,
           accentColor: accentColor,
-          illustrationAssetPath: 'assets/images/mosque_home.png',
+          illustrationAssetPath: 'assets/images/kaaba.png',
           plannedDaysCount: planningData.plannings.length,
+          currentDayDate: selectedDay?.date,
           currentTripDay: selectedDay == null
               ? null
               : _tripDayNumber(
@@ -505,37 +508,37 @@ class _TripSummaryCard extends StatelessWidget {
     required this.accentColor,
     required this.illustrationAssetPath,
     required this.plannedDaysCount,
+    this.currentDayDate,
     this.currentTripDay,
     this.compact = false,
   });
-
+ 
   final MobilePlanningGroup groupe;
   final Color accentColor;
   final String illustrationAssetPath;
   final int plannedDaysCount;
+  final DateTime? currentDayDate;
   final int? currentTripDay;
   final bool compact;
-
+ 
   @override
   Widget build(BuildContext context) {
-    final totalTripDays = _tripLengthInDays(groupe.dateDepart, groupe.dateRetour);
-    final boundedCurrentTripDay =
-        currentTripDay?.clamp(0, totalTripDays == 0 ? 0 : totalTripDays);
-    final displayedProgressUnits = compact
-        ? (boundedCurrentTripDay ?? plannedDaysCount)
-        : plannedDaysCount;
-    final progress = totalTripDays == 0
-        ? 0.0
-        : (displayedProgressUnits / totalTripDays).clamp(0.0, 1.0);
+    final totalTripDays =
+        _tripLengthInDays(groupe.dateDepart, groupe.dateRetour);
+    final boundedCurrentTripDay = currentTripDay?.clamp(
+      0,
+      totalTripDays == 0 ? 0 : totalTripDays,
+    );
+    final progress = computeTripProgress(
+      groupe.dateDepart,
+      groupe.dateRetour,
+      DateTime.now(),
+    );
     final percentageLabel = '${(progress * 100).round()}%';
-    final progressDetail = compact
-        ? (totalTripDays == 0
-              ? 'Progression du voyage'
-              : 'Jour ${boundedCurrentTripDay ?? 0} sur $totalTripDays')
-        : (totalTripDays == 0
-              ? '$plannedDaysCount jour(s) planifies'
-              : '$plannedDaysCount jour(s) planifies');
-
+    final progressDetail = totalTripDays == 0
+        ? 'Progression du voyage'
+        : 'Jour ${boundedCurrentTripDay ?? 0} sur $totalTripDays';
+ 
     return AppCard(
       padding: EdgeInsets.fromLTRB(
         compact ? 15 : 18,
@@ -557,8 +560,10 @@ class _TripSummaryCard extends StatelessWidget {
             ),
       shadow: AppShadows.lifted,
       child: Stack(
+        clipBehavior: Clip.none,
         children: [
-          if (!compact)
+          // ── guide: radial glow + large bottom-right image ──
+          if (!compact) ...[
             Positioned.fill(
               child: Container(
                 decoration: BoxDecoration(
@@ -574,7 +579,6 @@ class _TripSummaryCard extends StatelessWidget {
                 ),
               ),
             ),
-          if (!compact)
             Positioned(
               left: -18,
               top: 34,
@@ -587,20 +591,83 @@ class _TripSummaryCard extends StatelessWidget {
                 ),
               ),
             ),
-          Positioned(
-            top: compact ? 16 : 18,
-            right: compact ? 12 : 18,
-            child: Opacity(
-              opacity: compact ? 0.9 : 0.92,
-              child: AppHeroAsset(
-                assetPath: illustrationAssetPath,
-                width: compact ? 66 : 112,
-                height: compact ? 68 : 88,
-                scale: compact ? 1.01 : 1.04,
-                alignment: compact ? Alignment.bottomRight : Alignment.bottomCenter,
+            Positioned(
+              right: -6,
+              bottom: -10,
+              child: IgnorePointer(
+                child: Opacity(
+                  opacity: 0.96,
+                  child: AppHeroAsset(
+                    assetPath: illustrationAssetPath,
+                    width: 144,
+                    height: 156,
+                    scale: 1.0,
+                    alignment: Alignment.bottomCenter,
+                    fit: BoxFit.contain,
+                  )
+                      .animate(
+                        onPlay: (controller) =>
+                            controller.repeat(reverse: true),
+                      )
+                      .fadeIn(duration: 420.ms, curve: Curves.easeOutCubic)
+                      .slideX(
+                        begin: 0.08,
+                        end: 0,
+                        duration: 420.ms,
+                        curve: Curves.easeOutCubic,
+                      )
+                      .moveY(
+                        begin: 0,
+                        end: -5,
+                        duration: 2200.ms,
+                        curve: Curves.easeInOut,
+                      ),
+                ),
               ),
             ),
-          ),
+          ],
+ 
+          // ── pèlerin compact: bigger image, better anchored ──
+          if (compact)
+            Positioned(
+              // anchor to right edge and bottom of card
+              right: -4,
+              bottom: -14,
+              child: IgnorePointer(
+                child: AppHeroAsset(
+                  assetPath: illustrationAssetPath,
+                  // FIX: was 66×68 — now 148×160, large enough to feel
+                  // intentional and grounded at the bottom-right
+                  width: 148,
+                  height: 160,
+                  scale: 1.0,
+                  alignment: Alignment.bottomRight,
+                  fit: BoxFit.contain,
+                )
+                // FIX: entrance — fades + slides in from right on build
+                .animate()
+                .fadeIn(duration: 500.ms, curve: Curves.easeOut)
+                .slideX(
+                  begin: 0.12,
+                  end: 0,
+                  duration: 500.ms,
+                  curve: Curves.easeOutCubic,
+                )
+                // FIX: idle — gentle floating loop (same as guide card)
+                .then()
+                .animate(
+                  onPlay: (controller) => controller.repeat(reverse: true),
+                )
+                .moveY(
+                  begin: 0,
+                  end: -6,
+                  duration: 2400.ms,
+                  curve: Curves.easeInOut,
+                ),
+              ),
+            ),
+ 
+          // ── text content — right padding guards against image ──
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -615,8 +682,9 @@ class _TripSummaryCard extends StatelessWidget {
                 compact: true,
               ),
               SizedBox(height: compact ? 8 : 10),
+              // FIX: constrain text width so it never overlaps the image
               SizedBox(
-                width: compact ? 160 : 150,
+                width: compact ? 170 : 150,
                 child: Text(
                   groupe.nom,
                   style: TextStyle(
@@ -628,12 +696,16 @@ class _TripSummaryCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 3),
-              Text(
-                _tripSubtitle(groupe),
-                style: TextStyle(
-                  fontSize: compact ? 11.5 : 12.5,
-                  color: AppColors.textMuted,
-                  fontWeight: FontWeight.w500,
+              // subtitle also constrained
+              SizedBox(
+                width: compact ? 170 : double.infinity,
+                child: Text(
+                  _tripSubtitle(groupe),
+                  style: TextStyle(
+                    fontSize: compact ? 11.5 : 12.5,
+                    color: AppColors.textMuted,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
               if (groupe.dateDepart != null && groupe.dateRetour != null) ...[
@@ -658,46 +730,58 @@ class _TripSummaryCard extends StatelessWidget {
                 ),
               ],
               SizedBox(height: compact ? 12 : 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      progressDetail,
+              // progress row — constrained width on compact so
+              // percentage label doesn't collide with the image
+              SizedBox(
+                width: compact ? 175 : double.infinity,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        progressDetail,
+                        style: TextStyle(
+                          fontSize: compact ? 10.5 : 11.5,
+                          color: AppColors.textMuted,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      percentageLabel,
                       style: TextStyle(
-                        fontSize: compact ? 10.5 : 11.5,
-                        color: AppColors.textMuted,
-                        fontWeight: FontWeight.w400,
+                        fontSize: compact ? 15 : 15,
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(height: compact ? 6 : 8),
+              // progress bar — also constrained on compact
+              SizedBox(
+                width: compact ? 175 : double.infinity,
+                child: Container(
+                  height: compact ? 5 : 6,
+                  decoration: BoxDecoration(
+                    color: AppColors.borderSoft,
+                    borderRadius: BorderRadius.circular(AppRadii.pill),
+                  ),
+                  alignment: Alignment.centerLeft,
+                  child: FractionallySizedBox(
+                    widthFactor: progress.clamp(0.0, 1.0),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: compact ? accentColor : AppColors.primary,
+                        borderRadius: BorderRadius.circular(AppRadii.pill),
                       ),
                     ),
                   ),
-                  Text(
-                    percentageLabel,
-                    style: TextStyle(
-                      fontSize: compact ? 15 : 15,
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: compact ? 6 : 8),
-              Container(
-                height: compact ? 5 : 6,
-                decoration: BoxDecoration(
-                  color: AppColors.borderSoft,
-                  borderRadius: BorderRadius.circular(AppRadii.pill),
-                ),
-                alignment: Alignment.centerLeft,
-                child: FractionallySizedBox(
-                  widthFactor: progress.clamp(0.0, 1.0),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: compact ? accentColor : AppColors.primary,
-                      borderRadius: BorderRadius.circular(AppRadii.pill),
-                    ),
-                  ),
                 ),
               ),
+              // FIX: extra bottom padding on compact so the image
+              // (which overflows below the card) has room to breathe
+              if (compact) const SizedBox(height: 56),
             ],
           ),
         ],
@@ -721,17 +805,21 @@ class _FamilyCurrentMomentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final currentEvent = _currentOrNextEvent(planning?.evenements ?? const []);
-    final nextEvent = _nextEventAfter(
+    final currentEvent = pickCurrentOrNextPlanningEvent(
+      planning?.evenements ?? const [],
+    );
+    final nextEvent = pickNextPlanningEventAfter(
       planning?.evenements ?? const [],
       currentEvent,
     );
     final currentLocation =
         currentEvent == null ? null : _primaryLocation([currentEvent]);
     final totalTripDays = _tripLengthInDays(groupe.dateDepart, groupe.dateRetour);
-    final progress = totalTripDays == 0
-        ? 0.0
-        : (dayNumber / totalTripDays).clamp(0.0, 1.0);
+    final progress = computeTripProgress(
+      groupe.dateDepart,
+      groupe.dateRetour,
+      DateTime.now(),
+    );
 
     return AppCard(
       padding: const EdgeInsets.all(AppSpacing.lg),
@@ -760,7 +848,7 @@ class _FamilyCurrentMomentCard extends StatelessWidget {
           Text(
             planning == null
                 ? 'Aucun programme partage pour aujourd hui.'
-                : 'Jour $dayNumber - ${planning?.titre?.trim().isNotEmpty == true ? planning!.titre! : 'Programme du jour'}',
+                : _planningSectionHeading(dayNumber, planning!),
             style: const TextStyle(
               fontSize: 14,
               color: AppColors.textMuted,
@@ -918,7 +1006,6 @@ class _DayOnlyHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return SectionTitle(
       title,
-      subtitle: 'Today view for the selected journey.',
     );
   }
 }
@@ -1003,7 +1090,7 @@ class _PlanningDayCard extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              _toAst(planning.date).day.toString().padLeft(2, '0'),
+              SaudiTime.inSaudi(planning.date).day.toString().padLeft(2, '0'),
               style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w800,
@@ -1042,25 +1129,24 @@ class _SelectedDaySection extends StatelessWidget {
     required this.planning,
     required this.dayNumber,
     required this.isGuide,
-    required this.validatingEventIds,
-    required this.onValidateEvent,
+    required this.updatingEventIds,
+    required this.onUpdateEventStatus,
   });
 
   final MobilePlanningDay planning;
   final int dayNumber;
   final bool isGuide;
-  final Set<String> validatingEventIds;
-  final ValueChanged<MobilePlanningEvent>? onValidateEvent;
+  final Set<String> updatingEventIds;
+  final void Function(MobilePlanningEvent event, String status)?
+      onUpdateEventStatus;
 
   @override
   Widget build(BuildContext context) {
-    final locationLabel = _primaryLocation(planning.evenements);
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'J${dayNumber.toString()} - ${_planningTitleLabel(planning)}',
+          _planningSectionHeading(dayNumber, planning),
           style: const TextStyle(
             fontSize: 15.5,
             fontWeight: FontWeight.w800,
@@ -1068,35 +1154,10 @@ class _SelectedDaySection extends StatelessWidget {
             color: AppColors.primaryDark,
           ),
         ),
-        const SizedBox(height: 4),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Expanded(
-              child: Text(
-                'Programme partage pour cette journee.',
-                style: TextStyle(
-                  fontSize: 11.5,
-                  height: 1.35,
-                  color: AppColors.textMuted,
-                ),
-              ),
-            ),
-            if (locationLabel != null)
-              AppStatusChip(
-                label: locationLabel,
-                icon: _locationIcon(locationLabel),
-                backgroundColor: AppColors.goldSoft,
-                foregroundColor: AppColors.gold,
-                compact: true,
-              ),
-          ],
-        ),
         const SizedBox(height: AppSpacing.sm),
         if (planning.evenements.isEmpty)
           const _PlanningEmptyState(
             title: 'Aucun evenement pour cette journee',
-            message: 'Cette journee existe, mais aucun evenement n a encore ete ajoute.',
             compact: true,
           )
         else
@@ -1106,15 +1167,27 @@ class _SelectedDaySection extends StatelessWidget {
               return _TimelineEventTile(
                 event: event,
                 isLast: entry.key == planning.evenements.length - 1,
-                canValidate: isGuide && !event.estValide,
-                isValidating: validatingEventIds.contains(event.id),
-                onValidate: onValidateEvent == null
+                canComplete: isGuide && event.canBeCompleted,
+                canCancel: isGuide && event.canBeCancelled,
+                isUpdating: updatingEventIds.contains(event.id),
+                onComplete: onUpdateEventStatus == null
                     ? null
                     : () {
-                        _confirmAndValidateEvent(
+                        _confirmAndUpdateEventStatus(
                           context,
                           event,
-                          onValidateEvent!,
+                          'TERMINE',
+                          onUpdateEventStatus!,
+                        );
+                      },
+                onCancel: onUpdateEventStatus == null
+                    ? null
+                    : () {
+                        _confirmAndUpdateEventStatus(
+                          context,
+                          event,
+                          'ANNULE',
+                          onUpdateEventStatus!,
                         );
                       },
               );
@@ -1125,26 +1198,34 @@ class _SelectedDaySection extends StatelessWidget {
   }
 }
 
-Future<void> _confirmAndValidateEvent(
+Future<void> _confirmAndUpdateEventStatus(
   BuildContext context,
   MobilePlanningEvent event,
-  ValueChanged<MobilePlanningEvent> onValidateEvent,
+  String status,
+  void Function(MobilePlanningEvent event, String status) onUpdateEventStatus,
 ) async {
+  final isCancellation = status == 'ANNULE';
   final confirmed = await showDialog<bool>(
         context: context,
         builder: (dialogContext) => AlertDialog(
-          title: const Text('Confirmer la validation'),
+          title: Text(
+            isCancellation
+                ? 'Confirmer l annulation'
+                : 'Confirmer la fin de l etape',
+          ),
           content: Text(
-            'Voulez-vous valider cet evenement : "${event.titre}" ?',
+            isCancellation
+                ? 'Voulez-vous annuler cet evenement : "${event.titre}" ?'
+                : 'Voulez-vous marquer cet evenement comme termine : "${event.titre}" ?',
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: const Text('Annuler'),
+              child: const Text('Retour'),
             ),
             ElevatedButton(
               onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: const Text('Valider'),
+              child: Text(isCancellation ? 'Annuler l etape' : 'Terminer'),
             ),
           ],
         ),
@@ -1155,32 +1236,43 @@ Future<void> _confirmAndValidateEvent(
     return;
   }
 
-  onValidateEvent(event);
+  onUpdateEventStatus(event, status);
 }
 
 class _TimelineEventTile extends StatelessWidget {
   const _TimelineEventTile({
     required this.event,
     required this.isLast,
-    required this.canValidate,
-    required this.isValidating,
-    this.onValidate,
+    required this.canComplete,
+    required this.canCancel,
+    required this.isUpdating,
+    this.onComplete,
+    this.onCancel,
   });
 
   final MobilePlanningEvent event;
   final bool isLast;
-  final bool canValidate;
-  final bool isValidating;
-  final VoidCallback? onValidate;
+  final bool canComplete;
+  final bool canCancel;
+  final bool isUpdating;
+  final VoidCallback? onComplete;
+  final VoidCallback? onCancel;
 
   @override
   Widget build(BuildContext context) {
     final displayTime = event.heureDebutPrevue != null
         ? _formatHour(event.heureDebutPrevue!)
         : '--:--';
-    final canShowValidation =
-        event.type != 'PRIERE' && (canValidate || event.estValide);
-    final timelineColor = event.estValide ? AppColors.green : AppColors.borderSoft;
+    final description = event.description?.trim();
+    final hasDescription = description?.isNotEmpty == true;
+    final hasLongDescription = _isLongEventDescription(description);
+    final showActionRow = event.type != 'PRIERE' &&
+        (canComplete || canCancel);
+    final statusAccent = _eventStatusColor(event);
+    final statusSoft = _eventStatusSoftColor(event);
+    final statusIcon = _eventStatusIcon(event);
+    final statusLabel = _eventStatusLabel(event);
+    final isResolved = event.isResolved;
 
     return IntrinsicHeight(
       child: Row(
@@ -1201,22 +1293,22 @@ class _TimelineEventTile extends StatelessWidget {
                 const SizedBox(height: 7),
                 AnimatedContainer(
                   duration: const Duration(milliseconds: 180),
-                  width: event.estValide ? 22 : 10,
-                  height: event.estValide ? 22 : 10,
+                  width: isResolved ? 22 : 10,
+                  height: isResolved ? 22 : 10,
                   decoration: BoxDecoration(
-                    color: event.estValide ? AppColors.greenSoft : AppColors.goldSoft,
+                    color: isResolved ? statusSoft : AppColors.goldSoft,
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: event.estValide ? AppColors.green : AppColors.gold,
-                      width: event.estValide ? 1.6 : 1.2,
+                      color: isResolved ? statusAccent : AppColors.gold,
+                      width: isResolved ? 1.6 : 1.2,
                     ),
                   ),
                   alignment: Alignment.center,
-                  child: event.estValide
-                      ? const Icon(
-                          Icons.check_rounded,
+                  child: isResolved
+                      ? Icon(
+                          statusIcon,
                           size: 13,
-                          color: AppColors.green,
+                          color: statusAccent,
                         )
                       : Container(
                           width: 6,
@@ -1230,9 +1322,11 @@ class _TimelineEventTile extends StatelessWidget {
                 const SizedBox(height: 4),
                 Expanded(
                   child: Container(
-                    width: event.estValide ? 2 : 1.4,
+                    width: isResolved ? 2 : 1.4,
                     decoration: BoxDecoration(
-                      color: isLast ? Colors.transparent : timelineColor,
+                      color: isLast
+                          ? Colors.transparent
+                          : (isResolved ? statusAccent : AppColors.borderSoft),
                       borderRadius: BorderRadius.circular(999),
                     ),
                   ),
@@ -1264,15 +1358,6 @@ class _TimelineEventTile extends StatelessWidget {
                             ),
                           ),
                         ),
-                        if (event.estValide)
-                          const Padding(
-                            padding: EdgeInsets.only(left: 8, top: 1),
-                            child: Icon(
-                              Icons.more_vert_rounded,
-                              size: 18,
-                              color: AppColors.textFaint,
-                            ),
-                          ),
                       ],
                     ),
                     const SizedBox(height: 9),
@@ -1287,31 +1372,26 @@ class _TimelineEventTile extends StatelessWidget {
                           foregroundColor: _eventTypeStrongColor(event.type),
                           compact: true,
                         ),
-                        if (event.estValide)
-                          const _MetaPill(
-                            label: 'Valide',
-                            icon: Icons.check_circle_rounded,
-                            background: AppColors.greenSoft,
-                            foreground: AppColors.green,
-                          ),
-                      ],
-                    ),
-                    if (event.lieux.isNotEmpty) ...[
-                      const SizedBox(height: 7),
-                      Wrap(
-                        spacing: 6,
-                        runSpacing: 6,
-                        children: event.lieux
+                        ...event.lieux
                             .map(
                               (lieu) => AppStatusChip(
                                 label: lieu,
                                 icon: _locationIcon(lieu),
-                                backgroundColor: AppColors.section,
-                                foregroundColor: AppColors.textMuted,
+                                backgroundColor: _locationSoftColor(lieu),
+                                foregroundColor: _locationStrongColor(lieu),
                                 compact: true,
                               ),
                             )
-                            .toList(),
+                            ,
+                      ],
+                    ),
+                    if (isResolved) ...[
+                      const SizedBox(height: 7),
+                      _MetaPill(
+                        label: statusLabel,
+                        icon: statusIcon,
+                        background: statusSoft,
+                        foreground: statusAccent,
                       ),
                     ],
                     if (event.etape?.trim().isNotEmpty == true) ...[
@@ -1322,141 +1402,60 @@ class _TimelineEventTile extends StatelessWidget {
                         foreground: AppColors.textMuted,
                       ),
                     ],
-                    if (event.estValide && event.valideeAt != null) ...[
+                    if (event.isCompleted && event.valideeAt != null) ...[
                       const SizedBox(height: 10),
                       Text(
-                        'Valide a ${_formatHour(event.valideeAt!)}',
-                        style: const TextStyle(
+                        'Terminee a ${_formatHour(event.valideeAt!)}',
+                        style: TextStyle(
                           fontSize: 12,
-                          color: AppColors.green,
+                          color: statusAccent,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
+                    ],
+                    if (hasDescription) ...[
                       const SizedBox(height: 7),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 11,
-                          vertical: 10,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF6F8F3),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: AppColors.borderSoft),
-                        ),
-                        child: const Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.check_circle_rounded,
-                                  size: 16,
-                                  color: AppColors.green,
-                                ),
-                                SizedBox(width: 7),
-                                Text(
-                                  'Etape validee',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.primaryDark,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            SizedBox(height: 3),
-                            Text(
-                              'Cette etape a ete validee avec succes.',
-                              style: TextStyle(
-                                fontSize: 11,
-                                height: 1.35,
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              description!,
+                              maxLines: hasLongDescription ? 3 : null,
+                              overflow: hasLongDescription
+                                  ? TextOverflow.ellipsis
+                                  : TextOverflow.visible,
+                              style: const TextStyle(
+                                fontSize: 12.5,
+                                height: 1.4,
                                 color: AppColors.textMuted,
                               ),
                             ),
+                          ),
+                          if (hasLongDescription) ...[
+                            const SizedBox(width: 8),
+                            _DescriptionInfoButton(
+                              description: description,
+                            ),
                           ],
-                        ),
+                        ],
                       ),
-                    ],
-                    if (event.description?.trim().isNotEmpty == true) ...[
-                      const SizedBox(height: 7),
-                      Text(
-                        event.description!,
-                        style: const TextStyle(
-                          fontSize: 12.5,
-                          height: 1.4,
-                          color: AppColors.textMuted,
+                      if (hasLongDescription) ...[
+                        const SizedBox(height: 4),
+                        const Text(
+                          'Description complete',
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textFaint,
+                          ),
                         ),
-                      ),
+                      ],
                     ],
-                    if (canShowValidation) ...[
+                    if (showActionRow) ...[
                       const SizedBox(height: 10),
-                      SizedBox(
-                        width: double.infinity,
-                        child: event.estValide
-                            ? DecoratedBox(
-                                decoration: BoxDecoration(
-                                  color: AppColors.primaryDark,
-                                  borderRadius: BorderRadius.circular(18),
-                                ),
-                                child: const Padding(
-                                  padding: EdgeInsets.symmetric(vertical: 12),
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(
-                                        Icons.check_circle_outline_rounded,
-                                        color: Colors.white,
-                                        size: 17,
-                                      ),
-                                      SizedBox(width: 8),
-                                      Text(
-                                        'Etape validee',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              )
-                            : FilledButton(
-                                onPressed: isValidating ? null : onValidate,
-                                style: FilledButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(vertical: 12),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(18),
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    if (isValidating)
-                                      const SizedBox(
-                                        width: 15,
-                                        height: 15,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          color: Colors.white,
-                                        ),
-                                      )
-                                    else
-                                      const Icon(Icons.check_rounded, size: 17),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      isValidating
-                                          ? 'Validation...'
-                                          : 'Valider l etape',
-                                      style: const TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
+                      _buildEventActionArea(
+                        isUpdating: isUpdating,
                       ),
                     ],
                   ],
@@ -1466,6 +1465,66 @@ class _TimelineEventTile extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildEventActionArea({required bool isUpdating}) {
+    return Row(
+      children: [
+        Expanded(
+          child: FilledButton(
+            onPressed: isUpdating ? null : onComplete,
+            style: FilledButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(18),
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (isUpdating)
+                  const SizedBox(
+                    width: 15,
+                    height: 15,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                else
+                  const Icon(Icons.check_rounded, size: 17),
+                const SizedBox(width: 8),
+                Text(
+                  isUpdating ? 'Mise a jour...' : 'Terminer',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        OutlinedButton(
+          onPressed: isUpdating ? null : onCancel,
+          style: OutlinedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            side: const BorderSide(color: AppColors.red),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(18),
+            ),
+          ),
+          child: const Text(
+            'Annuler',
+            style: TextStyle(
+              color: AppColors.red,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -1494,10 +1553,38 @@ class _MetaPill extends StatelessWidget {
   }
 }
 
+class _DescriptionInfoButton extends StatelessWidget {
+  const _DescriptionInfoButton({
+    required this.description,
+  });
+
+  final String description;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppColors.blueSoft,
+      borderRadius: BorderRadius.circular(999),
+      child: InkWell(
+        onTap: () => _showDescriptionDialog(context, description),
+        borderRadius: BorderRadius.circular(999),
+        child: const Padding(
+          padding: EdgeInsets.all(8),
+          child: Icon(
+            Icons.info_outline_rounded,
+            size: 18,
+            color: AppColors.blue,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _PlanningEmptyState extends StatelessWidget {
   const _PlanningEmptyState({
     required this.title,
-    required this.message,
+    this.message = '',
     this.compact = false,
   });
 
@@ -1527,16 +1614,18 @@ class _PlanningEmptyState extends StatelessWidget {
               fontWeight: FontWeight.w700,
             ),
           ),
-          const SizedBox(height: 8),
-          Text(
-            message,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 14,
-              height: 1.5,
-              color: AppColors.textMuted,
+          if (message.trim().isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 14,
+                height: 1.5,
+                color: AppColors.textMuted,
+              ),
             ),
-          ),
+          ],
         ],
       ),
     );
@@ -1599,13 +1688,13 @@ class _PlanningErrorState extends StatelessWidget {
 
 int _tripLengthInDays(DateTime? start, DateTime? end) {
   if (start == null || end == null) return 0;
-  return _startOfAstDay(end).difference(_startOfAstDay(start)).inDays + 1;
+  return SaudiTime.dayOf(end).difference(SaudiTime.dayOf(start)).inDays + 1;
 }
 
 int _tripDayNumber(DateTime? start, DateTime date) {
   if (start == null) return 1;
-  final normalizedStart = _startOfAstDay(start);
-  final normalizedDate = _startOfAstDay(date);
+  final normalizedStart = SaudiTime.dayOf(start);
+  final normalizedDate = SaudiTime.dayOf(date);
   final difference = normalizedDate.difference(normalizedStart).inDays;
   return difference < 0 ? 1 : difference + 1;
 }
@@ -1622,10 +1711,18 @@ String _planningTitleLabel(MobilePlanningDay planning) {
   }
 
   final cleanedTitle = rawTitle.replaceFirst(
-    RegExp(r'^(?:j(?:our)?\s*\d+)\s*[-:]\s*', caseSensitive: false),
+    RegExp(r'^(?:j(?:our)?\s*\d+)(?:\s*[-:]\s*|\s*$)', caseSensitive: false),
     '',
   );
   return cleanedTitle.trim().isEmpty ? 'Journee' : cleanedTitle.trim();
+}
+
+String _planningSectionHeading(int dayNumber, MobilePlanningDay planning) {
+  final cleanedTitle = _planningTitleLabel(planning);
+  if (cleanedTitle == 'Journee') {
+    return 'Jour $dayNumber';
+  }
+  return 'Jour $dayNumber - $cleanedTitle';
 }
 
 int _planningDisplayDayNumber(
@@ -1633,6 +1730,9 @@ int _planningDisplayDayNumber(
   MobilePlanningDay planning, {
   DateTime? fallbackStartDate,
 }) {
+  if (fallbackStartDate != null) {
+    return _tripDayNumber(fallbackStartDate, planning.date);
+  }
   final index = plannings.indexWhere((day) => day.id == planning.id);
   if (index >= 0) {
     return index + 1;
@@ -1641,9 +1741,78 @@ int _planningDisplayDayNumber(
 }
 
 String _formatHour(DateTime value) {
-  final hour = value.hour.toString().padLeft(2, '0');
-  final minute = value.minute.toString().padLeft(2, '0');
-  return '$hour:$minute';
+  return SaudiTime.formatHour(value);
+}
+
+bool _isLongEventDescription(String? value) {
+  if (value == null) return false;
+  final normalized = value.trim();
+  return normalized.length > 120 || '\n'.allMatches(normalized).length >= 2;
+}
+
+Future<void> _showDescriptionDialog(BuildContext context, String description) {
+  return showDialog<void>(
+    context: context,
+    builder: (dialogContext) => Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 360),
+        decoration: BoxDecoration(
+          color: AppColors.card,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: AppColors.borderSoft),
+          boxShadow: AppShadows.lifted,
+        ),
+        padding: const EdgeInsets.fromLTRB(18, 18, 18, 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Expanded(
+                  child: Text(
+                    'Description complete',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.primaryDark,
+                    ),
+                  ),
+                ),
+                InkWell(
+                  onTap: () => Navigator.of(dialogContext).pop(),
+                  borderRadius: BorderRadius.circular(999),
+                  child: const Padding(
+                    padding: EdgeInsets.all(4),
+                    child: Icon(
+                      Icons.close_rounded,
+                      size: 22,
+                      color: AppColors.textMuted,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Flexible(
+              child: SingleChildScrollView(
+                child: Text(
+                  description,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    height: 1.65,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
 }
 
 String _formatMediumDate(DateTime value) {
@@ -1661,17 +1830,8 @@ String _formatMediumDate(DateTime value) {
     'nov',
     'dec',
   ];
-  final astDate = _toAst(value);
+  final astDate = SaudiTime.inSaudi(value);
   return '${astDate.day.toString().padLeft(2, '0')} ${months[astDate.month - 1]}';
-}
-
-DateTime _toAst(DateTime value) {
-  return value.toUtc().add(const Duration(hours: 3));
-}
-
-DateTime _startOfAstDay(DateTime value) {
-  final ast = _toAst(value);
-  return DateTime.utc(ast.year, ast.month, ast.day);
 }
 
 String _monthLabel(DateTime value) {
@@ -1702,6 +1862,10 @@ String _eventTypeLabel(String type) {
       return 'Rite';
     case 'PRIERE':
       return 'Priere';
+    case 'REPAS':
+      return 'Repas';
+    case 'REPOS':
+      return 'Repos';
     default:
       return 'Autre';
   }
@@ -1717,6 +1881,10 @@ IconData _eventTypeIcon(String type) {
       return Icons.mosque_outlined;
     case 'PRIERE':
       return Icons.wb_twilight_outlined;
+    case 'REPAS':
+      return Icons.restaurant_outlined;
+    case 'REPOS':
+      return Icons.king_bed_outlined;
     default:
       return Icons.route_outlined;
   }
@@ -1730,30 +1898,114 @@ String _formatEtapeLabel(String value) {
       .join(' ');
 }
 
+String _eventStatusLabel(MobilePlanningEvent event) {
+  if (event.isCancelled) return 'Annulee';
+  if (event.isCompleted) return 'Terminee';
+  if (event.status == 'EN_COURS') return 'En cours';
+  return 'Planifiee';
+}
+
+IconData _eventStatusIcon(MobilePlanningEvent event) {
+  if (event.isCancelled) return Icons.cancel_outlined;
+  if (event.isCompleted) return Icons.check_circle_rounded;
+  if (event.status == 'EN_COURS') return Icons.play_circle_outline_rounded;
+  return Icons.schedule_rounded;
+}
+
+Color _eventStatusColor(MobilePlanningEvent event) {
+  if (event.isCancelled) return AppColors.red;
+  if (event.isCompleted) return AppColors.green;
+  if (event.status == 'EN_COURS') return AppColors.blue;
+  return AppColors.gold;
+}
+
+Color _eventStatusSoftColor(MobilePlanningEvent event) {
+  if (event.isCancelled) return AppColors.redSoft;
+  if (event.isCompleted) return AppColors.greenSoft;
+  if (event.status == 'EN_COURS') return AppColors.blueSoft;
+  return AppColors.goldSoft;
+}
+
 Color _eventTypeSoftColor(String type) {
   switch (type) {
+    case 'PRIERE':
+      return const Color(0x264A9EFF);
     case 'TRANSPORT':
-      return AppColors.blueSoft;
+      return const Color(0xFFDCECFF);
     case 'VISITE':
-      return AppColors.greenSoft;
+      return const Color(0x2E50CD89);
+    case 'REPAS':
+      return const Color(0x33FFAE66);
+    case 'REPOS':
+      return const Color(0x33ADB7C9);
     case 'RITE':
-      return AppColors.goldSoft;
+      return const Color(0xFFE9E1FF);
     default:
-      return AppColors.section;
+      return const Color(0x1F7D7D7D);
   }
 }
 
 Color _eventTypeStrongColor(String type) {
   switch (type) {
+    case 'PRIERE':
+      return const Color(0xFF2F7AD6);
     case 'TRANSPORT':
-      return AppColors.blue;
+      return const Color(0xFF1764C3);
     case 'VISITE':
-      return AppColors.green;
+      return const Color(0xFF248A4B);
+    case 'REPAS':
+      return const Color(0xFFB86A1A);
+    case 'REPOS':
+      return const Color(0xFF667287);
     case 'RITE':
-      return AppColors.gold;
+      return const Color(0xFF5D47D6);
     default:
       return AppColors.textMuted;
   }
+}
+
+Color _locationSoftColor(String value) {
+  final normalized = value.toLowerCase();
+  if (normalized.contains('masjid') ||
+      normalized.contains('haram') ||
+      normalized.contains('mecque') ||
+      normalized.contains('kaaba')) {
+    return AppColors.goldSoft;
+  }
+  if (normalized.contains('hotel')) {
+    return AppColors.blueSoft;
+  }
+  if (normalized.contains('mina') ||
+      normalized.contains('arafat') ||
+      normalized.contains('muzdalifah') ||
+      normalized.contains('miqat') ||
+      normalized.contains('safa') ||
+      normalized.contains('marwa')) {
+    return AppColors.greenSoft;
+  }
+  return AppColors.section;
+}
+
+Color _locationStrongColor(String value) {
+  final normalized = value.toLowerCase();
+  if (normalized.contains('masjid') ||
+      normalized.contains('haram') ||
+      normalized.contains('mecque') ||
+      normalized.contains('kaaba')) {
+    return AppColors.gold;
+  }
+  if (normalized.contains('hotel')) {
+    return AppColors.blue;
+  }
+  if (normalized.contains('mina') ||
+      normalized.contains('arafat') ||
+      normalized.contains('muzdalifah') ||
+      normalized.contains('miqat') ||
+      normalized.contains('safa') ||
+      normalized.contains('marwa')) {
+    return AppColors.green;
+  }
+  return AppColors.textMuted;
 }
 
 IconData _locationIcon(String value) {
@@ -1785,42 +2037,4 @@ String? _primaryLocation(List<MobilePlanningEvent> events) {
   return null;
 }
 
-MobilePlanningEvent? _currentOrNextEvent(List<MobilePlanningEvent> events) {
-  if (events.isEmpty) return null;
 
-  final now = DateTime.now();
-  for (var index = 0; index < events.length; index += 1) {
-    final event = events[index];
-    final start = event.heureDebutPrevue;
-    final nextStart =
-        index + 1 < events.length ? events[index + 1].heureDebutPrevue : null;
-
-    if (start == null) {
-      return event;
-    }
-
-    final isCurrent = !start.isAfter(now) &&
-        (nextStart == null || nextStart.isAfter(now));
-    if (isCurrent) {
-      return event;
-    }
-
-    if (start.isAfter(now)) {
-      return event;
-    }
-  }
-
-  return events.last;
-}
-
-MobilePlanningEvent? _nextEventAfter(
-  List<MobilePlanningEvent> events,
-  MobilePlanningEvent? current,
-) {
-  if (current == null) return null;
-  final currentIndex = events.indexWhere((event) => event.id == current.id);
-  if (currentIndex < 0 || currentIndex >= events.length - 1) {
-    return null;
-  }
-  return events[currentIndex + 1];
-}
