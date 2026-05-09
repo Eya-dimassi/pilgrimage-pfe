@@ -3,10 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../../core/utils/saudi_time.dart';
 import '../../../core/widgets/app_surfaces.dart';
 import '../../../services/notification_navigation_service.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../sos/domain/guide_sos_alert.dart';
+import '../../sos/domain/sos_alert.dart';
 import '../../sos/providers/guide_sos_provider.dart';
 import '../data/mobile_notifications_repository.dart';
 import '../domain/mobile_notification.dart';
@@ -90,7 +92,7 @@ class _MobileAlertsScreenState extends ConsumerState<MobileAlertsScreen> {
             error:
                 (error, _) => _AlertsEmptyState(
                   icon: Icons.info_outline_rounded,
-                  title: 'Unable to load notifications',
+                  title: 'Impossible de charger les notifications',
                   subtitle: error.toString(),
                 ),
             data: (feed) {
@@ -101,7 +103,7 @@ class _MobileAlertsScreenState extends ConsumerState<MobileAlertsScreen> {
                   icon: Icons.notifications_none_rounded,
                   title: _emptyTitleForScope(_selectedScope),
                   subtitle:
-                      'Planning changes, reminders, and safety updates will appear here as your trip moves forward.',
+                      'Les mises a jour du planning, les rappels et les alertes importantes apparaitront ici.',
                 );
               }
 
@@ -129,16 +131,12 @@ class _MobileAlertsScreenState extends ConsumerState<MobileAlertsScreen> {
     List<MobileNotificationItem> items,
     _AlertsScope scope,
   ) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
+    final now = SaudiTime.now();
+    final today = SaudiTime.dayOf(now);
     final yesterday = today.subtract(const Duration(days: 1));
 
     return items.where((item) {
-      final itemDay = DateTime(
-        item.createdAt.year,
-        item.createdAt.month,
-        item.createdAt.day,
-      );
+      final itemDay = SaudiTime.dayOf(item.createdAt);
 
       switch (scope) {
         case _AlertsScope.today:
@@ -154,11 +152,11 @@ class _MobileAlertsScreenState extends ConsumerState<MobileAlertsScreen> {
   String _emptyTitleForScope(_AlertsScope scope) {
     switch (scope) {
       case _AlertsScope.today:
-        return 'Nothing for today yet';
+        return 'Aucune notification aujourd hui';
       case _AlertsScope.yesterday:
-        return 'No updates from yesterday';
+        return 'Aucune notification hier';
       case _AlertsScope.earlier:
-        return 'No earlier notifications';
+        return 'Aucune notification plus ancienne';
     }
   }
 }
@@ -193,7 +191,7 @@ class _AlertsHeader extends StatelessWidget {
             if (onMarkAllRead != null)
               TextButton(
                 onPressed: onMarkAllRead,
-                child: const Text('Mark all'),
+                child: const Text('Tout lire'),
               )
             else
               const SizedBox(width: 72),
@@ -202,8 +200,8 @@ class _AlertsHeader extends StatelessWidget {
         const SizedBox(height: AppSpacing.s),
         Text(
           unreadCount == 0
-              ? 'Everything is up to date.'
-              : '$unreadCount unread alert${unreadCount > 1 ? 's' : ''} waiting for you.',
+              ? 'Tout est a jour.'
+              : '$unreadCount notification${unreadCount > 1 ? 's' : ''} non lue${unreadCount > 1 ? 's' : ''}.',
           style: const TextStyle(
             fontSize: 13.5,
             color: AppColors.textSecondary,
@@ -229,19 +227,19 @@ class _AlertsScopeBar extends StatelessWidget {
     return Row(
       children: [
         _ScopeChip(
-          label: 'Today',
+          label: 'Aujourd hui',
           selected: selectedScope == _AlertsScope.today,
           onTap: () => onChanged(_AlertsScope.today),
         ),
         const SizedBox(width: AppSpacing.s),
         _ScopeChip(
-          label: 'Yesterday',
+          label: 'Hier',
           selected: selectedScope == _AlertsScope.yesterday,
           onTap: () => onChanged(_AlertsScope.yesterday),
         ),
         const SizedBox(width: AppSpacing.s),
         _ScopeChip(
-          label: 'Earlier',
+          label: 'Plus ancien',
           selected: selectedScope == _AlertsScope.earlier,
           onTap: () => onChanged(_AlertsScope.earlier),
         ),
@@ -306,7 +304,7 @@ class _GuideSosSection extends StatelessWidget {
       error:
           (error, _) => _AlertsEmptyState(
             icon: Icons.sos_outlined,
-            title: 'Unable to load SOS alerts',
+            title: 'Impossible de charger les alertes SOS',
             subtitle: error.toString(),
           ),
       data: (alerts) {
@@ -361,16 +359,12 @@ class _GuideSosSection extends StatelessWidget {
     List<GuideSosAlert> alerts,
     _AlertsScope scope,
   ) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
+    final now = SaudiTime.now();
+    final today = SaudiTime.dayOf(now);
     final yesterday = today.subtract(const Duration(days: 1));
 
     return alerts.where((alert) {
-      final itemDay = DateTime(
-        alert.createdAt.year,
-        alert.createdAt.month,
-        alert.createdAt.day,
-      );
+      final itemDay = SaudiTime.dayOf(alert.createdAt);
 
       switch (scope) {
         case _AlertsScope.today:
@@ -399,89 +393,160 @@ class _GuideSosCardState extends ConsumerState<_GuideSosCard> {
 
   @override
   Widget build(BuildContext context) {
+    final summary = _summaryForType(widget.alert.type);
+    final locationLabel =
+        '${widget.alert.latitude.toStringAsFixed(5)}, ${widget.alert.longitude.toStringAsFixed(5)}';
+
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.card,
+        color: const Color(0xFFFFFBFB),
         borderRadius: BorderRadius.circular(AppRadii.lg),
-        border: Border(
-          left: const BorderSide(color: AppColors.red, width: 3),
-          top: BorderSide(color: AppColors.red.withValues(alpha: 0.10)),
-          right: BorderSide(color: AppColors.red.withValues(alpha: 0.10)),
-          bottom: BorderSide(color: AppColors.red.withValues(alpha: 0.10)),
-        ),
+        border: Border.all(color: const Color(0xFFF2DCDD)),
         boxShadow: AppShadows.soft,
       ),
       padding: const EdgeInsets.all(AppSpacing.m),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: AppColors.redSoft,
-                  borderRadius: BorderRadius.circular(AppRadii.sm),
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  _initials(widget.alert.pelerinName),
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w800,
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFCEDEE),
+              borderRadius: BorderRadius.circular(AppRadii.md),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Alerte SOS en direct',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w900,
                     color: AppColors.red,
                   ),
                 ),
-              ),
-              const SizedBox(width: 11),
-              Expanded(
-                child: Column(
+                const SizedBox(height: 10),
+                Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      widget.alert.pelerinName,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    if (widget.alert.groupeNom != null)
-                      Text(
-                        widget.alert.groupeNom!,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppColors.textMuted,
-                          fontWeight: FontWeight.w500,
+                    Container(
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(AppRadii.sm),
+                        border: Border.all(
+                          color: AppColors.red.withValues(alpha: 0.18),
                         ),
                       ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        _initials(widget.alert.pelerinName),
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.red,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.alert.pelerinName.isEmpty
+                                ? 'Pelerin'
+                                : widget.alert.pelerinName,
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            widget.alert.groupeNom?.trim().isNotEmpty == true
+                                ? widget.alert.groupeNom!
+                                : 'Groupe non renseigne',
+                            style: const TextStyle(
+                              fontSize: 12.5,
+                              color: AppColors.textMuted,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(AppRadii.pill),
+                      ),
+                      child: Text(
+                        _elapsedLabel(widget.alert.createdAt),
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.red,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _GuideSosTypeChip(type: widget.alert.type),
+                    _MiniInfoChip(
+                      icon: Icons.place_outlined,
+                      label: locationLabel,
+                    ),
+                  ],
                 ),
-                decoration: BoxDecoration(
-                  color: AppColors.redSoft,
-                  borderRadius: BorderRadius.circular(AppRadii.pill),
-                ),
-                child: Text(
-                  _elapsedLabel(widget.alert.createdAt),
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.red,
-                  ),
-                ),
-              ),
-            ],
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'Situation',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+              color: AppColors.textMuted,
+              letterSpacing: 0.2,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            summary,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+            ),
           ),
           if (widget.alert.message?.trim().isNotEmpty == true) ...[
-            const SizedBox(height: 11),
+            const SizedBox(height: 12),
+            const Text(
+              'Message',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+                color: AppColors.textMuted,
+                letterSpacing: 0.2,
+              ),
+            ),
+            const SizedBox(height: 4),
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(
@@ -489,8 +554,9 @@ class _GuideSosCardState extends ConsumerState<_GuideSosCard> {
                 vertical: 10,
               ),
               decoration: BoxDecoration(
-                color: AppColors.section,
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(AppRadii.sm),
+                border: Border.all(color: AppColors.borderSoft),
               ),
               child: Text(
                 widget.alert.message!,
@@ -502,31 +568,40 @@ class _GuideSosCardState extends ConsumerState<_GuideSosCard> {
               ),
             ),
           ],
-          const SizedBox(height: 13),
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _resolving ? null : _confirmResolve,
+              icon: _resolving
+                  ? const SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Icon(Icons.check_rounded, size: 16),
+              label: Text(_resolving ? 'En cours...' : 'Resoudre'),
+            ),
+          ),
+          const SizedBox(height: 10),
           Row(
             children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: _callPilgrim,
+                  icon: const Icon(Icons.call_outlined, size: 16),
+                  label: const Text('Appeler'),
+                ),
+              ),
+              const SizedBox(width: 10),
               Expanded(
                 child: OutlinedButton.icon(
                   onPressed: _openMaps,
                   icon: const Icon(Icons.location_on_outlined, size: 16),
                   label: const Text('Position'),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: _resolving ? null : _confirmResolve,
-                  icon: _resolving
-                      ? const SizedBox(
-                          width: 14,
-                          height: 14,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Icon(Icons.check_rounded, size: 16),
-                  label: Text(_resolving ? 'En cours...' : 'Resoudre'),
                 ),
               ),
             ],
@@ -628,6 +703,20 @@ class _GuideSosCardState extends ConsumerState<_GuideSosCard> {
     await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 
+  Future<void> _callPilgrim() async {
+    final phone = widget.alert.pelerinPhone?.trim() ?? '';
+    if (phone.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Numero du pelerin indisponible')),
+      );
+      return;
+    }
+
+    final uri = Uri(scheme: 'tel', path: phone);
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+
   String _initials(String name) {
     final parts = name.trim().split(' ').where((part) => part.isNotEmpty).toList();
     if (parts.length >= 2) {
@@ -645,6 +734,107 @@ class _GuideSosCardState extends ConsumerState<_GuideSosCard> {
     if (diff.inMinutes < 60) return 'Il y a ${diff.inMinutes} min';
     return 'Il y a ${diff.inHours} h';
   }
+
+  String _summaryForType(SosIncidentType type) {
+    switch (type) {
+      case SosIncidentType.maladie:
+        return 'Probleme de sante signale par le pelerin.';
+      case SosIncidentType.perte:
+        return 'Le pelerin signale qu il est perdu.';
+      case SosIncidentType.logistique:
+        return 'Le pelerin a besoin d aide logistique.';
+      case SosIncidentType.autre:
+        return 'Demande d assistance generale.';
+    }
+  }
+}
+
+class _GuideSosTypeChip extends StatelessWidget {
+  const _GuideSosTypeChip({required this.type});
+
+  final SosIncidentType type;
+
+  @override
+  Widget build(BuildContext context) {
+    final tone = _toneForType(type);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: tone.background,
+        borderRadius: BorderRadius.circular(AppRadii.pill),
+      ),
+      child: Text(
+        type.label,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w800,
+          color: tone.foreground,
+        ),
+      ),
+    );
+  }
+}
+
+class _MiniInfoChip extends StatelessWidget {
+  const _MiniInfoChip({
+    required this.icon,
+    required this.label,
+  });
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AppRadii.pill),
+        border: Border.all(color: AppColors.borderSoft),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: AppColors.textMuted),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 11.5,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+({Color background, Color foreground}) _toneForType(SosIncidentType type) {
+  switch (type) {
+    case SosIncidentType.maladie:
+      return (
+        background: const Color(0xFFFFF5DD),
+        foreground: const Color(0xFFE0A11B),
+      );
+    case SosIncidentType.perte:
+      return (
+        background: const Color(0xFFEAF2FF),
+        foreground: const Color(0xFF2F7BEA),
+      );
+    case SosIncidentType.logistique:
+      return (
+        background: const Color(0xFFFFECDD),
+        foreground: const Color(0xFFEA7A2F),
+      );
+    case SosIncidentType.autre:
+      return (
+        background: const Color(0xFFF0F2F5),
+        foreground: const Color(0xFF6D7484),
+      );
+  }
 }
 
 class _NotificationRow extends ConsumerWidget {
@@ -657,7 +847,7 @@ class _NotificationRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final role = ref.watch(authProvider).valueOrNull?.user.role ?? 'PELERIN';
-    final tone = _toneForType(item.type);
+    final presentation = _presentationForNotification(item);
 
     return Material(
       color: Colors.transparent,
@@ -679,45 +869,47 @@ class _NotificationRow extends ConsumerWidget {
             if (item.etape != null) 'etape': item.etape!,
           }, role: role);
         },
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 6),
+          child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
           decoration: BoxDecoration(
             color:
                 item.isRead
                     ? Colors.transparent
-                    : tone.background.withValues(alpha: 0.42),
+                    : presentation.background.withValues(alpha: 0.36),
             borderRadius: BorderRadius.circular(AppRadii.md),
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                width: 40,
-                height: 40,
+                width: 34,
+                height: 34,
                 decoration: BoxDecoration(
-                  color: tone.background,
-                  shape: BoxShape.circle,
+                  color: presentation.background,
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
-                  _iconForType(item.type),
-                  color: tone.foreground,
-                  size: 18,
+                  presentation.icon,
+                  color: presentation.foreground,
+                  size: 17,
                 ),
               ),
-              const SizedBox(width: AppSpacing.sm),
+              const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Expanded(
                           child: Text(
                             item.title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w800,
                               height: 1.2,
                             ),
                           ),
@@ -726,36 +918,55 @@ class _NotificationRow extends ConsumerWidget {
                         Text(
                           _timeLabel(item.createdAt),
                           style: const TextStyle(
-                            fontSize: 12,
+                            fontSize: 11.5,
                             fontWeight: FontWeight.w600,
                             color: AppColors.textHint,
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: AppSpacing.xs),
+                    const SizedBox(height: 4),
                     Text(
                       item.body,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        fontSize: 13,
+                        fontSize: 12.5,
                         color: AppColors.textSecondary,
-                        height: 1.45,
+                        height: 1.35,
                       ),
                     ),
-                    if ((item.etape ?? '').trim().isNotEmpty) ...[
-                      const SizedBox(height: AppSpacing.s),
-                      AppStatusChip(
-                        label: item.etape!,
-                        backgroundColor: tone.background,
-                        foregroundColor: tone.foreground,
+                    if ((item.etape ?? '').trim().isNotEmpty ||
+                        presentation.label != null) ...[
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 6,
+                        children: [
+                          if (presentation.label != null)
+                            AppStatusChip(
+                              label: presentation.label!,
+                              icon: presentation.icon,
+                              backgroundColor: presentation.background,
+                              foregroundColor: presentation.foreground,
+                              compact: true,
+                            ),
+                          if ((item.etape ?? '').trim().isNotEmpty)
+                            AppStatusChip(
+                              label: item.etape!,
+                              backgroundColor: AppColors.section,
+                              foregroundColor: AppColors.textSecondary,
+                              compact: true,
+                            ),
+                        ],
                       ),
                     ],
                   ],
                 ),
               ),
-              const SizedBox(width: AppSpacing.s),
+              const SizedBox(width: 8),
               Padding(
-                padding: const EdgeInsets.only(top: 4),
+                padding: const EdgeInsets.only(top: 5),
                 child:
                     item.isRead
                         ? const SizedBox(width: 8, height: 8)
@@ -775,64 +986,108 @@ class _NotificationRow extends ConsumerWidget {
     );
   }
 
-  IconData _iconForType(String? type) {
-    switch (type) {
-      case 'planning':
-      case 'planning_update':
-        return Icons.calendar_today_rounded;
-      case 'upcoming_rendezvous':
-        return Icons.alarm_rounded;
-      case 'alert':
-        return Icons.priority_high_rounded;
-      case 'presence_call':
-      case 'presence_update':
-        return Icons.how_to_reg_rounded;
-      default:
-        return Icons.notifications_none_rounded;
-    }
-  }
-
-  ({Color background, Color foreground}) _toneForType(String? type) {
-    switch (type) {
-      case 'planning':
-      case 'planning_update':
-        return (
-          background: AppColors.greenSoft,
-          foreground: AppColors.primary,
-        );
-      case 'upcoming_rendezvous':
-        return (
-          background: AppColors.goldSoft,
-          foreground: AppColors.gold,
-        );
-      case 'alert':
-        return (
-          background: AppColors.redSoft,
-          foreground: AppColors.red,
-        );
-      case 'presence_call':
-      case 'presence_update':
-        return (
-          background: AppColors.blueSoft,
-          foreground: AppColors.blue,
-        );
-      default:
-        return (
-          background: AppColors.blueSoft,
-          foreground: AppColors.blue,
-        );
-    }
-  }
-
   String _timeLabel(DateTime date) {
-    final now = DateTime.now();
+    final now = SaudiTime.now();
     final difference = now.difference(date);
 
-    if (difference.inMinutes < 1) return 'Now';
-    if (difference.inMinutes < 60) return '${difference.inMinutes}m ago';
-    if (difference.inHours < 24) return '${difference.inHours}h ago';
-    return '${difference.inDays}d ago';
+    if (difference.inMinutes < 1) return 'A l instant';
+    if (difference.inMinutes < 60) return 'Il y a ${difference.inMinutes} min';
+    if (difference.inHours < 24) return 'Il y a ${difference.inHours} h';
+    return 'Il y a ${difference.inDays} j';
   }
+}
+
+class _NotificationPresentation {
+  const _NotificationPresentation({
+    required this.background,
+    required this.foreground,
+    required this.icon,
+    this.label,
+  });
+
+  final Color background;
+  final Color foreground;
+  final IconData icon;
+  final String? label;
+}
+
+_NotificationPresentation _presentationForNotification(
+  MobileNotificationItem item,
+) {
+  final title = item.title.toLowerCase();
+  final body = item.body.toLowerCase();
+  final type = item.type?.toLowerCase();
+
+  if (type == 'sos') {
+    return const _NotificationPresentation(
+      background: AppColors.redSoft,
+      foreground: AppColors.red,
+      icon: Icons.sos_rounded,
+      label: 'SOS',
+    );
+  }
+
+  if (type == 'sos_resolved') {
+    return const _NotificationPresentation(
+      background: AppColors.greenSoft,
+      foreground: AppColors.green,
+      icon: Icons.health_and_safety_outlined,
+      label: 'SOS resolu',
+    );
+  }
+
+  final isCancelledStep =
+      type == 'alert' &&
+      (title.contains('annulee') ||
+          title.contains('annul') ||
+          body.contains(' a annule '));
+  if (isCancelledStep) {
+    return const _NotificationPresentation(
+      background: Color(0xFFFFF1E7),
+      foreground: Color(0xFFCC6A1C),
+      icon: Icons.event_busy_rounded,
+      label: 'Etape annulee',
+    );
+  }
+
+  final isCompletedStep =
+      type == 'alert' &&
+      (title.contains('terminee') ||
+          title.contains('termine') ||
+          body.contains(' est passe a '));
+  if (isCompletedStep) {
+    return const _NotificationPresentation(
+      background: AppColors.greenSoft,
+      foreground: AppColors.green,
+      icon: Icons.check_circle_outline_rounded,
+      label: 'Etape terminee',
+    );
+  }
+
+  if (type == 'planning' || type == 'planning_update') {
+    return const _NotificationPresentation(
+      background: AppColors.blueSoft,
+      foreground: AppColors.blue,
+      icon: Icons.calendar_today_rounded,
+      label: 'Planning',
+    );
+  }
+
+  if (type == 'upcoming_rendezvous') {
+    return const _NotificationPresentation(
+      background: AppColors.goldSoft,
+      foreground: AppColors.gold,
+      icon: Icons.alarm_rounded,
+      label: 'Rappel',
+    );
+  }
+
+  return const _NotificationPresentation(
+    background: AppColors.blueSoft,
+    foreground: AppColors.blue,
+    icon: Icons.notifications_none_rounded,
+    label: 'Notification',
+  );
 }
 
 class _AlertsEmptyState extends StatelessWidget {

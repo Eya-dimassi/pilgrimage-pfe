@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+import '../../auth/providers/auth_provider.dart';
 import '../../../services/notification_feed_refresh_service.dart';
 import '../../auth/domain/auth_exception.dart';
 import '../../notifications/providers/mobile_notifications_provider.dart';
@@ -14,12 +15,19 @@ final sosControllerProvider =
 class SosController extends AsyncNotifier<SosAlert?> {
   @override
   Future<SosAlert?> build() async {
+    final session = ref.watch(authProvider.select((state) => state.valueOrNull));
+    if (session == null || session.user.role != 'PELERIN') {
+      return null;
+    }
     ref.watch(notificationFeedRefreshProvider);
     final repository = ref.read(sosRepositoryProvider);
     return repository.fetchMyActiveSos();
   }
 
-  Future<SosAlert> triggerSos({String? message}) async {
+  Future<SosAlert> triggerSos({
+    required SosIncidentType type,
+    String? message,
+  }) async {
     final currentAlert = state.valueOrNull;
     if (currentAlert?.isActive == true) {
       return currentAlert!;
@@ -39,6 +47,7 @@ class SosController extends AsyncNotifier<SosAlert?> {
       final alert = await repository.triggerSos(
         latitude: position.latitude,
         longitude: position.longitude,
+        type: type,
         message: message,
       );
 

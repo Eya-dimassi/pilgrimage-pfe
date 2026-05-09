@@ -20,6 +20,7 @@ class ApiEndpoints {
   static const String mobileNotifications = '/mobile/notifications';
   static const String mobileNotificationToken =
       '/mobile/notifications/device-token';
+  static const String mobileChatMessage = '/mobile/chat/message';
   static const String mobileSos = '/mobile/sos';
   static const String mobileSosMe = '/mobile/sos/me';
   static const String mobileGuideSos = '/mobile/guide/sos';
@@ -32,6 +33,9 @@ class ApiEndpoints {
 
   static String mobilePlanningValidateEvent(String groupeId, String eventId) =>
       '/mobile/planning/groupes/$groupeId/evenements/$eventId/valider';
+
+  static String mobilePlanningEventStatus(String groupeId, String eventId) =>
+      '/mobile/planning/groupes/$groupeId/evenements/$eventId/status';
 
   static String mobileNotificationRead(String notificationId) =>
       '/mobile/notifications/$notificationId/read';

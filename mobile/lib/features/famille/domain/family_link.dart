@@ -40,12 +40,16 @@ class FamilyLinkedGroup {
     required this.nom,
     required this.typeVoyage,
     required this.annee,
+    this.dateDepart,
+    this.dateRetour,
   });
 
   final String id;
   final String nom;
   final String typeVoyage;
   final int annee;
+  final DateTime? dateDepart;
+  final DateTime? dateRetour;
 
   factory FamilyLinkedGroup.fromJson(Map<String, dynamic> json) {
     return FamilyLinkedGroup(
@@ -53,6 +57,12 @@ class FamilyLinkedGroup {
       nom: json['nom'] as String? ?? '',
       typeVoyage: json['typeVoyage'] as String? ?? '',
       annee: json['annee'] as int? ?? 0,
+      dateDepart: json['dateDepart'] is String
+          ? DateTime.tryParse(json['dateDepart'] as String)
+          : null,
+      dateRetour: json['dateRetour'] is String
+          ? DateTime.tryParse(json['dateRetour'] as String)
+          : null,
     );
   }
 }

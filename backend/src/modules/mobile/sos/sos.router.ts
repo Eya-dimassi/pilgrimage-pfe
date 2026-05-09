@@ -21,6 +21,7 @@ router.post('/', async (req: AuthRequest, res: Response) => {
     const result = await createSosAlert(req.user!.id, {
       latitude: req.body?.latitude,
       longitude: req.body?.longitude,
+      type: req.body?.type,
       message: req.body?.message,
     })
 

@@ -69,13 +69,15 @@ class MobilePlanningRepository {
     }
   }
 
-  Future<void> validateEvent({
+  Future<void> updateEventStatus({
     required String groupeId,
     required String eventId,
+    required String status,
   }) async {
     try {
       await _dio.put(
-        ApiEndpoints.mobilePlanningValidateEvent(groupeId, eventId),
+        ApiEndpoints.mobilePlanningEventStatus(groupeId, eventId),
+        data: {'status': status},
       );
     } on DioException catch (error) {
       throw AuthException.fromDio(error);

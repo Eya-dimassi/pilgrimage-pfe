@@ -33,6 +33,7 @@ class SosRepository {
   Future<SosAlert> triggerSos({
     required double latitude,
     required double longitude,
+    required SosIncidentType type,
     String? message,
   }) async {
     try {
@@ -41,6 +42,7 @@ class SosRepository {
         data: {
           'latitude': latitude,
           'longitude': longitude,
+          'type': type.apiValue,
           if (message != null && message.trim().isNotEmpty)
             'message': message.trim(),
         },

@@ -31,19 +31,30 @@ const MOBILE_GROUP_WITH_COUNT_SELECT = {
 
 type EventValidationRow = {
   id: string
+  status: MobileEventStatus | null
   estValide: boolean | null
   valideeAt: Date | null
   valideParGuideId: string | null
 }
 
+type MobileEventStatus = 'PLANIFIE' | 'EN_COURS' | 'TERMINE' | 'ANNULE'
+
 type OrderedGroupEventRow = {
   id: string
   titre: string
-  estValide: boolean | null
+  status: MobileEventStatus | null
   etape: string | null
   heureDebutPrevue: Date | null
   createdAt: Date
   planningDate: Date
+}
+
+function isResolvedEventStatus(status: MobileEventStatus | null | undefined) {
+  return status === 'TERMINE' || status === 'ANNULE'
+}
+
+function isCompletedEventStatus(status: MobileEventStatus | null | undefined) {
+  return status === 'TERMINE'
 }
 
 function sortMobileGroups<T extends { status?: string | null; dateDepart?: Date | null; dateRetour?: Date | null; annee?: number | null }>(
@@ -297,8 +308,23 @@ export async function validateMobilePlanningEvent(
   groupeId: string,
   eventId: string,
 ) {
+  return updateMobilePlanningEventStatus(userId, role, groupeId, eventId, 'TERMINE')
+}
+
+export async function updateMobilePlanningEventStatus(
+  userId: string,
+  role: string,
+  groupeId: string,
+  eventId: string,
+  statusInput: string,
+) {
   if (role !== 'GUIDE') {
-    throw new Error('Seul un guide peut valider un evenement')
+    throw new Error('Seul un guide peut mettre a jour le statut d un evenement')
+  }
+
+  const status = statusInput as MobileEventStatus
+  if (status !== 'TERMINE' && status !== 'ANNULE') {
+    throw new Error('Statut evenement non pris en charge')
   }
 
   await assertMobilePlanningAccess(userId, role, groupeId)
@@ -316,7 +342,7 @@ export async function validateMobilePlanningEvent(
     SELECT
       ep."id",
       ep."titre",
-      ep."estValide",
+      ep."status",
       ep."etape",
       ep."heureDebutPrevue",
       ep."createdAt",
@@ -341,22 +367,27 @@ export async function validateMobilePlanningEvent(
   const targetEvent = orderedEvents[eventIndex]
 
   const existingValidation = await prisma.$queryRaw<EventValidationRow[]>`
-    SELECT "id", "estValide", "valideeAt", "valideParGuideId"
+    SELECT "id", "status", "estValide", "valideeAt", "valideParGuideId"
     FROM "EvenementPlanning"
     WHERE "id" = ${targetEvent.id}
     LIMIT 1
   `
 
-  if (targetEvent.estValide) {
+  if (targetEvent.status === status) {
     return {
-      message: 'Evenement deja valide',
+      message:
+        status === 'ANNULE' ? 'Evenement deja annule' : 'Evenement deja termine',
       evenement: existingValidation[0],
     }
   }
 
+  if (isResolvedEventStatus(targetEvent.status)) {
+    throw new Error('Cet evenement a deja un statut final')
+  }
+
   let previousPendingEvent: OrderedGroupEventRow | null = null
   for (let index = eventIndex - 1; index >= 0; index -= 1) {
-    if (!orderedEvents[index].estValide) {
+    if (!isResolvedEventStatus(orderedEvents[index].status)) {
       previousPendingEvent = orderedEvents[index]
       break
     }
@@ -364,18 +395,19 @@ export async function validateMobilePlanningEvent(
 
   if (previousPendingEvent) {
     throw new Error(
-      `Validation refusee: validez d'abord l'evenement precedent (${previousPendingEvent.titre}).`,
+      `Action refusee: terminez d abord l evenement precedent (${previousPendingEvent.titre}).`,
     )
   }
 
   const updatedRows = await prisma.$queryRaw<EventValidationRow[]>`
     UPDATE "EvenementPlanning"
     SET
-      "estValide" = TRUE,
-      "valideParGuideId" = ${guide.id},
-      "valideeAt" = NOW()
+      "status" = ${status}::"StatutEvenement",
+      "estValide" = ${status === 'TERMINE'},
+      "valideParGuideId" = ${status === 'TERMINE' ? guide.id : null},
+      "valideeAt" = ${status === 'TERMINE' ? Prisma.sql`NOW()` : null}
     WHERE "id" = ${targetEvent.id}
-    RETURNING "id", "estValide", "valideeAt", "valideParGuideId"
+    RETURNING "id", "status", "estValide", "valideeAt", "valideParGuideId"
   `
 
   if (!updatedRows.length) {
@@ -434,14 +466,27 @@ export async function validateMobilePlanningEvent(
       groupeId,
       eventId: targetEvent.id,
       etape: String(etapeLabel),
+      status,
     }
+
+    const pelerinTitle = status === 'ANNULE' ? 'Etape annulee' : 'Etape terminee'
+    const familleTitle =
+      status === 'ANNULE' ? 'Nouvelle etape annulee' : 'Nouvelle etape terminee'
+    const pelerinBody =
+      status === 'ANNULE'
+        ? `Le groupe ${groupeContext.nom} a annule ${etapeLabel}.`
+        : `Le groupe ${groupeContext.nom} est passe a ${etapeLabel}.`
+    const familleBody =
+      status === 'ANNULE'
+        ? `${groupeContext.nom} a annule ${etapeLabel}.`
+        : `${groupeContext.nom} est passe a ${etapeLabel}.`
 
     if (pelerinUserIds.length) {
       await sendPushToUsers({
         userIds: pelerinUserIds,
         role: 'PELERIN',
-        title: 'Etape validee',
-        body: `Le groupe ${groupeContext.nom} est passe a ${etapeLabel}.`,
+        title: pelerinTitle,
+        body: pelerinBody,
         data: notificationData,
       })
     }
@@ -450,15 +495,18 @@ export async function validateMobilePlanningEvent(
       await sendPushToUsers({
         userIds: familleUserIds,
         role: 'FAMILLE',
-        title: 'Nouvelle etape validee',
-        body: `${groupeContext.nom} est passe a ${etapeLabel}.`,
+        title: familleTitle,
+        body: familleBody,
         data: notificationData,
       })
     }
   }
 
   return {
-    message: 'Evenement valide avec succes',
+    message:
+      status === 'ANNULE'
+        ? 'Evenement annule avec succes'
+        : 'Evenement termine avec succes',
     evenement: updatedRows[0],
   }
 }
@@ -525,7 +573,7 @@ async function attachEventValidation<T extends { evenements: Array<{ id: string 
   }
 
   const rows = await prisma.$queryRaw<EventValidationRow[]>`
-    SELECT "id", "estValide", "valideeAt", "valideParGuideId"
+    SELECT "id", "status", "estValide", "valideeAt", "valideParGuideId"
     FROM "EvenementPlanning"
     WHERE "id" IN (${Prisma.join(eventIds)})
   `
@@ -537,7 +585,8 @@ async function attachEventValidation<T extends { evenements: Array<{ id: string 
       const validation = validationByEventId.get(event.id)
       return {
         ...event,
-        estValide: Boolean(validation?.estValide),
+        status: validation?.status ?? null,
+        estValide: isCompletedEventStatus(validation?.status) || Boolean(validation?.estValide),
         valideeAt: validation?.valideeAt ?? null,
         valideParGuideId: validation?.valideParGuideId ?? null,
       }

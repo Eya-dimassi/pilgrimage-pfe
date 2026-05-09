@@ -12,43 +12,41 @@ class RoleProfileTemplate extends StatelessWidget {
     required this.roleLabel,
     required this.accentColor,
     required this.onEdit,
-    required this.onLogout,
+    this.extraChildren = const [],
   });
 
   final AuthUser user;
   final String roleLabel;
   final Color accentColor;
   final VoidCallback onEdit;
-  final Future<void> Function() onLogout;
+  final List<Widget> extraChildren;
 
   @override
   Widget build(BuildContext context) {
     final fullName = user.fullName.isNotEmpty ? user.fullName : user.email;
-    final email = user.email.isNotEmpty ? user.email : 'Not provided';
+    final email = user.email.isNotEmpty ? user.email : 'Non renseigne';
     final phone = user.telephone?.isNotEmpty == true
         ? user.telephone!
-        : 'Not provided';
+        : 'Non renseigne';
     final birthDate = _formatDate(user.dateNaissance);
     final nationality = user.nationalite?.isNotEmpty == true
         ? user.nationalite!
-        : 'Not provided';
+        : 'Non renseigne';
     final passport = user.numeroPasseport?.isNotEmpty == true
         ? user.numeroPasseport!
-        : 'Not provided';
+        : 'Non renseigne';
     final specialite = user.specialite?.isNotEmpty == true
         ? user.specialite!
-        : 'Not provided';
+        : 'Non renseigne';
     final groupeNom = user.groupeNom?.isNotEmpty == true
         ? user.groupeNom!
-        : 'Not assigned';
+        : 'Non attribue';
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
       children: [
         const SectionTitle(
-          'Profile',
-          subtitle:
-              'Your mobile identity, linked journey details, and account actions.',
+          'Profil',
           bottomPadding: AppSpacing.sm,
           titleStyle: TextStyle(
             fontSize: 20,
@@ -100,7 +98,7 @@ class RoleProfileTemplate extends StatelessWidget {
                     ),
                     const SizedBox(height: 6),
                     AppStatusChip(
-                      label: '$roleLabel · Active account',
+                      label: '$roleLabel - Compte actif',
                       icon: Icons.verified_rounded,
                       backgroundColor: Colors.white.withValues(alpha: 0.16),
                       foregroundColor: Colors.white,
@@ -138,16 +136,16 @@ class RoleProfileTemplate extends StatelessWidget {
         ),
         const SizedBox(height: AppSpacing.m),
         _ProfileSection(
-          title: 'Personal information',
+          title: 'Informations personnelles',
           children: [
             _ProfileTile(
               icon: Icons.person_outline_rounded,
-              title: 'First name',
+              title: 'Prenom',
               subtitle: user.prenom.isEmpty ? '-' : user.prenom,
             ),
             _ProfileTile(
               icon: Icons.badge_outlined,
-              title: 'Last name',
+              title: 'Nom',
               subtitle: user.nom.isEmpty ? '-' : user.nom,
             ),
             _ProfileTile(
@@ -157,68 +155,56 @@ class RoleProfileTemplate extends StatelessWidget {
             ),
             _ProfileTile(
               icon: Icons.phone_outlined,
-              title: 'Phone number',
+              title: 'Telephone',
               subtitle: phone,
             ),
             if (user.lienParente?.isNotEmpty == true)
               _ProfileTile(
                 icon: Icons.family_restroom_outlined,
-                title: 'Relationship',
+                title: 'Lien de parente',
                 subtitle: user.lienParente!,
               ),
             if (user.role == 'GUIDE')
               _ProfileTile(
                 icon: Icons.workspace_premium_outlined,
-                title: 'Speciality',
+                title: 'Specialite',
                 subtitle: specialite,
               ),
             if (user.role == 'PELERIN') ...[
               _ProfileTile(
                 icon: Icons.groups_outlined,
-                title: 'Current group',
+                title: 'Groupe actuel',
                 subtitle: groupeNom,
               ),
               _ProfileTile(
                 icon: Icons.cake_outlined,
-                title: 'Birth date',
+                title: 'Date de naissance',
                 subtitle: birthDate,
               ),
               _ProfileTile(
                 icon: Icons.public_outlined,
-                title: 'Nationality',
+                title: 'Nationalite',
                 subtitle: nationality,
               ),
               _ProfileTile(
                 icon: Icons.airplane_ticket_outlined,
-                title: 'Passport number',
+                title: 'Numero de passeport',
                 subtitle: passport,
               ),
             ],
           ],
         ),
-        const SizedBox(height: AppSpacing.sm),
-        AppListTileCard(
-          icon: Icons.edit_note_rounded,
-          title: 'Edit profile',
-          subtitle: 'Update your personal information and journey details.',
-          iconTone: accentColor,
-          onTap: onEdit,
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        AppListTileCard(
-          icon: Icons.logout_rounded,
-          title: 'Log out',
-          subtitle: 'End your current session on this device.',
-          iconTone: AppColors.red,
-          onTap: () async => onLogout(),
-        ),
+        if (extraChildren.isNotEmpty) ...[
+          const SizedBox(height: AppSpacing.sm),
+          ...extraChildren,
+        ],
       ],
     );
   }
 
   String _formatDate(DateTime? value) {
     if (value == null) {
-      return 'Not provided';
+      return 'Non renseigne';
     }
     final day = value.day.toString().padLeft(2, '0');
     final month = value.month.toString().padLeft(2, '0');
@@ -234,7 +220,7 @@ class RoleProfileTemplate extends StatelessWidget {
     final messenger = ScaffoldMessenger.of(context);
     messenger.hideCurrentSnackBar();
     messenger.showSnackBar(
-      const SnackBar(content: Text('Unique code copied')),
+      const SnackBar(content: Text('Code unique copie')),
     );
   }
 }

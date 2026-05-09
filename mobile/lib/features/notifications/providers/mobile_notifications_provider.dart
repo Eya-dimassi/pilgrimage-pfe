@@ -13,7 +13,7 @@ final notificationFeedRefreshProvider =
 final mobileNotificationsProvider =
     FutureProvider<MobileNotificationFeed>((ref) async {
   ref.watch(notificationFeedRefreshProvider);
-  final session = ref.watch(authProvider).valueOrNull;
+  final session = ref.watch(authProvider.select((state) => state.valueOrNull));
   if (session == null) {
     return const MobileNotificationFeed.empty();
   }

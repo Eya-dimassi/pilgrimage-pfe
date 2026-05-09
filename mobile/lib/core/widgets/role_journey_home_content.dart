@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../theme/app_theme.dart';
+import '../utils/saudi_time.dart';
+import '../utils/trip_progress.dart';
 import '../../features/planning/domain/mobile_planning_models.dart';
 import '../../features/notifications/providers/mobile_notifications_provider.dart';
 import '../../features/planning/providers/mobile_planning_provider.dart';
@@ -34,6 +37,7 @@ class RoleJourneyHomeContent extends ConsumerWidget {
     this.roleToneLabel = '',
     this.quickActions = const [],
     this.heroAssetPath = 'assets/images/mosque_guide.png',
+    this.showOverviewSection = true,
   });
 
   final String firstName;
@@ -43,17 +47,18 @@ class RoleJourneyHomeContent extends ConsumerWidget {
   final String roleToneLabel;
   final List<HomeQuickAction> quickActions;
   final String heroAssetPath;
+  final bool showOverviewSection;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedGroup = groupsAsync.valueOrNull?.isNotEmpty == true
-        ? _pickBestGroup(groupsAsync.valueOrNull!)
+        ? pickBestPlanningGroup(groupsAsync.valueOrNull!)
         : null;
     final planningAsync = selectedGroup == null
         ? const AsyncValue<MobilePlanningData?>.data(null)
-        : ref.watch(mobilePlanningDetailProvider(selectedGroup.id)).whenData(
-              (value) => value,
-            );
+        : ref
+              .watch(mobilePlanningDetailProvider(selectedGroup.id))
+              .whenData((value) => value);
 
     Future<void> refreshHome() async {
       ref.invalidate(mobilePlanningGroupsProvider);
@@ -79,10 +84,7 @@ class RoleJourneyHomeContent extends ConsumerWidget {
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.fromLTRB(18, 8, 18, 12),
             children: [
-              _HomeHeader(
-                firstName: firstName,
-                groupeNom: groupeNom,
-              ),
+              _HomeHeader(firstName: firstName, groupeNom: groupeNom),
               const SizedBox(height: 12),
               _RoleHero(
                 fallbackGroupName: groupeNom,
@@ -100,23 +102,25 @@ class RoleJourneyHomeContent extends ConsumerWidget {
                 const SizedBox(height: AppSpacing.m),
                 _QuickActionsRow(actions: quickActions),
               ],
-              const SizedBox(height: AppSpacing.m),
-              const SectionTitle(
-                'Vue d ensemble',
-                subtitle:
-                    'Les etapes, lieux et reperes partages pour votre groupe aujourd hui.',
-                bottomPadding: AppSpacing.sm,
-                titleStyle: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -0.4,
-                  color: AppColors.textPrimary,
+              if (showOverviewSection) ...[
+                const SizedBox(height: AppSpacing.m),
+                const SectionTitle(
+                  'Vue d ensemble',
+                  subtitle:
+                      'Les etapes, lieux et reperes partages pour votre groupe aujourd hui.',
+                  bottomPadding: AppSpacing.sm,
+                  titleStyle: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.4,
+                    color: AppColors.textPrimary,
+                  ),
                 ),
-              ),
-              _DailyFlowPanel(
-                planningAsync: planningAsync,
-                accentColor: accentColor,
-              ),
+                _DailyFlowPanel(
+                  planningAsync: planningAsync,
+                  accentColor: accentColor,
+                ),
+              ],
             ],
           ),
         ),
@@ -126,10 +130,7 @@ class RoleJourneyHomeContent extends ConsumerWidget {
 }
 
 class _HomeHeader extends StatelessWidget {
-  const _HomeHeader({
-    required this.firstName,
-    required this.groupeNom,
-  });
+  const _HomeHeader({required this.firstName, required this.groupeNom});
 
   final String firstName;
   final String? groupeNom;
@@ -175,58 +176,9 @@ class _HomeHeader extends StatelessWidget {
             ],
           ),
         ),
-        Container(
-          width: 46,
-          height: 46,
-          decoration: const BoxDecoration(
-            color: Color(0xFF0F3D2E),
-            shape: BoxShape.circle,
-          ),
-          alignment: Alignment.center,
-          child: const Icon(
-            Icons.auto_awesome_rounded,
-            color: Colors.white,
-            size: 22,
-          ),
-        ),
       ],
     );
   }
-}
-
-MobilePlanningGroup _pickBestGroup(List<MobilePlanningGroup> groups) {
-  int priority(MobilePlanningGroup group) {
-    switch (group.status) {
-      case 'EN_COURS':
-        return 0;
-      case 'PLANIFIE':
-        return 1;
-      case 'TERMINE':
-        return 2;
-      case 'ANNULE':
-        return 3;
-      default:
-        return 4;
-    }
-  }
-
-  final sortedGroups = [...groups]
-    ..sort((left, right) {
-      final priorityDiff = priority(left) - priority(right);
-      if (priorityDiff != 0) return priorityDiff;
-
-      final rightStart = right.dateDepart?.millisecondsSinceEpoch ?? 0;
-      final leftStart = left.dateDepart?.millisecondsSinceEpoch ?? 0;
-      if (rightStart != leftStart) return rightStart.compareTo(leftStart);
-
-      final rightEnd = right.dateRetour?.millisecondsSinceEpoch ?? 0;
-      final leftEnd = left.dateRetour?.millisecondsSinceEpoch ?? 0;
-      if (rightEnd != leftEnd) return rightEnd.compareTo(leftEnd);
-
-      return right.annee.compareTo(left.annee);
-    });
-
-  return sortedGroups.first;
 }
 
 class _QuickActionsRow extends StatelessWidget {
@@ -237,18 +189,22 @@ class _QuickActionsRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
-      children: actions.asMap().entries.map((entry) {
-        final index = entry.key;
-        final action = entry.value;
-        return Expanded(
-          child: Padding(
-            padding: EdgeInsets.only(
-              right: index == actions.length - 1 ? 0 : 10,
-            ),
-            child: _QuickActionCard(action: action),
-          ),
-        );
-      }).toList(growable: false),
+      children: actions
+          .asMap()
+          .entries
+          .map((entry) {
+            final index = entry.key;
+            final action = entry.value;
+            return Expanded(
+              child: Padding(
+                padding: EdgeInsets.only(
+                  right: index == actions.length - 1 ? 0 : 10,
+                ),
+                child: _QuickActionCard(action: action),
+              ),
+            );
+          })
+          .toList(growable: false),
     );
   }
 }
@@ -265,10 +221,7 @@ class _QuickActionCard extends StatelessWidget {
       radius: AppRadii.lg,
       onTap: action.onTap,
       gradient: LinearGradient(
-        colors: [
-          Colors.white,
-          action.toneColor.withValues(alpha: 0.06),
-        ],
+        colors: [Colors.white, action.toneColor.withValues(alpha: 0.06)],
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
       ),
@@ -312,11 +265,7 @@ class _QuickActionCard extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 6),
-          Icon(
-            Icons.chevron_right_rounded,
-            size: 18,
-            color: action.toneColor,
-          ),
+          Icon(Icons.chevron_right_rounded, size: 18, color: action.toneColor),
         ],
       ),
     );
@@ -339,22 +288,34 @@ class _RoleHero extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final planning = planningAsync.valueOrNull;
-    final today = planning?.plannings.isNotEmpty == true
-        ? planning!.plannings.first
-        : null;
-    final currentEvent = _currentOrNextEvent(today?.evenements ?? const []);
-    final nextEvent = _nextEventAfter(today?.evenements ?? const [], currentEvent);
+    final visiblePlannings = sortPlanningDaysByDate(
+      planning?.plannings ?? const [],
+    );
+    final today = findPlanningDayForDate(
+      visiblePlannings,
+      SaudiTime.now(),
+      preferWithEvents: true,
+    );
+    final currentEvent = pickCurrentOrNextPlanningEvent(
+      today?.evenements ?? const [],
+    );
+    final nextEvent = pickNextPlanningEventPreview(
+      visiblePlannings,
+      anchorDay: SaudiTime.now(),
+      currentEvent: currentEvent,
+    );
     final groupLabel = group?.nom ?? fallbackGroupName ?? 'Votre groupe';
+    final progress = computeTripProgress(
+      group?.dateDepart,
+      group?.dateRetour,
+      DateTime.now(),
+    );
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(22),
         gradient: const LinearGradient(
-          colors: [
-            Color(0xFF0F3D2E),
-            Color(0xFF156243),
-            Color(0xFF1E7A58),
-          ],
+          colors: [Color(0xFF0F3D2E), Color(0xFF156243), Color(0xFF1E7A58)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -384,16 +345,36 @@ class _RoleHero extends StatelessWidget {
             ),
           ),
           Positioned(
-            right: 8,
-            top: 28,
-            child: Opacity(
-              opacity: 0.84,
-              child: AppHeroAsset(
-                assetPath: heroAssetPath,
-                width: 122,
-                height: 132,
-                scale: 1.14,
-                alignment: Alignment.bottomCenter,
+            right: -6,
+            bottom: -8,
+            child: IgnorePointer(
+              child: Opacity(
+                opacity: 0.96,
+                child: AppHeroAsset(
+                  assetPath: heroAssetPath,
+                  width: 150,
+                  height: 176,
+                  scale: 1.0,
+                  alignment: Alignment.bottomCenter,
+                  fit: BoxFit.contain,
+                )
+                    .animate(onPlay: (controller) => controller.repeat(reverse: true))
+                    .fadeIn(
+                      duration: 420.ms,
+                      curve: Curves.easeOutCubic,
+                    )
+                    .slideX(
+                      begin: 0.08,
+                      end: 0,
+                      duration: 420.ms,
+                      curve: Curves.easeOutCubic,
+                    )
+                    .moveY(
+                      begin: 0,
+                      end: -5,
+                      duration: 2200.ms,
+                      curve: Curves.easeInOut,
+                    ),
               ),
             ),
           ),
@@ -418,7 +399,7 @@ class _RoleHero extends StatelessWidget {
                         ),
                         const SizedBox(height: 14),
                         Text(
-                          currentEvent?.titre ?? 'Aucune etape partagee pour le moment',
+                          currentEvent?.titre ?? 'Aucune etape aujourd hui',
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
@@ -430,7 +411,8 @@ class _RoleHero extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          _heroMeta(currentEvent, groupLabel) ?? 'Programme du jour',
+                          _heroMeta(currentEvent, groupLabel) ??
+                              'Programme du jour',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
@@ -446,6 +428,8 @@ class _RoleHero extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 18),
+              _HeroProgressBlock(progress: progress),
+              const SizedBox(height: 14),
               _HeroEventPanel(
                 currentEvent: currentEvent,
                 nextEvent: nextEvent,
@@ -455,6 +439,48 @@ class _RoleHero extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _HeroProgressBlock extends StatelessWidget {
+  const _HeroProgressBlock({required this.progress});
+
+  final double progress;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          height: 6,
+          width: 186,
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.18),
+            borderRadius: BorderRadius.circular(999),
+          ),
+          alignment: Alignment.centerLeft,
+          child: FractionallySizedBox(
+            widthFactor: progress.clamp(0.0, 1.0),
+            child: Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFF45E090),
+                borderRadius: BorderRadius.circular(999),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          '${(progress * 100).round()}% du voyage',
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 11.5,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -475,7 +501,8 @@ class _HeroEventPanel extends StatelessWidget {
     final currentTitle = currentEvent?.titre ?? 'Programme du moment';
     final currentMeta = _heroPanelMeta(currentEvent) ?? fallbackLocation;
     final upcomingTitle = nextEvent?.titre ?? 'Aucune suite partagee';
-    final upcomingMeta = _heroPanelMeta(nextEvent) ?? 'En attente de la prochaine etape';
+    final upcomingMeta =
+        _heroPanelMeta(nextEvent) ?? 'En attente de la prochaine etape';
 
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 14, 14, 13),
@@ -542,11 +569,7 @@ class _HeroEventRow extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
           ),
           alignment: Alignment.center,
-          child: Icon(
-            icon,
-            size: 18,
-            color: Colors.white,
-          ),
+          child: Icon(icon, size: 18, color: Colors.white),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -589,11 +612,7 @@ class _HeroEventRow extends StatelessWidget {
         ),
         if (trailingIcon != null) ...[
           const SizedBox(width: 8),
-          Icon(
-            trailingIcon,
-            size: 22,
-            color: Colors.white,
-          ),
+          Icon(trailingIcon, size: 22, color: Colors.white),
         ],
       ],
     );
@@ -663,33 +682,44 @@ class _DailyFlowPanel extends StatelessWidget {
         toneColor: AppColors.red,
       ),
       data: (planning) {
-        final today = planning?.plannings.isNotEmpty == true
-            ? planning!.plannings.first
-            : null;
+        final expandedPlannings = _expandPlanningsForTrip(
+          planning?.plannings ?? const [],
+        );
+        final today = findPlanningDayForDate(
+          expandedPlannings,
+          SaudiTime.now(),
+          preferWithEvents: true,
+        );
         final events = today?.evenements ?? const <MobilePlanningEvent>[];
-          final currentEvent = _currentOrNextEvent(events);
-          final nextEvent = _nextEventAfter(events, currentEvent);
+        final currentEvent = pickCurrentOrNextPlanningEvent(events);
+        final nextEvent = pickNextPlanningEventPreview(
+          expandedPlannings,
+          anchorDay: SaudiTime.now(),
+          currentEvent: currentEvent,
+        );
 
-          return Column(
-            children: [
+        return Column(
+          children: [
+            _FlowCard(
+              eventType: currentEvent?.type,
+              title:
+                  currentEvent?.titre ??
+                  'Aucune etape aujourd hui',
+              meta: _eventMeta(currentEvent),
+              icon: _eventTypeIcon(currentEvent?.type),
+              toneColor: _eventTypeColor(currentEvent?.type),
+            ),
+            const SizedBox(height: 12),
+            if (nextEvent != null)
               _FlowCard(
-                eventType: currentEvent?.type,
-                title: currentEvent?.titre ?? 'Aucune etape partagee pour aujourd hui',
-                meta: _eventMeta(currentEvent),
-                icon: _eventTypeIcon(currentEvent?.type),
-                toneColor: _eventTypeColor(currentEvent?.type),
+                eventType: nextEvent.type,
+                title: nextEvent.titre,
+                meta: _eventMeta(nextEvent),
+                icon: _eventTypeIcon(nextEvent.type),
+                toneColor: _eventTypeColor(nextEvent.type),
               ),
-              const SizedBox(height: 12),
-              if (nextEvent != null)
-                _FlowCard(
-                  eventType: nextEvent.type,
-                  title: nextEvent.titre,
-                  meta: _eventMeta(nextEvent),
-                  icon: _eventTypeIcon(nextEvent.type),
-                  toneColor: _eventTypeColor(nextEvent.type),
-                ),
-            ],
-          );
+          ],
+        );
       },
     );
   }
@@ -763,39 +793,11 @@ class _FlowCard extends StatelessWidget {
   }
 }
 
-MobilePlanningEvent? _currentOrNextEvent(List<MobilePlanningEvent> events) {
-  if (events.isEmpty) return null;
+List<MobilePlanningDay> _expandPlanningsForTrip(
+  List<MobilePlanningDay> plannings,
+) => sortPlanningDaysByDate(plannings);
 
-  final now = DateTime.now();
-  for (var index = 0; index < events.length; index += 1) {
-    final event = events[index];
-    final start = event.heureDebutPrevue;
-    final nextStart =
-        index + 1 < events.length ? events[index + 1].heureDebutPrevue : null;
 
-    if (start == null) return event;
-
-    final isCurrent =
-        !start.isAfter(now) && (nextStart == null || nextStart.isAfter(now));
-    if (isCurrent || start.isAfter(now)) {
-      return event;
-    }
-  }
-
-  return events.last;
-}
-
-MobilePlanningEvent? _nextEventAfter(
-  List<MobilePlanningEvent> events,
-  MobilePlanningEvent? current,
-) {
-  if (current == null) return null;
-  final currentIndex = events.indexWhere((event) => event.id == current.id);
-  if (currentIndex < 0 || currentIndex >= events.length - 1) {
-    return null;
-  }
-  return events[currentIndex + 1];
-}
 
 String? _primaryLocation(List<MobilePlanningEvent> events) {
   for (final event in events) {
@@ -879,7 +881,5 @@ String _eventTypeLabel(String? type) {
 }
 
 String _formatHour(DateTime value) {
-  final hour = value.hour.toString().padLeft(2, '0');
-  final minute = value.minute.toString().padLeft(2, '0');
-  return '$hour:$minute';
+  return SaudiTime.formatHour(value);
 }

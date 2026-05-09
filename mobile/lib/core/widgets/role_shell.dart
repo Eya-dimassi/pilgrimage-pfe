@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../features/notifications/providers/mobile_notifications_provider.dart';
@@ -11,37 +13,49 @@ class RoleShell extends ConsumerStatefulWidget {
     super.key,
     required this.homeChild,
     required this.profileChild,
+    this.chatbotChild,
+    this.accountActions = const [],
     this.planningChild,
     this.alertsChild,
     this.initialIndex = 0,
+    this.onIndexChanged,
   });
 
   final Widget homeChild;
   final Widget profileChild;
+  final Widget? chatbotChild;
+  final List<RoleShellAccountAction> accountActions;
   final Widget? planningChild;
   final Widget? alertsChild;
   final int initialIndex;
+  final ValueChanged<int>? onIndexChanged;
 
   @override
   ConsumerState<RoleShell> createState() => _RoleShellState();
 }
 
 class _RoleShellState extends ConsumerState<RoleShell> {
+  static const String _appName = 'Sacred Journey Hub';
   late int _currentIndex;
+  int _lastMainIndex = 0;
 
   @override
   void initState() {
     super.initState();
-    _currentIndex = widget.initialIndex.clamp(0, 3);
+    _currentIndex = widget.initialIndex.clamp(0, 4);
+    _lastMainIndex = _currentIndex == 4 ? 0 : _currentIndex;
   }
 
   @override
   void didUpdateWidget(covariant RoleShell oldWidget) {
     super.didUpdateWidget(oldWidget);
-    final nextIndex = widget.initialIndex.clamp(0, 3);
+    final nextIndex = widget.initialIndex.clamp(0, 4);
     if (oldWidget.initialIndex != widget.initialIndex &&
         _currentIndex != nextIndex) {
       _currentIndex = nextIndex;
+      if (nextIndex != 4) {
+        _lastMainIndex = nextIndex;
+      }
     }
   }
 
@@ -66,9 +80,9 @@ class _RoleShellState extends ConsumerState<RoleShell> {
         badgeCount: unreadCount,
       ),
       const _ShellDestination(
-        label: 'Profil',
-        icon: Icons.person_outline_rounded,
-        activeIcon: Icons.person_rounded,
+        label: 'Chatbot',
+        icon: Icons.auto_awesome_outlined,
+        activeIcon: Icons.auto_awesome_rounded,
       ),
     ];
 
@@ -88,24 +102,324 @@ class _RoleShellState extends ConsumerState<RoleShell> {
             description:
                 'Les notifications importantes, rappels et alertes de suivi seront centralisees dans cet espace.',
           ),
+      widget.chatbotChild ??
+          const _FeaturePlaceholder(
+            icon: Icons.auto_awesome_rounded,
+            title: 'Chatbot',
+            description:
+                'Votre assistant de voyage apparaitra ici pour repondre rapidement aux questions utiles.',
+          ),
       widget.profileChild,
     ];
 
+    final isProfilePage = _currentIndex == 4;
+
     return Scaffold(
       body: BrandBackdrop(
-        child: SafeArea(
-          bottom: false,
-          child: IndexedStack(
-            index: _currentIndex,
-            children: pages,
-          ),
+        child: Stack(
+          children: [
+            SafeArea(
+              bottom: false,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 56),
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 280),
+                  transitionBuilder: (child, animation) => FadeTransition(
+                    opacity: animation,
+                    child: SlideTransition(
+                      position: Tween<Offset>(
+                        begin: const Offset(0, 0.03),
+                        end: Offset.zero,
+                      ).animate(
+                        CurvedAnimation(
+                          parent: animation,
+                          curve: Curves.easeOut,
+                        ),
+                      ),
+                      child: child,
+                    ),
+                  ),
+                  child: KeyedSubtree(
+                    key: ValueKey(_currentIndex),
+                    child: pages[_currentIndex],
+                  ),
+                ),
+              ),
+            ),
+            SafeArea(
+              bottom: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+                child: _RoleTopBar(
+                  title: _appName,
+                  trailing: Builder(
+                    builder: (buttonContext) => _TopActionButton(
+                      icon: isProfilePage
+                          ? Icons.arrow_back_rounded
+                          : Icons.person_outline_rounded,
+                      label: isProfilePage ? 'Retour' : 'Compte',
+                      onTap: isProfilePage
+                          ? (_) => _closeProfile()
+                          : (tapContext) => _openAccountMenu(tapContext),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
       bottomNavigationBar: _MagicBottomNavigation(
         items: destinations,
-        currentIndex: _currentIndex,
-        onSelected: (index) => setState(() => _currentIndex = index),
+        currentIndex: _currentIndex == 4 ? _lastMainIndex : _currentIndex,
+        onSelected: (index) {
+          HapticFeedback.lightImpact();
+          setState(() {
+            _currentIndex = index;
+            _lastMainIndex = index;
+          });
+          widget.onIndexChanged?.call(index);
+        },
       ),
+    );
+  }
+
+  void _closeProfile() {
+    HapticFeedback.lightImpact();
+    setState(() {
+      _currentIndex = _lastMainIndex;
+    });
+    widget.onIndexChanged?.call(_lastMainIndex);
+  }
+
+  Future<void> _openAccountMenu(BuildContext buttonContext) async {
+    HapticFeedback.lightImpact();
+    final overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
+    final button = buttonContext.findRenderObject();
+    if (button is! RenderBox) {
+      return;
+    }
+
+    final buttonTopLeft = button.localToGlobal(Offset.zero, ancestor: overlay);
+    final buttonBottomRight = button.localToGlobal(
+      button.size.bottomRight(Offset.zero),
+      ancestor: overlay,
+    );
+    final selected = await showMenu<String>(
+      context: context,
+      color: AppColors.card,
+      surfaceTintColor: Colors.transparent,
+      elevation: 10,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+        side: const BorderSide(color: AppColors.borderSoft),
+      ),
+      position: RelativeRect.fromLTRB(
+        buttonTopLeft.dx - 160,
+        buttonBottomRight.dy + 8,
+        overlay.size.width - buttonBottomRight.dx,
+        overlay.size.height - buttonTopLeft.dy,
+      ),
+      items: [
+        const PopupMenuItem<String>(
+          value: 'profile',
+          child: _AccountMenuItem(
+            icon: Icons.person_outline_rounded,
+            label: 'Profil',
+            toneColor: AppColors.primaryDark,
+          ),
+        ),
+        ...widget.accountActions.asMap().entries.map(
+          (entry) => PopupMenuItem<String>(
+            value: 'action_${entry.key}',
+            child: _AccountMenuItem(
+              icon: entry.value.icon,
+              label: entry.value.label,
+              toneColor: entry.value.toneColor,
+            ),
+          ),
+        ),
+      ],
+    );
+
+    if (!mounted || selected == null) {
+      return;
+    }
+
+    if (selected == 'profile') {
+      setState(() {
+        _lastMainIndex = _currentIndex;
+        _currentIndex = 4;
+      });
+      widget.onIndexChanged?.call(4);
+      return;
+    }
+
+    if (selected.startsWith('action_')) {
+      final index = int.tryParse(selected.replaceFirst('action_', ''));
+      if (index == null || index < 0 || index >= widget.accountActions.length) {
+        return;
+      }
+      await widget.accountActions[index].onTap(context);
+    }
+  }
+}
+
+class RoleShellAccountAction {
+  const RoleShellAccountAction({
+    required this.label,
+    required this.icon,
+    required this.onTap,
+    this.toneColor = AppColors.textPrimary,
+  });
+
+  final String label;
+  final IconData icon;
+  final Color toneColor;
+  final Future<void> Function(BuildContext context) onTap;
+}
+
+class _TopActionButton extends StatelessWidget {
+  const _TopActionButton({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final ValueChanged<BuildContext> onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: label,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => onTap(context),
+          borderRadius: BorderRadius.circular(16),
+          child: Ink(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              color: AppColors.section.withValues(alpha: 0.92),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColors.borderSoft),
+            ),
+            child: Icon(icon, size: 20, color: AppColors.textPrimary),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _RoleTopBar extends StatelessWidget {
+  const _RoleTopBar({
+    required this.title,
+    required this.trailing,
+  });
+
+  final String title;
+  final Widget trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 46,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Row(
+            children: [
+              const _BrandLogoBadge(),
+              const Spacer(),
+              trailing,
+            ],
+          ),
+          IgnorePointer(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 64),
+              child: Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 15.5,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.35,
+                  color: AppColors.primaryDark,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BrandLogoBadge extends StatelessWidget {
+  const _BrandLogoBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 46,
+      height: 46,
+      decoration: BoxDecoration(
+        color: AppColors.section.withValues(alpha: 0.94),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.borderSoft),
+      ),
+      padding: const EdgeInsets.all(5),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Image.asset(
+          'assets/images/logo.png',
+          fit: BoxFit.contain,
+        ),
+      ),
+    );
+  }
+}
+
+class _AccountMenuItem extends StatelessWidget {
+  const _AccountMenuItem({
+    required this.icon,
+    required this.label,
+    required this.toneColor,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color toneColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        AppIconBadge(
+          icon: icon,
+          size: 36,
+          backgroundColor: toneColor.withValues(alpha: 0.12),
+          foregroundColor: toneColor,
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            label,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -170,8 +484,9 @@ class _MagicBottomNavigation extends StatelessWidget {
                                   mainAxisAlignment: MainAxisAlignment.end,
                                   children: [
                                     AnimatedOpacity(
-                                      duration:
-                                          const Duration(milliseconds: 180),
+                                      duration: const Duration(
+                                        milliseconds: 180,
+                                      ),
                                       curve: Curves.easeOut,
                                       opacity: active ? 0.0 : 1.0,
                                       child: Stack(
@@ -186,9 +501,14 @@ class _MagicBottomNavigation extends StatelessWidget {
                                             Positioned(
                                               right: -8,
                                               top: -6,
-                                              child: _UnreadBadge(
-                                                count: destination.badgeCount,
-                                              ),
+                                              child:
+                                                  _UnreadBadge(
+                                                    count:
+                                                        destination.badgeCount,
+                                                  ).animate().scale(
+                                                    duration: 200.ms,
+                                                    curve: Curves.elasticOut,
+                                                  ),
                                             ),
                                         ],
                                       ),
@@ -226,7 +546,7 @@ class _MagicBottomNavigation extends StatelessWidget {
                   child: _ActiveNavBubble(
                     icon: items[currentIndex].activeIcon,
                     badgeCount: items[currentIndex].badgeCount,
-                  ),
+                  ).animate().scale(duration: 400.ms, curve: Curves.elasticOut),
                 ),
               ],
             ),
@@ -238,10 +558,7 @@ class _MagicBottomNavigation extends StatelessWidget {
 }
 
 class _ActiveNavBubble extends StatelessWidget {
-  const _ActiveNavBubble({
-    required this.icon,
-    this.badgeCount = 0,
-  });
+  const _ActiveNavBubble({required this.icon, this.badgeCount = 0});
 
   final IconData icon;
   final int badgeCount;
@@ -273,16 +590,16 @@ class _ActiveNavBubble extends StatelessWidget {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: Colors.white,
-                border: Border.all(
-                  color: const Color(0xFFBEE0C3),
-                  width: 1.8,
-                ),
+                border: Border.all(color: const Color(0xFFBEE0C3), width: 1.8),
               ),
-              child: Icon(
-                icon,
-                color: AppColors.primaryDark,
-                size: 22,
-              ),
+              child: Icon(icon, color: AppColors.primaryDark, size: 22)
+                  .animate()
+                  .rotate(
+                    begin: -0.05,
+                    end: 0,
+                    duration: 300.ms,
+                    curve: Curves.easeOut,
+                  ),
             ),
           ),
           if (badgeCount > 0)
@@ -298,19 +615,14 @@ class _ActiveNavBubble extends StatelessWidget {
 }
 
 class _UnreadBadge extends StatelessWidget {
-  const _UnreadBadge({
-    required this.count,
-  });
+  const _UnreadBadge({required this.count});
 
   final int count;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      constraints: const BoxConstraints(
-        minWidth: 16,
-        minHeight: 16,
-      ),
+      constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
       padding: const EdgeInsets.symmetric(horizontal: 4),
       decoration: BoxDecoration(
         color: AppColors.red,
