@@ -5,6 +5,7 @@ import {
   getMobilePlanningForGroup,
   getMobileGroupPelerins,
   getMobilePlanningGroups,
+  updateMobilePlanningEventStatus,
   validateMobilePlanningEvent,
 } from './planning.service'
 
@@ -59,6 +60,25 @@ router.get(
         String(req.params.groupeId),
       )
       return res.status(200).json(pelerins)
+    } catch (error: any) {
+      return res.status(400).json({ message: error.message })
+    }
+  },
+)
+
+router.put(
+  '/groupes/:groupeId/evenements/:eventId/status',
+  requireRole('GUIDE'),
+  async (req: AuthRequest, res: Response) => {
+    try {
+      const result = await updateMobilePlanningEventStatus(
+        req.user!.id,
+        req.user!.role,
+        String(req.params.groupeId),
+        String(req.params.eventId),
+        String(req.body?.status ?? ''),
+      )
+      return res.status(200).json(result)
     } catch (error: any) {
       return res.status(400).json({ message: error.message })
     }

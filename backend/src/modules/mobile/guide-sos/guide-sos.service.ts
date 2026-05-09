@@ -44,6 +44,13 @@ export async function getActiveGuideSosAlerts(utilisateurId: string) {
       id: true,
       latitude: true,
       longitude: true,
+      incidents: {
+        orderBy: { createdAt: 'desc' },
+        take: 1,
+        select: {
+          type: true,
+        },
+      },
       message: true,
       createdAt: true,
       pelerin: {
@@ -53,6 +60,7 @@ export async function getActiveGuideSosAlerts(utilisateurId: string) {
             select: {
               prenom: true,
               nom: true,
+              telephone: true,
             },
           },
           groupes: {
@@ -90,12 +98,14 @@ export async function getActiveGuideSosAlerts(utilisateurId: string) {
     id: alert.id,
     latitude: alert.latitude,
     longitude: alert.longitude,
+    type: alert.incidents[0]?.type ?? 'AUTRE',
     message: alert.message,
     createdAt: alert.createdAt,
     pelerinName: [alert.pelerin.utilisateur?.prenom, alert.pelerin.utilisateur?.nom]
       .filter(Boolean)
       .join(' ')
       .trim(),
+    pelerinPhone: alert.pelerin.utilisateur?.telephone ?? null,
     groupe: alert.pelerin.groupes[0]?.groupe
       ? {
           id: alert.pelerin.groupes[0].groupe.id,
