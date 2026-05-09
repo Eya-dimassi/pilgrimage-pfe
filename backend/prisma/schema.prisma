@@ -138,15 +138,16 @@ model AgenceVoyage {
 }
 
 model Guide {
-  id            String   @id @default(uuid())
-  utilisateurId String   @unique
-  agenceId      String
-  specialite    String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  utilisateur Utilisateur  @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
-  agence      AgenceVoyage @relation(fields: [agenceId], references: [id])
+  id                 String             @id @default(uuid())
+  utilisateurId      String             @unique
+  agenceId           String
+  specialite         String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  disponibilite      DisponibiliteGuide @default(DISPONIBLE)
+  disponibiliteMajAt DateTime?
+  utilisateur        Utilisateur        @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
+  agence             AgenceVoyage       @relation(fields: [agenceId], references: [id])
 
   groupes           GroupeGuide[]
   evenementsValides EvenementPlanning[]
@@ -447,6 +448,11 @@ enum StatutEvenement {
   EN_COURS
   TERMINE
   ANNULE
+}
+
+enum DisponibiliteGuide {
+  DISPONIBLE
+  INDISPONIBLE
 }
 
 enum EtapeVoyage {
