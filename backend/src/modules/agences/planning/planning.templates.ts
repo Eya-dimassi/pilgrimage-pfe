@@ -191,8 +191,9 @@ export const HAJJ_TEMPLATE: TemplateDay[] = [
   },
 ]
 
-export function buildUmrahPlan(totalDays: number) {
+export function buildUmrahPlan(totalDays: number): TemplateDay[] {
   if (totalDays <= 0) return []
+
   if (totalDays === 1) {
     return [withSequentialTitle(cloneDay(UMRAH_RITES_DAY), 1)]
   }
@@ -204,31 +205,22 @@ export function buildUmrahPlan(totalDays: number) {
     ]
   }
 
-  const ritesDayNumber = totalDays <= 4 ? 2 : 3
-  const days: TemplateDay[] = []
-
-  for (let dayNumber = 1; dayNumber <= totalDays; dayNumber += 1) {
-    if (dayNumber === 1) {
-      days.push(withSequentialTitle(cloneDay(UMRAH_ARRIVAL_DAY), dayNumber))
-      continue
-    }
-
-    if (dayNumber === totalDays) {
-      days.push(withSequentialTitle(cloneDay(UMRAH_DEPARTURE_DAY), dayNumber))
-      continue
-    }
-
-    if (dayNumber === ritesDayNumber) {
-      days.push(withSequentialTitle(cloneDay(UMRAH_RITES_DAY), dayNumber))
-      continue
-    }
-
-    days.push(withSequentialTitle(buildUmrahMiddleDay(dayNumber, totalDays), dayNumber))
+  if (totalDays === 3) {
+    return [
+      withSequentialTitle(cloneDay(UMRAH_ARRIVAL_DAY), 1),
+      withSequentialTitle(cloneDay(UMRAH_RITES_DAY), 2),
+      withSequentialTitle(cloneDay(UMRAH_DEPARTURE_DAY), 3),
+    ]
   }
 
-  return days
+  // 4+ jours : jours 1, 2, 3 remplis + dernier jour
+ return [
+  withSequentialTitle(cloneDay(UMRAH_ARRIVAL_DAY), 1),
+  withSequentialTitle(cloneDay(UMRAH_MEDINA_WORSHIP_DAY), 2),
+  withSequentialTitle(cloneDay(UMRAH_RITES_DAY), 3),
+  withSequentialTitle(cloneDay(UMRAH_DEPARTURE_DAY), totalDays),
+]
 }
-
 export function buildHajjPlan() {
   const fixedDays = HAJJ_TEMPLATE
     .filter((day) => day.type === 'HAJJ_FIXED')

@@ -547,22 +547,17 @@ export async function generatePlanningTemplate(agenceId: string, groupeId: strin
   let resolveTemplateDate: (templateDay: TemplateDay, index: number) => Date
 
   if (groupe.typeVoyage === 'UMRAH') {
-    templateDays = buildUmrahPlan(totalDays)
-    resolveTemplateDate = (_templateDay, index) => {
-      if (templateDays.length === 1) {
-        return startDate
-      }
+  templateDays = buildUmrahPlan(totalDays)
 
-      if (templateDays.length === 2) {
-        return index === 0 ? startDate : endDate
-      }
+  resolveTemplateDate = (templateDay, _index) => {
+  const match = /^Jour (\d+)/.exec(templateDay.title)
+  const dayNumber = match ? parseInt(match[1], 10) : 1
 
-      if (index === 0) return startDate
-      if (index === templateDays.length - 1) return endDate
-
-      return addDays(startDate, index)
-    }
-  } else {
+  if (dayNumber === 1) return startDate
+  if (dayNumber === totalDays) return endDate
+  return addDays(startDate, dayNumber - 1)
+}
+} else {
     if (!groupe.hajjStartDate) {
       throw new Error('Renseignez la date du 8 Dhul Hijja pour generer le planning Hajj')
     }
@@ -612,7 +607,9 @@ export async function generatePlanningTemplate(agenceId: string, groupeId: strin
     createdEvents += templateDay.events.length
   }
 
-  const shouldMarkInProgress = groupe.status === 'PLANIFIE'
+  const todayAST = startOfASTDay(new Date())
+  const isTripInProgress = todayAST.getTime() >= startDate.getTime() && todayAST.getTime() <= endDate.getTime()
+  const shouldMarkInProgress = groupe.status === 'PLANIFIE' && isTripInProgress
 
   if (operations.length || shouldMarkInProgress) {
     await prisma.$transaction([

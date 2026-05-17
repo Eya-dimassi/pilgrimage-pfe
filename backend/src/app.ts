@@ -10,6 +10,7 @@ import planningRouter from './modules/agences/planning/planning.router';
 
 import guideRouter from './modules/agences/guide/guide.router';
 import guidePresenceRouter from './modules/agences/guide/presence/presence.router';
+import agencePresenceRouter from './modules/agences/presence/presence.router';
 import mobilePlanningRouter from './modules/mobile/planning/planning.router';
 import mobileNotificationsRouter from './modules/mobile/notifications/notifications.router';
 import mobileSosRouter from './modules/mobile/sos/sos.router';
@@ -34,6 +35,7 @@ app.use('/agence/groupes', groupesRouter);
 app.use('/agence/groupes', planningRouter);
 
 app.use('/agence/guides', guideRouter);
+app.use('/agence/presence', agencePresenceRouter);
 app.use('/guide/presence', guidePresenceRouter);
 app.use('/agence', agencesRouter);
 app.use('/mobile/planning', mobilePlanningRouter);

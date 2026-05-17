@@ -391,3 +391,161 @@ export async function confirmPresenceAsPelerin(
     confirmation: updated,
   }
 }
+
+type FamilyPresenceStatusPayload = {
+  pelerinId: string
+  codeUnique: string
+  fullName: string
+  groupeId: string | null
+  groupeNom: string | null
+   statusForFamily: 'PRESENT' | 'ABSENT' | 'EXCUSE'
+  source: 'default' | 'latest_call'
+  activeAppelId: string | null
+  confirmationId: string | null
+  note: string | null
+  rawStatus: string | null
+  confirmeAt: Date | null
+}
+
+export async function getFamilyPresenceStatuses(
+  userId: string,
+): Promise<FamilyPresenceStatusPayload[]> {
+  const links = await prisma.famillePelerin.findMany({
+    where: {
+      actif: true,
+      famille: {
+        utilisateurId: userId,
+      },
+    },
+    include: {
+      pelerin: {
+        select: {
+          id: true,
+          codeUnique: true,
+          utilisateur: {
+            select: {
+              nom: true,
+              prenom: true,
+            },
+          },
+          groupes: {
+            where: { actif: true },
+            orderBy: { dateDebut: 'desc' },
+            take: 1,
+            select: {
+              groupe: {
+                select: {
+                  id: true,
+                  nom: true,
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    orderBy: {
+      createdAt: 'asc',
+    },
+  })
+
+  if (links.length === 0) {
+    return []
+  }
+
+  const pelerinIds = links.map((link) => link.pelerinId)
+
+  const activeAppels = await prisma.appelPresence.findMany({
+    where: {
+      statut: 'EN_COURS',
+      confirmations: {
+        some: {
+          pelerinId: { in: pelerinIds },
+        },
+      },
+    },
+    select: {
+      id: true,
+      date: true,
+    },
+  })
+
+  const staleAppelIds = Array.from(
+    new Set(
+      activeAppels
+        .filter((appel) => isAutoCloseDue(appel.date))
+        .map((appel) => appel.id),
+    ),
+  )
+
+  if (staleAppelIds.length > 0) {
+    await Promise.all(staleAppelIds.map((appelId) => closeAppelById(appelId)))
+  }
+
+  const latestConfirmations = await prisma.confirmationPresence.findMany({
+    where: {
+      pelerinId: { in: pelerinIds },
+    },
+    include: {
+      appelPresence: {
+        select: {
+          id: true,
+          date: true,
+          statut: true,
+          groupe: {
+            select: {
+              id: true,
+              nom: true,
+            },
+          },
+        },
+      },
+    },
+    orderBy: [
+      {
+        appelPresence: {
+          date: 'desc',
+        },
+      },
+      {
+        createdAt: 'desc',
+      },
+    ],
+  })
+
+  const latestByPelerinId = new Map<string, (typeof latestConfirmations)[number]>()
+  for (const confirmation of latestConfirmations) {
+    if (!latestByPelerinId.has(confirmation.pelerinId)) {
+      latestByPelerinId.set(confirmation.pelerinId, confirmation)
+    }
+  }
+
+  return links.map((link) => {
+    const confirmation = latestByPelerinId.get(link.pelerinId)
+    const rawStatus = confirmation?.statut ?? null
+    const statusForFamily =
+      rawStatus === 'ABSENT' || rawStatus === 'EXCUSE' ? rawStatus : 'PRESENT'
+
+    const fallbackGroup = link.pelerin.groupes[0]?.groupe
+    const groupFromCall = confirmation?.appelPresence.groupe
+
+    return {
+      pelerinId: link.pelerinId,
+      codeUnique: link.pelerin.codeUnique,
+      fullName:
+        `${link.pelerin.utilisateur.prenom} ${link.pelerin.utilisateur.nom}`.trim(),
+      groupeId: groupFromCall?.id ?? fallbackGroup?.id ?? null,
+      groupeNom: groupFromCall?.nom ?? fallbackGroup?.nom ?? null,
+      statusForFamily,
+      source:
+        statusForFamily === 'ABSENT' || statusForFamily === 'EXCUSE'
+          ? 'latest_call'
+          : 'default',
+      activeAppelId: confirmation?.appelPresenceId ?? null,
+      confirmationId: confirmation?.id ?? null,
+      note: statusForFamily === 'PRESENT' ? null : confirmation?.note ?? null,
+      rawStatus,
+      confirmeAt: confirmation?.confirmeAt ?? null,
+    }
+  })
+}
