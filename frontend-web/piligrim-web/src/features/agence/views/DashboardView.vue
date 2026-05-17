@@ -288,15 +288,11 @@ import DashGuides from '@/features/agence/views/Dashguides.vue'
 import DashPlanning from '@/features/agence/views/Dashplanning.vue'
 import DashPelerins from '@/features/agence/views/Dashpelerins.vue'
 import DashPresence from '@/features/agence/views/Dashpresence.vue'
-
-import '@/assets/styles/dashboard.css'
-
-const VALID_VIEWS = ['dashboard', 'pelerins', 'guides', 'groupes', 'planning', 'presence-history']
 import SosHistoryView from '@/features/agence/views/SosHistoryView.vue'
 
 import '@/assets/styles/dashboard.css'
 
-const VALID_VIEWS = ['dashboard', 'pelerins', 'guides', 'groupes', 'planning', 'sos']
+const VALID_VIEWS = ['dashboard', 'pelerins', 'guides', 'groupes', 'planning', 'presence-history', 'sos']
 
 const route = useRoute()
 const router = useRouter()
