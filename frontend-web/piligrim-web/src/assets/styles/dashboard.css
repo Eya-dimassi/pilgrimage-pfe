@@ -933,6 +933,26 @@
   color: var(--gold);
 }
 
+.type-pill.sos-type-danger {
+  background: rgba(248, 113, 113, 0.12);
+  color: var(--red);
+}
+
+.type-pill.sos-type-warning {
+  background: rgba(251, 146, 60, 0.12);
+  color: var(--orange);
+}
+
+.type-pill.sos-type-info {
+  background: rgba(74, 158, 255, 0.12);
+  color: var(--blue);
+}
+
+.type-pill.sos-type-muted {
+  background: var(--bg3);
+  color: var(--text2);
+}
+
 .specialite-tag {
   background: rgba(139, 92, 246, 0.12);
   color: #a78bfa;
@@ -1222,6 +1242,46 @@
   color: var(--text2);
   font-size: 14px;
   padding: 48px;
+}
+
+.sos-toolbar-card {
+  overflow: visible;
+}
+
+.sos-toolbar {
+  flex-wrap: wrap;
+  justify-content: space-between;
+}
+
+.sos-search-wrap {
+  min-width: 280px;
+  max-width: none;
+}
+
+.sos-select {
+  flex: 0 0 220px;
+  padding-left: 14px;
+}
+
+.sos-table-wrap {
+  overflow-x: auto;
+}
+
+.sos-detail-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 180px;
+}
+
+.sos-detail-copy {
+  max-width: 320px;
+  line-height: 1.45;
+}
+
+.sos-empty-state {
+  gap: 12px;
+  min-height: 220px;
 }
 
 .inline-assign {
@@ -1837,5 +1897,13 @@
 
   .topbar-profile-copy {
     display: none;
+  }
+
+  .sos-select {
+    flex-basis: 100%;
+  }
+
+  .sos-search-wrap {
+    min-width: 100%;
   }
 }
