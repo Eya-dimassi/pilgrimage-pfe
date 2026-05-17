@@ -18,7 +18,9 @@ import '../../planning/domain/mobile_planning_models.dart';
 import '../../planning/providers/mobile_planning_provider.dart';
 import '../../planning/screens/role_planning_pages.dart';
 import '../domain/family_link.dart';
+import '../domain/family_presence_status.dart';
 import '../providers/family_links_provider.dart';
+import '../providers/family_presence_provider.dart';
 
 class FamilleHomeScreen extends ConsumerStatefulWidget {
   const FamilleHomeScreen({
@@ -85,6 +87,12 @@ class _FamilleHomeScreenState extends ConsumerState<FamilleHomeScreen> {
     final authState = ref.watch(authProvider);
     final user = authState.valueOrNull?.user;
     final familyLinksAsync = ref.watch(familyLinksProvider);
+    final familyPresenceAsync = ref.watch(familyPresenceStatusesProvider);
+    final presenceByPelerinId = <String, FamilyPresenceStatus>{
+      for (final status in familyPresenceAsync.valueOrNull ??
+          const <FamilyPresenceStatus>[])
+        status.pelerinId: status,
+    };
 
     if (user == null) {
       return const SizedBox.shrink();
@@ -117,7 +125,11 @@ class _FamilleHomeScreenState extends ConsumerState<FamilleHomeScreen> {
           label: 'Mes proches',
           icon: Icons.history_rounded,
           toneColor: const Color(0xFFE58E73),
-          onTap: (_) async => _openRelativesSheet(context, familyLinksAsync),
+          onTap: (_) async => _openRelativesSheet(
+            context,
+            familyLinksAsync,
+            presenceByPelerinId,
+          ),
         ),
         RoleShellAccountAction(
           label: 'Deconnexion',
@@ -135,7 +147,11 @@ class _FamilleHomeScreenState extends ConsumerState<FamilleHomeScreen> {
         firstName: user.prenom.trim().isNotEmpty ? user.prenom.trim() : user.email,
         linksAsync: familyLinksAsync,
         selectedGroupId: _selectedFamilyGroupId,
-        onOpenRelatives: () => _openRelativesSheet(context, familyLinksAsync),
+        onOpenRelatives: () => _openRelativesSheet(
+          context,
+          familyLinksAsync,
+          presenceByPelerinId,
+        ),
         onOpenAlerts: _openAlertsTab,
         onSelectLink: (link) => _handleLinkSelection(context, link),
       ),
@@ -178,6 +194,7 @@ class _FamilleHomeScreenState extends ConsumerState<FamilleHomeScreen> {
   Future<void> _openRelativesSheet(
     BuildContext context,
     AsyncValue<List<FamilyLink>> familyLinksAsync,
+    Map<String, FamilyPresenceStatus> presenceByPelerinId,
   ) {
     return showModalBottomSheet<void>(
       context: context,
@@ -235,6 +252,7 @@ class _FamilleHomeScreenState extends ConsumerState<FamilleHomeScreen> {
                       _handleLinkSelection(context, link);
                     },
                     selectedGroupId: _selectedFamilyGroupId,
+                    presenceByPelerinId: presenceByPelerinId,
                     compact: true,
                   ),
                 ],
@@ -494,10 +512,17 @@ class _FamilleHomeContent extends ConsumerWidget {
     final selectedLink = _resolveSelectedLink(links, selectedGroupId);
     final selectedGroupIdValue = selectedLink?.groupe?.id;
     final notificationsAsync = ref.watch(mobileNotificationsProvider);
+    final familyPresenceAsync = ref.watch(familyPresenceStatusesProvider);
+    final presenceByPelerinId = <String, FamilyPresenceStatus>{
+      for (final status in familyPresenceAsync.valueOrNull ??
+          const <FamilyPresenceStatus>[])
+        status.pelerinId: status,
+    };
 
     Future<void> refreshHome() async {
       ref.invalidate(familyLinksProvider);
       ref.invalidate(mobileNotificationsProvider);
+      ref.invalidate(familyPresenceStatusesProvider);
       for (final link in links) {
         final groupeId = link.groupe?.id;
         if (groupeId != null && groupeId.isNotEmpty) {
@@ -507,6 +532,7 @@ class _FamilleHomeContent extends ConsumerWidget {
 
       await ref.read(familyLinksProvider.future);
       await ref.read(mobileNotificationsProvider.future);
+      await ref.read(familyPresenceStatusesProvider.future);
       for (final link in links) {
         final groupeId = link.groupe?.id;
         if (groupeId != null && groupeId.isNotEmpty) {
@@ -532,6 +558,7 @@ class _FamilleHomeContent extends ConsumerWidget {
                 selectedGroupId: selectedGroupId,
                 onOpenRelatives: onOpenRelatives,
                 onSelectLink: onSelectLink,
+                presenceByPelerinId: presenceByPelerinId,
               ),
               const SizedBox(height: 18),
               _FamilyAlertsPreview(
@@ -587,12 +614,14 @@ class _FamilyTodaySection extends StatelessWidget {
     required this.selectedGroupId,
     required this.onOpenRelatives,
     required this.onSelectLink,
+    required this.presenceByPelerinId,
   });
 
   final AsyncValue<List<FamilyLink>> linksAsync;
   final String? selectedGroupId;
   final VoidCallback onOpenRelatives;
   final ValueChanged<FamilyLink> onSelectLink;
+  final Map<String, FamilyPresenceStatus> presenceByPelerinId;
 
   @override
   Widget build(BuildContext context) {
@@ -657,6 +686,7 @@ class _FamilyTodaySection extends StatelessWidget {
                   link: featuredLink,
                   selected: featuredLink.groupe?.id == selectedGroupId,
                   onTap: () => onSelectLink(featuredLink),
+                  presenceStatus: presenceByPelerinId[featuredLink.pelerinId],
                 ),
                 if (remainingCount > 0) ...[
                   const SizedBox(height: 10),
@@ -683,11 +713,13 @@ class _FamilyTodayCard extends ConsumerWidget {
     required this.link,
     required this.selected,
     required this.onTap,
+    required this.presenceStatus,
   });
 
   final FamilyLink link;
   final bool selected;
   final VoidCallback onTap;
+  final FamilyPresenceStatus? presenceStatus;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -795,6 +827,11 @@ class _FamilyTodayCard extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(height: 4),
+                    _FamilyPresenceChip(
+                      status: presenceStatus?.statusForFamily ?? 'PRESENT',
+                      note: presenceStatus?.note,
+                    ),
+                    const SizedBox(height: 6),
                     Text(
                       _familyTodayTitle(currentEvent, day),
                       maxLines: 1,
@@ -1112,6 +1149,7 @@ class _FamilyLinksSection extends StatelessWidget {
     required this.onAddRelative,
     required this.onSelectLink,
     required this.selectedGroupId,
+    required this.presenceByPelerinId,
     this.compact = false,
   });
 
@@ -1119,6 +1157,7 @@ class _FamilyLinksSection extends StatelessWidget {
   final VoidCallback onAddRelative;
   final ValueChanged<FamilyLink> onSelectLink;
   final String? selectedGroupId;
+  final Map<String, FamilyPresenceStatus> presenceByPelerinId;
   final bool compact;
 
   @override
@@ -1208,6 +1247,7 @@ class _FamilyLinksSection extends StatelessWidget {
                       child: _FamilyLinkCard(
                         link: link,
                         selected: link.groupe?.id == selectedGroupId,
+                        presenceStatus: presenceByPelerinId[link.pelerinId],
                         onTap: () => onSelectLink(link),
                       ),
                     ),
@@ -1225,11 +1265,13 @@ class _FamilyLinkCard extends StatelessWidget {
   const _FamilyLinkCard({
     required this.link,
     required this.selected,
+    required this.presenceStatus,
     required this.onTap,
   });
 
   final FamilyLink link;
   final bool selected;
+  final FamilyPresenceStatus? presenceStatus;
   final VoidCallback onTap;
 
   @override
@@ -1289,6 +1331,11 @@ class _FamilyLinkCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 6),
+                    _FamilyPresenceChip(
+                      status: presenceStatus?.statusForFamily ?? 'PRESENT',
+                      note: presenceStatus?.note,
+                    ),
+                    const SizedBox(height: 6),
                     Text(
                       groupLabel,
                       style: const TextStyle(
@@ -1311,6 +1358,60 @@ class _FamilyLinkCard extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _FamilyPresenceChip extends StatelessWidget {
+  const _FamilyPresenceChip({
+    required this.status,
+    this.note,
+  });
+
+  final String status;
+  final String? note;
+
+  @override
+  Widget build(BuildContext context) {
+    final normalized = _normalizeFamilyPresenceStatus(status);
+    final backgroundColor = _familyPresenceBackground(normalized);
+    final foregroundColor = _familyPresenceForeground(normalized);
+    final label = _familyPresenceLabel(normalized);
+    final hasNote = note != null && note!.trim().isNotEmpty;
+
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          decoration: BoxDecoration(
+            color: backgroundColor,
+            borderRadius: BorderRadius.circular(999),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              color: foregroundColor,
+            ),
+          ),
+        ),
+        if (hasNote) ...[
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              note!.trim(),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 11.5,
+                color: AppColors.textMuted,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ],
     );
   }
 }
@@ -1362,6 +1463,48 @@ class _FamilyTodayTone {
   final Color accentColor;
   final Color softColor;
   final Color borderColor;
+}
+
+String _normalizeFamilyPresenceStatus(String? raw) {
+  if (raw == 'ABSENT') return 'ABSENT';
+  if (raw == 'EXCUSE') return 'EXCUSE';
+  return 'PRESENT';
+}
+
+String _familyPresenceLabel(String status) {
+  switch (status) {
+    case 'ABSENT':
+      return 'Absent';
+    case 'EXCUSE':
+      return 'Excuse';
+    case 'PRESENT':
+    default:
+      return 'Present';
+  }
+}
+
+Color _familyPresenceBackground(String status) {
+  switch (status) {
+    case 'ABSENT':
+      return const Color(0xFFFFECE8);
+    case 'EXCUSE':
+      return const Color(0xFFFFF4E2);
+    case 'PRESENT':
+    default:
+      return const Color(0xFFEAF8EF);
+  }
+}
+
+Color _familyPresenceForeground(String status) {
+  switch (status) {
+    case 'ABSENT':
+      return const Color(0xFFB8452E);
+    case 'EXCUSE':
+      return const Color(0xFFAF7A22);
+    case 'PRESENT':
+    default:
+      return const Color(0xFF1F7A46);
+  }
 }
 
 String _familyTripDateLabel(FamilyLinkedGroup? group) {

@@ -1,6 +1,7 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../domain/models/confirmation_presence.dart';
 
 class ConfirmationCard extends StatelessWidget {
@@ -79,7 +80,7 @@ class ConfirmationCard extends StatelessWidget {
                   targetStatut: 'PRESENT',
                   currentStatut: currentStatut,
                   icon: Icons.check_circle,
-                  tooltip: 'Present',
+                  tooltip: 'presence.status.present'.tr(),
                   color: Colors.green,
                   onPressed: () => onStatutChanged('PRESENT'),
                 ),
@@ -88,7 +89,7 @@ class ConfirmationCard extends StatelessWidget {
                   targetStatut: 'EXCUSE',
                   currentStatut: currentStatut,
                   icon: Icons.info,
-                  tooltip: 'Excuse',
+                  tooltip: 'presence.status.excuse'.tr(),
                   color: Colors.orange,
                   onPressed: () => onStatutChanged('EXCUSE'),
                 ),
@@ -97,7 +98,7 @@ class ConfirmationCard extends StatelessWidget {
                   targetStatut: 'ABSENT',
                   currentStatut: currentStatut,
                   icon: Icons.cancel,
-                  tooltip: 'Absent',
+                  tooltip: 'presence.status.absent'.tr(),
                   color: Colors.red,
                   onPressed: () => onStatutChanged('ABSENT'),
                 ),

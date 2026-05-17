@@ -12,6 +12,7 @@ import '../features/auth/screens/intro_screen.dart';
 import '../features/auth/screens/login_screen.dart';
 import '../features/famille/screens/famille_home_screen.dart';
 import '../features/guide/screens/guide_home_screen.dart';
+import '../features/guide/screens/guide_presence_home_screen.dart';
 import '../features/pelerin/screens/pelerin_home_screen.dart';
 import '../features/presence/screens/appel_presence_screen.dart';
 import '../features/presence/screens/pelerin_presence_screen.dart';
@@ -62,6 +63,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         ),
       ),
       GoRoute(
+        path: '/guide-presence-home',
+        builder: (context, state) => const GuidePresenceHomeScreen(),
+      ),
+      GoRoute(
         path: '/famille-home',
         builder: (context, state) => FamilleHomeScreen(
           initialTabIndex: _tabIndexFromState(state),
@@ -94,6 +99,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final isForgotPassword = location == '/forgot-password';
       final isFamilySignup = location == '/family-signup';
       final isProfileEdit = location == '/profile-edit';
+      final isGuidePresenceHome = location == '/guide-presence-home';
       final isGuidePresence = location == '/guide-presence' || location.startsWith('/guide-presence/');
       final isPelerinPresence =
           location == '/pelerin-presence' || location.startsWith('/pelerin-presence/');
@@ -125,7 +131,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
 
       final role = session.user.role;
       final isRoleScopedExtraRoute =
-          (role == 'GUIDE' && isGuidePresence) ||
+          (role == 'GUIDE' && (isGuidePresenceHome || isGuidePresence)) ||
           (role == 'PELERIN' && isPelerinPresence);
 
       if (!isProfileEdit && !isRoleScopedExtraRoute && location != targetPath) {

@@ -1,0 +1,495 @@
+﻿{
+  "appName": "Sacred Journey Hub",
+  "nav": {
+    "home": "Accueil",
+    "profile": "Profil",
+    "planning": "Planning",
+    "alerts": "Alertes",
+    "chatbot": "Chatbot",
+    "settings": "Parametres",
+    "logout": "Deconnexion"
+  },
+  "auth": {
+    "login": "Connexion",
+    "register": "Inscription",
+    "email": "Adresse e-mail",
+    "password": "Mot de passe",
+    "forgotPassword": "Mot de passe oublie ?",
+    "loginBtn": "Se connecter",
+    "registerBtn": "Creer un compte",
+    "welcomeBack": "Bon retour, {name} !",
+    "logout": "Deconnexion"
+  },
+  "home": {
+    "greeting": "Bonjour, {name} !",
+    "subtitle": "Que souhaitez-vous faire aujourd'hui ?"
+  },
+  "items": {
+    "zero": "Aucun article",
+    "one": "{} article",
+    "other": "{} articles"
+  },
+  "messages": {
+    "zero": "Aucun message",
+    "one": "{} message non lu",
+    "other": "{} messages non lus"
+  },
+  "errors": {
+    "required": "Ce champ est obligatoire",
+    "invalidEmail": "Adresse e-mail invalide",
+    "networkError": "Erreur de connexion reseau",
+    "tryAgain": "Veuillez reessayer"
+  },
+  "actions": {
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "confirm": "Confirmer",
+    "back": "Retour",
+    "retry": "Reessayer",
+    "next": "Suivant",
+    "done": "Termine",
+    "continue": "Continuer"
+  },
+  "date": {
+    "today": "Aujourd'hui",
+    "yesterday": "Hier",
+    "tomorrow": "Demain"
+  },
+  "shell": {
+    "account": "Compte",
+    "placeholder": {
+      "planning": "Le planning quotidien, les reperes du groupe et les prochaines etapes apparaitront ici.",
+      "alerts": "Les notifications importantes, rappels et alertes de suivi seront centralisees dans cet espace.",
+      "chatbot": "Votre assistant de voyage apparaitra ici pour repondre rapidement aux questions utiles."
+    }
+  },
+  "alerts": {
+    "title": "Notifications",
+    "mark_all_read": "Tout lire",
+    "all_caught_up": "Tout est a jour.",
+    "unread_one": "1 notification non lue",
+    "unread_count": "{count} notifications non lues.",
+    "scope": {
+      "today": "Aujourd hui",
+      "yesterday": "Hier",
+      "earlier": "Plus ancien"
+    },
+    "empty": {
+      "today": "Aucune notification aujourd hui",
+      "yesterday": "Aucune notification hier",
+      "earlier": "Aucune notification plus ancienne",
+      "feed_subtitle": "Les mises a jour du planning, les rappels et les alertes importantes apparaitront ici."
+    },
+    "errors": {
+      "load_notifications": "Impossible de charger les notifications",
+      "load_sos": "Impossible de charger les alertes SOS"
+    },
+    "guide_sos": {
+      "chip": "Guide SOS",
+      "none_active": "Aucune urgence SOS active pour le moment.",
+      "live_title": "Alerte SOS en direct",
+      "pilgrim_fallback": "Pelerin",
+      "group_unknown": "Groupe non renseigne",
+      "situation": "Situation",
+      "message": "Message",
+      "resolving": "En cours...",
+      "resolve": "Resoudre",
+      "call": "Appeler",
+      "location": "Position",
+      "resolve_sheet_title": "Resoudre l alerte",
+      "resolve_sheet_message": "Confirmez-vous que {name} va bien et que la situation est prise en charge ?",
+      "resolved_toast": "Alerte SOS resolue",
+      "phone_unavailable": "Numero du pelerin indisponible",
+      "elapsed": {
+        "now": "Maintenant",
+        "minutes_ago": "Il y a {count} min",
+        "hours_ago": "Il y a {count} h"
+      },
+      "summary": {
+        "maladie": "Probleme de sante signale par le pelerin.",
+        "perte": "Le pelerin signale qu il est perdu.",
+        "logistique": "Le pelerin a besoin d aide logistique.",
+        "autre": "Demande d assistance generale."
+      }
+    },
+    "notification": {
+      "instant": "A l instant",
+      "minutes_ago": "Il y a {count} min",
+      "hours_ago": "Il y a {count} h",
+      "days_ago": "Il y a {count} j",
+      "labels": {
+        "sos_resolved": "SOS resolu",
+        "step_cancelled": "Etape annulee",
+        "step_completed": "Etape terminee",
+        "planning": "Planning",
+        "reminder": "Rappel",
+        "generic": "Notification"
+      }
+    }
+  },
+  "planning": {
+    "header": {
+      "today": "Planning du jour",
+      "days": "Journees"
+    },
+    "empty": {
+      "no_group_title": "Aucun groupe disponible",
+      "no_group_message": "Votre planning apparaitra ici des qu un groupe actif vous sera rattache.",
+      "no_today_title": "Aucun planning aujourd hui",
+      "no_today_message": "Le groupe n a pas encore de programme partage pour aujourd hui.",
+      "no_day_title": "Aucune journee disponible",
+      "no_day_message": "Aucune journee du voyage n est disponible pour le moment.",
+      "no_event_day": "Aucun evenement pour cette journee"
+    },
+    "feedback": {
+      "step_cancelled": "Etape annulee",
+      "step_completed": "Etape terminee",
+      "cancel_failed": "Annulation impossible",
+      "update_failed": "Mise a jour impossible"
+    },
+    "common": {
+      "trip_progress": "Progression du voyage",
+      "day_of": "Jour {day} sur {total}",
+      "group_hajj": "Groupe Hajj",
+      "group_omra": "Groupe Omra",
+      "day_label": "Journee",
+      "day": "Jour {day}",
+      "day_with_title": "Jour {day} - {title}",
+      "day_short": "J{day}"
+    },
+    "family": {
+      "live_now": "En direct",
+      "no_shared_today": "Aucun programme partage pour aujourd hui.",
+      "location": "Lieu",
+      "to_confirm": "A confirmer",
+      "activity": "Activite",
+      "no_activity": "Aucune activite en cours",
+      "next": "Ensuite",
+      "nothing_next": "Rien d autre de prevu pour aujourd hui"
+    },
+    "dialog": {
+      "confirm_cancel_title": "Confirmer l annulation",
+      "confirm_finish_title": "Confirmer la fin de l etape",
+      "confirm_cancel_message": "Voulez-vous annuler cet evenement : \"{title}\" ?",
+      "confirm_finish_message": "Voulez-vous marquer cet evenement comme termine : \"{title}\" ?"
+    },
+    "actions": {
+      "cancel_step": "Annuler l etape",
+      "finish": "Terminer",
+      "updating": "Mise a jour..."
+    },
+    "event": {
+      "completed_at": "Terminee a {time}",
+      "full_description": "Description complete"
+    },
+    "error": {
+      "load_title": "Impossible de charger le planning",
+      "retry": "Reessayer"
+    },
+    "event_type": {
+      "transport": "Transport",
+      "visit": "Visite",
+      "rite": "Rite",
+      "prayer": "Priere",
+      "meal": "Repas",
+      "rest": "Repos",
+      "other": "Autre"
+    },
+    "status": {
+      "cancelled": "Annulee",
+      "completed": "Terminee",
+      "in_progress": "En cours",
+      "planned": "Planifiee"
+    },
+    "month_short": {
+      "jan": "janv",
+      "feb": "fevr",
+      "mar": "mars",
+      "apr": "avr",
+      "may": "mai",
+      "jun": "juin",
+      "jul": "juil",
+      "aug": "aout",
+      "sep": "sept",
+      "oct": "oct",
+      "nov": "nov",
+      "dec": "dec"
+    }
+  },
+  "roles": {
+    "pelerin": "Pelerin",
+    "guide": "Guide"
+  },
+  "profile": {
+    "title": "Profil",
+    "personal_info": "Informations personnelles",
+    "account_active": "{role} - Compte actif",
+    "code_copied": "Code unique copie",
+    "common": {
+      "not_provided": "Non renseigne",
+      "not_assigned": "Non attribue"
+    },
+    "fields": {
+      "first_name": "Prenom",
+      "last_name": "Nom",
+      "email": "Email",
+      "phone": "Telephone",
+      "relationship": "Lien de parente",
+      "specialty": "Specialite",
+      "availability": "Disponibilite",
+      "current_group": "Groupe actuel",
+      "birth_date": "Date de naissance",
+      "nationality": "Nationalite",
+      "passport_number": "Numero de passeport"
+    },
+    "availability": {
+      "updating": "Mise a jour en cours...",
+      "available_desc": "Vous pouvez etre affecte a un groupe.",
+      "unavailable_desc": "Vous ne serez pas affecte a un groupe."
+    }
+  },
+  "pelerin": {
+    "common": {
+      "hajj": "Hajj",
+      "omra": "Omra"
+    },
+    "status": {
+      "planifie": "Planifie",
+      "en_cours": "En cours",
+      "termine": "Termine",
+      "annule": "Annule",
+      "inconnu": "Inconnu"
+    },
+    "home": {
+      "hello": "Bonjour",
+      "history_groups": "Historique groupes",
+      "language": "Langue",
+      "choose_language": "Choisir la langue",
+      "language_french": "Francais",
+      "language_english": "Anglais",
+      "language_arabic": "Arabe",
+      "group_history_title": "Historique de vos groupes",
+      "group_history_empty": "Aucun historique de groupe disponible.",
+      "depart_only": "Depart: {date}", 
+      "retour_only": "Retour: {date}",
+      "no_step_today": "Aucune etape aujourd hui",
+      "today_program": "Programme du jour",
+      "trip_progress": "{percent}% du voyage",
+      "shared_program_coming": "Programme partage a venir",
+      "next_step": "Prochaine etape"
+    },
+    "sos": {
+      "title": "Urgence SOS",
+      "description": "Utilisez ce bouton uniquement en cas d urgence reelle.",
+      "active_since": "Alerte active depuis {time}",
+      "choose_help_type": "Choisir le type d aide",
+      "choose_help_desc": "Selectionnez votre situation puis confirmez l envoi de l alerte.",
+      "sending": "Envoi en cours..."
+    }
+  },
+  "guide": {
+    "home": {
+      "groupes_list": "Liste des groupes",
+      "pelerins_list": "Liste des pèlerins",
+      "language": "Langue",
+      "choose_language": "Choisir la langue",
+      "language_french": "Francais",
+      "language_english": "Anglais",
+      "language_arabic": "Arabe",
+      "logout": "Déconnexion",
+      "disponible_toast": "Vous êtes maintenant disponible",
+      "indisponible_toast": "Vous êtes maintenant indisponible",
+      "disponibilite_error": "Impossible de mettre à jour la disponibilité"
+    },
+    "groups_sheet": {
+      "title": "Groupes",
+      "available_count": "{count} groupe(s) disponibles",
+      "results_count": "{count} resultat(s)",
+      "depart_on": "Depart {date}",
+      "pilgrims_count": "{count} pelerins",
+      "retry": "Recharger",
+      "search_hint": "Rechercher un groupe",
+      "filters": {
+        "all": "Tous",
+        "in_progress": "En cours",
+        "planned": "Planifies",
+        "completed": "Termines"
+      },
+      "status": {
+        "completed": "TERMINE",
+        "in_progress": "EN COURS",
+        "planned": "PLANIFIE",
+        "info": "INFO"
+      },
+      "empty": {
+        "search_title": "Aucun resultat",
+        "search_subtitle": "Essayez un autre mot-cle.",
+        "no_group_title": "Aucun groupe",
+        "no_group_subtitle": "Aucun groupe actif n'est disponible pour le moment."
+      }
+    },
+    "group_pilgrims_sheet": {
+      "attendance_call_tooltip": "Appel de presence",
+      "title": "Pelerins",
+      "people_count": "{count} personne(s)",
+      "search_hint": "Rechercher par nom ou telephone",
+      "empty": "Aucun pelerin dans ce groupe pour le moment.",
+      "retry": "Reessayer"
+    },
+    "presence": {
+      "card_title": "Appel présence",
+      "card_subtitle": "Ouvrir les groupes et lancer un appel",
+      "home": {
+        "title": "Appel presence",
+        "search_hint": "Rechercher un groupe",
+        "load_error_title": "Impossible de charger les groupes",
+        "empty_groups_title": "Aucun groupe disponible",
+        "empty_groups_subtitle": "Aucun groupe n est associe a ce compte guide.",
+        "no_result_title": "Aucun resultat",
+        "no_result_subtitle": "Aucun groupe ne correspond a votre recherche actuelle."
+      },
+      "groups": {
+        "section_title": "Appels de presence",
+        "open_error": "Impossible d ouvrir l appel",
+        "no_active_call": "Aucun appel en cours",
+        "pending_summary": "{pending} en attente sur {total}",
+        "loading": "Verification...",
+        "unavailable": "Etat indisponible",
+        "action_open": "Ouvrir",
+        "action_launch": "Lancer"
+      }
+    }
+  },
+  "presence": {
+    "title": "Appel de presence",
+    "save_changes": "Enregistrer ({count})",
+    "stats": {
+      "total": "Total",
+      "present": "Presents",
+      "absent": "Absents",
+      "excuse": "Excuses"
+    },
+    "status": {
+      "present": "Present",
+      "absent": "Absent",
+      "excuse": "Excuse"
+    },
+    "quick_actions": {
+      "all_present": "Tous presents",
+      "remind_absent": "Relancer absents"
+    },
+    "guide": {
+      "empty_group": "Aucun pelerin dans ce groupe",
+      "note_title": "Note - {name}",
+      "note_hint": "Ex: Retard 10 min, Malade...",
+      "all_present_success": "Tous les pelerins marques comme PRESENT",
+      "reset_absent_title": "Relancer les absents",
+      "reset_absent_message": "Les pelerins ABSENT seront remis EN_ATTENTE et recevront une notification de rappel.",
+      "reset_absent_action": "Relancer",
+      "reset_absent_success": "{count} absent(s) reinitialise(s) et notifie(s)",
+      "no_valid_changes": "Aucune modification valide a enregistrer",
+      "save_success": "Presences enregistrees avec succes"
+    },
+    "close_call": {
+      "tooltip": "Cloturer l appel",
+      "title": "Cloturer l appel",
+      "message": "Etes-vous sur de vouloir cloturer cet appel de presence ?\n\nCette action est irreversible.",
+      "action": "Cloturer",
+      "success": "Appel cloture avec succes"
+    },
+    "error": {
+      "title": "Erreur",
+      "with_message": "Erreur: {error}",
+      "data_unavailable": "Donnees indisponibles, reessayez."
+    },
+    "pilgrim": {
+      "no_active_call": "Aucun appel de presence en cours.",
+      "guide_label": "Guide: {name}",
+      "call_status_label": "Statut appel: {status}",
+      "your_status_label": "Votre statut: {status}",
+      "already_confirmed": "Deja confirme",
+      "confirm_me": "Je suis present",
+      "confirm_success": "Presence confirmee"
+    },
+    "create": {
+      "title": "Nouvel appel",
+      "heading": "Creer un appel de presence",
+      "group_label": "Groupe : {group}",
+      "description": "Un appel de presence sera cree pour tous les pelerins actifs du groupe.",
+      "creating": "Creation en cours...",
+      "action": "Creer l appel"
+    }
+  },
+  "sos": {
+    "errors": {
+      "location_permission_required": "Autorisez la localisation pour envoyer une alerte SOS",
+      "location_service_disabled": "Activez la localisation de votre telephone pour envoyer une alerte SOS",
+      "location_permission_needed": "La permission de localisation est necessaire pour envoyer une alerte SOS"
+    },
+    "hold_button": {
+      "hold_3s": "Maintenez 3 secondes",
+      "send_with_position": "Une alerte SOS sera envoyee avec votre position."
+    },
+    "sheet": {
+      "confirmation_title": "Secours alertes",
+      "confirmation_message": "Votre guide et vos proches ont ete informes a {time}.",
+      "position_sent": "Position transmise: {lat}, {lng}",
+      "got_it": "Compris",
+      "confirm_type_title": "Confirmer {type}",
+      "confirm_other_message": "Une demande d assistance generale sera envoyee a votre guide.",
+      "confirm_default_message": "Votre position et votre demande seront envoyees a votre guide.",
+      "pick_situation_title": "Choisir une situation",
+      "pick_situation_subtitle": "Selectionnez le type d aide dont vous avez besoin."
+    },
+    "types": {
+      "maladie": {
+        "label": "Maladie",
+        "description": "Probleme de sante"
+      },
+      "perte": {
+        "label": "Perte",
+        "description": "Je suis perdu"
+      },
+      "logistique": {
+        "label": "Logistique",
+        "description": "Transport ou organisation"
+      },
+      "autre": {
+        "label": "Autre",
+        "description": "Autre situation"
+      }
+    }
+  },
+  "adhan": {
+  "title": "Appel à la prière",
+  "schedule_title": "Horaires de prière",
+  "footer_prefix": "Horaires calculés pour La Mecque.",
+  "in_progress": "en cours",
+  "next_prayer_label": "Prochaine prière :",
+  "prayer_fallback": "Prière",
+  "sunrise": "Lever du soleil",
+  "prayers": {
+    "fajr": "Fajr",
+    "dhuhr": "Dhuhr",
+    "asr": "Asr",
+    "maghrib": "Maghrib",
+    "isha": "Isha"
+  },
+  "message": {
+    "fajr": "Le jour commence avec Fajr. Gardez un départ calme avant le mouvement du groupe.",
+    "dhuhr": "Dhuhr marque le cœur de la journée. Gardez un repère clair entre rites et déplacements.",
+    "asr": "Asr invite à ralentir un instant, vérifier le groupe et se recentrer.",
+    "maghrib": "Maghrib ouvre un moment de gratitude après l'effort et les déplacements.",
+    "isha": "Isha appelle au calme et à la préparation du lendemain.",
+    "upcoming_fajr": "La prochaine prière sera Fajr. Reposez-vous et gardez l'intention du lendemain.",
+    "upcoming_dhuhr": "La prochaine prière sera Dhuhr. Prenez vos repères avant la reprise du rythme.",
+    "upcoming_asr": "La prochaine prière sera Asr. Gardez un temps pour vous recentrer.",
+    "upcoming_maghrib": "La prochaine prière sera Maghrib. La fin du jour approche avec douceur.",
+    "upcoming_isha": "La prochaine prière sera Isha. Le soir approche, avec plus de calme.",
+    "upcoming_sunrise": "Le lever du jour approche. Gardez un rythme calme avant le prochain mouvement.",
+    "none": "Gardez un repère spirituel clair pendant tout le voyage."
+  }
+}
+}

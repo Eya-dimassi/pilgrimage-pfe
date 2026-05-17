@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 
 class AuthException implements Exception {
   const AuthException(this.message);
@@ -18,6 +19,16 @@ class AuthException implements Exception {
         error.type == DioExceptionType.connectionTimeout ||
         error.type == DioExceptionType.receiveTimeout ||
         error.type == DioExceptionType.sendTimeout) {
+      if (kDebugMode) {
+        final uri = error.requestOptions.uri.toString();
+        final reason = error.error?.toString();
+        if (reason != null && reason.trim().isNotEmpty) {
+          return AuthException(
+            'Impossible de joindre le serveur\n$uri\n$reason',
+          );
+        }
+        return AuthException('Impossible de joindre le serveur\n$uri');
+      }
       return const AuthException('Impossible de joindre le serveur');
     }
 

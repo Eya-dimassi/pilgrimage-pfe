@@ -5,6 +5,21 @@ import '../data/presence_repository.dart';
 import '../domain/models/appel_presence.dart';
 import '../domain/models/pelerin_presence_call.dart';
 
+class GuideGroupPresenceSnapshot {
+  const GuideGroupPresenceSnapshot({
+    required this.activeAppelId,
+    this.total,
+    this.enAttente,
+  });
+
+  final String? activeAppelId;
+  final int? total;
+  final int? enAttente;
+
+  bool get hasActiveCall =>
+      activeAppelId != null && activeAppelId!.trim().isNotEmpty;
+}
+
 // ============================================
 // DATA SOURCE
 // ============================================
@@ -82,3 +97,37 @@ final pelerinPresenceByIdProvider =
   final repository = ref.watch(presenceRepositoryProvider);
   return repository.getPelerinAppelById(appelId);
 });
+
+/// Snapshot de presence par groupe guide (sans endpoint resume dedie).
+final guideGroupPresenceSnapshotProvider =
+    FutureProvider.family<GuideGroupPresenceSnapshot, String>((
+      ref,
+      groupeId,
+    ) async {
+      final repository = ref.watch(presenceRepositoryProvider);
+      final historique = await repository.getHistorique(groupeId);
+      if (historique.isEmpty) {
+        return const GuideGroupPresenceSnapshot(activeAppelId: null);
+      }
+
+      final latest = historique.first;
+      final latestAppelId = latest['id']?.toString() ?? '';
+      if (latestAppelId.trim().isEmpty) {
+        return const GuideGroupPresenceSnapshot(activeAppelId: null);
+      }
+
+      try {
+        final appelData = await repository.getAppel(latestAppelId);
+        if (appelData.appel.statut != 'EN_COURS') {
+          return const GuideGroupPresenceSnapshot(activeAppelId: null);
+        }
+
+        return GuideGroupPresenceSnapshot(
+          activeAppelId: appelData.appel.id,
+          total: appelData.stats.total,
+          enAttente: appelData.stats.enAttente,
+        );
+      } catch (_) {
+        return const GuideGroupPresenceSnapshot(activeAppelId: null);
+      }
+    });

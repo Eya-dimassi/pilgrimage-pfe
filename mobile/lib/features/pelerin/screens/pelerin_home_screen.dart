@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/saudi_time.dart';
@@ -19,10 +20,7 @@ import '../../sos/presentation/sos_screen.dart';
 import '../../sos/providers/sos_provider.dart';
 
 class PelerinHomeScreen extends ConsumerWidget {
-  const PelerinHomeScreen({
-    super.key,
-    this.initialTabIndex = 0,
-  });
+  const PelerinHomeScreen({super.key, this.initialTabIndex = 0});
 
   final int initialTabIndex;
 
@@ -45,7 +43,7 @@ class PelerinHomeScreen extends ConsumerWidget {
       initialIndex: initialTabIndex,
       accountActions: [
         RoleShellAccountAction(
-          label: 'Historique groupes',
+          label: 'pelerin.home.history_groups'.tr(),
           icon: Icons.history_rounded,
           toneColor: const Color(0xFFD4AF37),
           onTap: (context) async => showModalBottomSheet<void>(
@@ -56,7 +54,13 @@ class PelerinHomeScreen extends ConsumerWidget {
           ),
         ),
         RoleShellAccountAction(
-          label: 'Deconnexion',
+          label: 'pelerin.home.language'.tr(),
+          icon: Icons.language_rounded,
+          toneColor: AppColors.blue,
+          onTap: (context) async => _showLanguagePicker(context),
+        ),
+        RoleShellAccountAction(
+          label: 'auth.logout'.tr(),
           icon: Icons.logout_rounded,
           toneColor: AppColors.red,
           onTap: (context) async {
@@ -76,9 +80,136 @@ class PelerinHomeScreen extends ConsumerWidget {
       alertsChild: const MobileAlertsScreen(),
       profileChild: RoleProfileTemplate(
         user: user,
-        roleLabel: 'Pelerin',
+        roleLabel: 'roles.pelerin'.tr(),
         accentColor: const Color(0xFFD4AF37),
         onEdit: () => context.push('/profile-edit'),
+      ),
+    );
+  }
+}
+
+Future<void> _showLanguagePicker(BuildContext context) async {
+  final selectedLocale = await showModalBottomSheet<Locale>(
+    context: context,
+    backgroundColor: Colors.transparent,
+    builder: (sheetContext) =>
+        _LanguagePickerSheet(currentLocale: context.locale),
+  );
+
+  if (selectedLocale == null) {
+    return;
+  }
+
+  if (!context.mounted) {
+    return;
+  }
+
+  await context.setLocale(selectedLocale);
+}
+
+class _LanguagePickerSheet extends StatelessWidget {
+  const _LanguagePickerSheet({required this.currentLocale});
+
+  final Locale currentLocale;
+
+  @override
+  Widget build(BuildContext context) {
+    final options = <({Locale locale, String key})>[
+      (locale: const Locale('fr'), key: 'pelerin.home.language_french'),
+      (locale: const Locale('en'), key: 'pelerin.home.language_english'),
+      (locale: const Locale('ar'), key: 'pelerin.home.language_arabic'),
+    ];
+
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 14),
+        child: Material(
+          color: AppColors.card,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+            side: const BorderSide(color: AppColors.borderSoft),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'pelerin.home.choose_language'.tr(),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                ...options.map(
+                  (option) => _LanguageOptionTile(
+                    label: option.key.tr(),
+                    isSelected:
+                        option.locale.languageCode ==
+                        currentLocale.languageCode,
+                    onTap: () => Navigator.of(context).pop(option.locale),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _LanguageOptionTile extends StatelessWidget {
+  const _LanguageOptionTile({
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        width: double.infinity,
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppColors.goldSoft
+              : AppColors.section.withValues(alpha: 0.55),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: isSelected ? AppColors.gold : AppColors.borderSoft,
+          ),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: isSelected ? AppColors.gold : AppColors.textPrimary,
+                ),
+              ),
+            ),
+            if (isSelected)
+              const Icon(
+                Icons.check_circle_rounded,
+                size: 18,
+                color: AppColors.gold,
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -133,10 +264,7 @@ class _PelerinHomeContent extends ConsumerWidget {
             children: [
               _Header(firstName: firstName, groupeNom: groupeNom),
               const SizedBox(height: 12),
-              _HeroCard(
-                group: selectedGroup,
-                planningAsync: planningAsync,
-              ),
+              _HeroCard(group: selectedGroup, planningAsync: planningAsync),
               const SizedBox(height: 12),
               const AdhanPanel(
                 accentColor: Color(0xFFD4AF37),
@@ -180,10 +308,10 @@ class _PelerinGroupHistorySheetHome extends ConsumerWidget {
                   padding: const EdgeInsets.fromLTRB(16, 14, 10, 10),
                   child: Row(
                     children: [
-                      const Expanded(
+                      Expanded(
                         child: Text(
-                          'Historique de vos groupes',
-                          style: TextStyle(
+                          'pelerin.home.group_history_title'.tr(),
+                          style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w800,
                           ),
@@ -216,13 +344,13 @@ class _PelerinGroupHistorySheetHome extends ConsumerWidget {
                     ),
                     data: (items) {
                       if (items.isEmpty) {
-                        return const Center(
+                        return Center(
                           child: Padding(
-                            padding: EdgeInsets.all(20),
+                            padding: const EdgeInsets.all(20),
                             child: Text(
-                              'Aucun historique de groupe disponible.',
+                              'pelerin.home.group_history_empty'.tr(),
                               textAlign: TextAlign.center,
-                              style: TextStyle(
+                              style: const TextStyle(
                                 color: AppColors.textMuted,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -253,15 +381,13 @@ class _PelerinGroupHistorySheetHome extends ConsumerWidget {
 }
 
 class _HistoryGroupTileHome extends StatelessWidget {
-  const _HistoryGroupTileHome({
-    required this.item,
-  });
+  const _HistoryGroupTileHome({required this.item});
 
   final MobilePlanningGroupHistoryItem item;
 
   @override
   Widget build(BuildContext context) {
-    final statusLabel = _statusLabel(item.groupe.status);
+    final statusLabel = _statusLabel(context, item.groupe.status);
     final statusColor = _statusColor(item.groupe.status);
     final departureDate = item.groupe.dateDepart;
     final returnDate = item.groupe.dateRetour;
@@ -305,7 +431,7 @@ class _HistoryGroupTileHome extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '${item.groupe.typeVoyage == 'HAJJ' ? 'Hajj' : 'Omra'} - ${item.groupe.annee}',
+                  '${item.groupe.typeVoyage == 'HAJJ' ? 'pelerin.common.hajj'.tr() : 'pelerin.common.omra'.tr()} - ${item.groupe.annee}',
                   style: const TextStyle(
                     fontSize: 12.5,
                     color: AppColors.textMuted,
@@ -315,15 +441,26 @@ class _HistoryGroupTileHome extends StatelessWidget {
                 if (departureDate != null) ...[
                   const SizedBox(height: 4),
                   Text(
-                    returnDate == null
-                        ? 'Depart: ${_formatDate(departureDate)}'
-                        : 'Depart-Retour: ${_formatDate(departureDate)} - ${_formatDate(returnDate)}',
+                    'pelerin.home.depart_only'.tr(
+                      namedArgs: {'date': _formatDate(departureDate)},
+                    ),
                     style: const TextStyle(
                       fontSize: 12.5,
                       color: AppColors.textMuted,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
+                  if (returnDate != null)
+                    Text(
+                      'pelerin.home.retour_only'.tr(
+                        namedArgs: {'date': _formatDate(returnDate)},
+                      ),
+                      style: const TextStyle(
+                        fontSize: 12.5,
+                        color: AppColors.textMuted,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                 ],
               ],
             ),
@@ -358,21 +495,21 @@ class _HistoryGroupTileHome extends StatelessWidget {
   }
 
   DateTime _toAst(DateTime value) {
-  return value;
-}
+    return value;
+  }
 
-  String _statusLabel(String? status) {
+  String _statusLabel(BuildContext context, String? status) {
     switch (status) {
       case 'PLANIFIE':
-        return 'Planifie';
+        return 'pelerin.status.planifie'.tr();
       case 'EN_COURS':
-        return 'En cours';
+        return 'pelerin.status.en_cours'.tr();
       case 'TERMINE':
-        return 'Termine';
+        return 'pelerin.status.termine'.tr();
       case 'ANNULE':
-        return 'Annule';
+        return 'pelerin.status.annule'.tr();
       default:
-        return 'Inconnu';
+        return 'pelerin.status.inconnu'.tr();
     }
   }
 
@@ -393,10 +530,7 @@ class _HistoryGroupTileHome extends StatelessWidget {
 }
 
 class _Header extends StatelessWidget {
-  const _Header({
-    required this.firstName,
-    required this.groupeNom,
-  });
+  const _Header({required this.firstName, required this.groupeNom});
 
   final String firstName;
   final String? groupeNom;
@@ -406,9 +540,9 @@ class _Header extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Bonjour',
-          style: TextStyle(
+        Text(
+          'pelerin.home.hello'.tr(),
+          style: const TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w500,
             color: AppColors.textPrimary,
@@ -442,10 +576,7 @@ class _Header extends StatelessWidget {
 }
 
 class _HeroCard extends StatelessWidget {
-  const _HeroCard({
-    required this.group,
-    required this.planningAsync,
-  });
+  const _HeroCard({required this.group, required this.planningAsync});
 
   final MobilePlanningGroup? group;
   final AsyncValue<MobilePlanningData?> planningAsync;
@@ -481,11 +612,7 @@ class _HeroCard extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(22),
         gradient: const LinearGradient(
-          colors: [
-            Color(0xFF0F3D2E),
-            Color(0xFF156243),
-            Color(0xFF1E7A58),
-          ],
+          colors: [Color(0xFF0F3D2E), Color(0xFF156243), Color(0xFF1E7A58)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -537,7 +664,7 @@ class _HeroCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      currentEvent?.titre ?? 'Aucune etape aujourd hui',
+                      currentEvent?.titre ?? 'pelerin.home.no_step_today'.tr(),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
@@ -549,7 +676,8 @@ class _HeroCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      _heroMeta(currentEvent, group) ?? 'Programme du jour',
+                      _heroMeta(currentEvent, group) ??
+                          'pelerin.home.today_program'.tr(),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
@@ -606,7 +734,9 @@ class _ProgressBlock extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Text(
-          '${(progress * 100).round()}% du voyage',
+          'pelerin.home.trip_progress'.tr(
+            namedArgs: {'percent': '${(progress * 100).round()}'},
+          ),
           style: const TextStyle(
             color: Colors.white,
             fontSize: 11.5,
@@ -666,21 +796,21 @@ class _SosSection extends ConsumerWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Urgence SOS',
-                      style: TextStyle(
+                      'pelerin.sos.title'.tr(),
+                      style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
                     SizedBox(height: 4),
                     Text(
-                      'Utilisez ce bouton uniquement en cas d urgence reelle.',
-                      style: TextStyle(
+                      'pelerin.sos.description'.tr(),
+                      style: const TextStyle(
                         fontSize: 11.5,
                         height: 1.3,
                         color: AppColors.textMuted,
@@ -716,7 +846,9 @@ class _SosSection extends ConsumerWidget {
                     ),
                   ),
                   child: Text(
-                    'Alerte active depuis ${_formatHour(activeAlert!.createdAt)}',
+                    'pelerin.sos.active_since'.tr(
+                      namedArgs: {'time': _formatHour(activeAlert!.createdAt)},
+                    ),
                     style: const TextStyle(
                       fontSize: 13,
                       height: 1.45,
@@ -778,10 +910,7 @@ class _SosSection extends ConsumerWidget {
 }
 
 class _SosQuickActionButton extends StatelessWidget {
-  const _SosQuickActionButton({
-    required this.loading,
-    required this.onPressed,
-  });
+  const _SosQuickActionButton({required this.loading, required this.onPressed});
 
   final bool loading;
   final Future<void> Function() onPressed;
@@ -798,20 +927,20 @@ class _SosQuickActionButton extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
           child: Column(
             children: [
-              const Text(
-                'Choisir le type d aide',
+              Text(
+                'pelerin.sos.choose_help_type'.tr(),
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w800,
                   color: Colors.white,
                 ),
               ),
               const SizedBox(height: 4),
-              const Text(
-                'Selectionnez votre situation puis confirmez l envoi de l alerte.',
+              Text(
+                'pelerin.sos.choose_help_desc'.tr(),
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 11.5,
                   height: 1.3,
                   color: Color(0xFFFDECEC),
@@ -832,9 +961,9 @@ class _SosQuickActionButton extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    const Text(
-                      'Envoi en cours...',
-                      style: TextStyle(
+                    Text(
+                      'pelerin.sos.sending'.tr(),
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 12.5,
                         fontWeight: FontWeight.w700,
@@ -847,9 +976,9 @@ class _SosQuickActionButton extends StatelessWidget {
                       size: 17,
                     ),
                     const SizedBox(width: 8),
-                    const Text(
-                      'Continuer',
-                      style: TextStyle(
+                    Text(
+                      'actions.continue'.tr(),
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 12.5,
                         fontWeight: FontWeight.w700,
@@ -879,7 +1008,7 @@ class _HeroNextStepPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final title = event != null && event!.titre.trim().isNotEmpty
         ? event!.titre.trim()
-        : 'Programme partage a venir';
+        : 'pelerin.home.shared_program_coming'.tr();
     final meta = _heroPanelMeta(event) ?? fallbackLocation;
 
     return Container(
@@ -910,9 +1039,9 @@ class _HeroNextStepPanel extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Prochaine etape',
-                  style: TextStyle(
+                Text(
+                  'pelerin.home.next_step'.tr(),
+                  style: const TextStyle(
                     color: Color(0xCCFFFFFF),
                     fontSize: 11.5,
                     fontWeight: FontWeight.w600,
@@ -992,6 +1121,7 @@ class _SoftScreenBackdrop extends StatelessWidget {
     );
   }
 }
+
 String? _primaryLocation(List<MobilePlanningEvent> events) {
   for (final event in events) {
     for (final lieu in event.lieux) {
@@ -1021,5 +1151,3 @@ String? _heroPanelMeta(MobilePlanningEvent? event) {
 String _formatHour(DateTime value) {
   return SaudiTime.formatHour(value);
 }
-
-

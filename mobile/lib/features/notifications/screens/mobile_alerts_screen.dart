@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/theme/app_theme.dart';
@@ -92,7 +93,7 @@ class _MobileAlertsScreenState extends ConsumerState<MobileAlertsScreen> {
             error:
                 (error, _) => _AlertsEmptyState(
                   icon: Icons.info_outline_rounded,
-                  title: 'Impossible de charger les notifications',
+                  title: 'alerts.errors.load_notifications'.tr(),
                   subtitle: error.toString(),
                 ),
             data: (feed) {
@@ -103,7 +104,7 @@ class _MobileAlertsScreenState extends ConsumerState<MobileAlertsScreen> {
                   icon: Icons.notifications_none_rounded,
                   title: _emptyTitleForScope(_selectedScope),
                   subtitle:
-                      'Les mises a jour du planning, les rappels et les alertes importantes apparaitront ici.',
+                      'alerts.empty.feed_subtitle'.tr(),
                 );
               }
 
@@ -152,11 +153,11 @@ class _MobileAlertsScreenState extends ConsumerState<MobileAlertsScreen> {
   String _emptyTitleForScope(_AlertsScope scope) {
     switch (scope) {
       case _AlertsScope.today:
-        return 'Aucune notification aujourd hui';
+        return 'alerts.empty.today'.tr();
       case _AlertsScope.yesterday:
-        return 'Aucune notification hier';
+        return 'alerts.empty.yesterday'.tr();
       case _AlertsScope.earlier:
-        return 'Aucune notification plus ancienne';
+        return 'alerts.empty.earlier'.tr();
     }
   }
 }
@@ -177,11 +178,11 @@ class _AlertsHeader extends StatelessWidget {
       children: [
         Row(
           children: [
-            const Expanded(
+            Expanded(
               child: Text(
-                'Notification',
+                'alerts.title'.tr(),
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.w800,
                   letterSpacing: -0.6,
@@ -191,7 +192,7 @@ class _AlertsHeader extends StatelessWidget {
             if (onMarkAllRead != null)
               TextButton(
                 onPressed: onMarkAllRead,
-                child: const Text('Tout lire'),
+                child: Text('alerts.mark_all_read'.tr()),
               )
             else
               const SizedBox(width: 72),
@@ -200,8 +201,10 @@ class _AlertsHeader extends StatelessWidget {
         const SizedBox(height: AppSpacing.s),
         Text(
           unreadCount == 0
-              ? 'Tout est a jour.'
-              : '$unreadCount notification${unreadCount > 1 ? 's' : ''} non lue${unreadCount > 1 ? 's' : ''}.',
+              ? 'alerts.all_caught_up'.tr()
+              : unreadCount == 1
+              ? 'alerts.unread_one'.tr()
+              : 'alerts.unread_count'.tr(namedArgs: {'count': '$unreadCount'}),
           style: const TextStyle(
             fontSize: 13.5,
             color: AppColors.textSecondary,
@@ -227,19 +230,19 @@ class _AlertsScopeBar extends StatelessWidget {
     return Row(
       children: [
         _ScopeChip(
-          label: 'Aujourd hui',
+          label: 'alerts.scope.today'.tr(),
           selected: selectedScope == _AlertsScope.today,
           onTap: () => onChanged(_AlertsScope.today),
         ),
         const SizedBox(width: AppSpacing.s),
         _ScopeChip(
-          label: 'Hier',
+          label: 'alerts.scope.yesterday'.tr(),
           selected: selectedScope == _AlertsScope.yesterday,
           onTap: () => onChanged(_AlertsScope.yesterday),
         ),
         const SizedBox(width: AppSpacing.s),
         _ScopeChip(
-          label: 'Plus ancien',
+          label: 'alerts.scope.earlier'.tr(),
           selected: selectedScope == _AlertsScope.earlier,
           onTap: () => onChanged(_AlertsScope.earlier),
         ),
@@ -304,7 +307,7 @@ class _GuideSosSection extends StatelessWidget {
       error:
           (error, _) => _AlertsEmptyState(
             icon: Icons.sos_outlined,
-            title: 'Impossible de charger les alertes SOS',
+            title: 'alerts.errors.load_sos'.tr(),
             subtitle: error.toString(),
           ),
       data: (alerts) {
@@ -320,9 +323,9 @@ class _GuideSosSection extends StatelessWidget {
               color: AppColors.section,
               borderRadius: BorderRadius.circular(AppRadii.md),
             ),
-            child: const Text(
-              'Aucune urgence SOS active pour le moment.',
-              style: TextStyle(
+            child: Text(
+              'alerts.guide_sos.none_active'.tr(),
+              style: const TextStyle(
                 fontSize: 13,
                 color: AppColors.textMuted,
                 fontWeight: FontWeight.w500,
@@ -334,10 +337,10 @@ class _GuideSosSection extends StatelessWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Row(
+            Row(
               children: [
                 AppStatusChip(
-                  label: 'Guide SOS',
+                  label: 'alerts.guide_sos.chip'.tr(),
                   backgroundColor: AppColors.redSoft,
                   foregroundColor: AppColors.red,
                   icon: Icons.sos_rounded,
@@ -419,9 +422,9 @@ class _GuideSosCardState extends ConsumerState<_GuideSosCard> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Alerte SOS en direct',
-                  style: TextStyle(
+                Text(
+                  'alerts.guide_sos.live_title'.tr(),
+                  style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w900,
                     color: AppColors.red,
@@ -458,7 +461,7 @@ class _GuideSosCardState extends ConsumerState<_GuideSosCard> {
                         children: [
                           Text(
                             widget.alert.pelerinName.isEmpty
-                                ? 'Pelerin'
+                                ? 'alerts.guide_sos.pilgrim_fallback'.tr()
                                 : widget.alert.pelerinName,
                             style: const TextStyle(
                               fontSize: 15,
@@ -470,7 +473,7 @@ class _GuideSosCardState extends ConsumerState<_GuideSosCard> {
                           Text(
                             widget.alert.groupeNom?.trim().isNotEmpty == true
                                 ? widget.alert.groupeNom!
-                                : 'Groupe non renseigne',
+                                : 'alerts.guide_sos.group_unknown'.tr(),
                             style: const TextStyle(
                               fontSize: 12.5,
                               color: AppColors.textMuted,
@@ -517,9 +520,9 @@ class _GuideSosCardState extends ConsumerState<_GuideSosCard> {
             ),
           ),
           const SizedBox(height: 12),
-          const Text(
-            'Situation',
-            style: TextStyle(
+          Text(
+            'alerts.guide_sos.situation'.tr(),
+            style: const TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w800,
               color: AppColors.textMuted,
@@ -537,9 +540,9 @@ class _GuideSosCardState extends ConsumerState<_GuideSosCard> {
           ),
           if (widget.alert.message?.trim().isNotEmpty == true) ...[
             const SizedBox(height: 12),
-            const Text(
-              'Message',
-              style: TextStyle(
+            Text(
+              'alerts.guide_sos.message'.tr(),
+              style: const TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w800,
                 color: AppColors.textMuted,
@@ -583,7 +586,11 @@ class _GuideSosCardState extends ConsumerState<_GuideSosCard> {
                       ),
                     )
                   : const Icon(Icons.check_rounded, size: 16),
-              label: Text(_resolving ? 'En cours...' : 'Resoudre'),
+              label: Text(
+                _resolving
+                    ? 'alerts.guide_sos.resolving'.tr()
+                    : 'alerts.guide_sos.resolve'.tr(),
+              ),
             ),
           ),
           const SizedBox(height: 10),
@@ -593,7 +600,7 @@ class _GuideSosCardState extends ConsumerState<_GuideSosCard> {
                 child: OutlinedButton.icon(
                   onPressed: _callPilgrim,
                   icon: const Icon(Icons.call_outlined, size: 16),
-                  label: const Text('Appeler'),
+                  label: Text('alerts.guide_sos.call'.tr()),
                 ),
               ),
               const SizedBox(width: 10),
@@ -601,7 +608,7 @@ class _GuideSosCardState extends ConsumerState<_GuideSosCard> {
                 child: OutlinedButton.icon(
                   onPressed: _openMaps,
                   icon: const Icon(Icons.location_on_outlined, size: 16),
-                  label: const Text('Position'),
+                  label: Text('alerts.guide_sos.location'.tr()),
                 ),
               ),
             ],
@@ -640,9 +647,9 @@ class _GuideSosCardState extends ConsumerState<_GuideSosCard> {
                   ),
                 ),
               ),
-              const Text(
-                'Resoudre l\'alerte',
-                style: TextStyle(
+              Text(
+                'alerts.guide_sos.resolve_sheet_title'.tr(),
+                style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
                   color: AppColors.textPrimary,
@@ -650,7 +657,14 @@ class _GuideSosCardState extends ConsumerState<_GuideSosCard> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Confirmez-vous que ${widget.alert.pelerinName} va bien et que la situation est prise en charge ?',
+                'alerts.guide_sos.resolve_sheet_message'.tr(
+                  namedArgs: {
+                    'name':
+                        widget.alert.pelerinName.isNotEmpty
+                            ? widget.alert.pelerinName
+                            : 'alerts.guide_sos.pilgrim_fallback'.tr(),
+                  },
+                ),
                 style: const TextStyle(
                   fontSize: 14,
                   height: 1.55,
@@ -663,14 +677,14 @@ class _GuideSosCardState extends ConsumerState<_GuideSosCard> {
                   Expanded(
                     child: OutlinedButton(
                       onPressed: () => Navigator.pop(ctx, false),
-                      child: const Text('Annuler'),
+                      child: Text('actions.cancel'.tr()),
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: ElevatedButton(
                       onPressed: () => Navigator.pop(ctx, true),
-                      child: const Text('Confirmer'),
+                      child: Text('actions.confirm'.tr()),
                     ),
                   ),
                 ],
@@ -687,7 +701,7 @@ class _GuideSosCardState extends ConsumerState<_GuideSosCard> {
       await ref.read(guideSosActionsProvider).resolve(widget.alert.id);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Alerte SOS resolue')),
+        SnackBar(content: Text('alerts.guide_sos.resolved_toast'.tr())),
       );
     } finally {
       if (mounted) {
@@ -708,7 +722,7 @@ class _GuideSosCardState extends ConsumerState<_GuideSosCard> {
     if (phone.isEmpty) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Numero du pelerin indisponible')),
+        SnackBar(content: Text('alerts.guide_sos.phone_unavailable'.tr())),
       );
       return;
     }
@@ -730,21 +744,27 @@ class _GuideSosCardState extends ConsumerState<_GuideSosCard> {
 
   String _elapsedLabel(DateTime createdAt) {
     final diff = DateTime.now().difference(createdAt);
-    if (diff.inMinutes < 1) return 'Maintenant';
-    if (diff.inMinutes < 60) return 'Il y a ${diff.inMinutes} min';
-    return 'Il y a ${diff.inHours} h';
+    if (diff.inMinutes < 1) return 'alerts.guide_sos.elapsed.now'.tr();
+    if (diff.inMinutes < 60) {
+      return 'alerts.guide_sos.elapsed.minutes_ago'.tr(
+        namedArgs: {'count': '${diff.inMinutes}'},
+      );
+    }
+    return 'alerts.guide_sos.elapsed.hours_ago'.tr(
+      namedArgs: {'count': '${diff.inHours}'},
+    );
   }
 
   String _summaryForType(SosIncidentType type) {
     switch (type) {
       case SosIncidentType.maladie:
-        return 'Probleme de sante signale par le pelerin.';
+        return 'alerts.guide_sos.summary.maladie'.tr();
       case SosIncidentType.perte:
-        return 'Le pelerin signale qu il est perdu.';
+        return 'alerts.guide_sos.summary.perte'.tr();
       case SosIncidentType.logistique:
-        return 'Le pelerin a besoin d aide logistique.';
+        return 'alerts.guide_sos.summary.logistique'.tr();
       case SosIncidentType.autre:
-        return 'Demande d assistance generale.';
+        return 'alerts.guide_sos.summary.autre'.tr();
     }
   }
 }
@@ -990,10 +1010,20 @@ class _NotificationRow extends ConsumerWidget {
     final now = SaudiTime.now();
     final difference = now.difference(date);
 
-    if (difference.inMinutes < 1) return 'A l instant';
-    if (difference.inMinutes < 60) return 'Il y a ${difference.inMinutes} min';
-    if (difference.inHours < 24) return 'Il y a ${difference.inHours} h';
-    return 'Il y a ${difference.inDays} j';
+    if (difference.inMinutes < 1) return 'alerts.notification.instant'.tr();
+    if (difference.inMinutes < 60) {
+      return 'alerts.notification.minutes_ago'.tr(
+        namedArgs: {'count': '${difference.inMinutes}'},
+      );
+    }
+    if (difference.inHours < 24) {
+      return 'alerts.notification.hours_ago'.tr(
+        namedArgs: {'count': '${difference.inHours}'},
+      );
+    }
+    return 'alerts.notification.days_ago'.tr(
+      namedArgs: {'count': '${difference.inDays}'},
+    );
   }
 }
 
@@ -1028,11 +1058,11 @@ _NotificationPresentation _presentationForNotification(
   }
 
   if (type == 'sos_resolved') {
-    return const _NotificationPresentation(
+    return _NotificationPresentation(
       background: AppColors.greenSoft,
       foreground: AppColors.green,
       icon: Icons.health_and_safety_outlined,
-      label: 'SOS resolu',
+      label: 'alerts.notification.labels.sos_resolved'.tr(),
     );
   }
 
@@ -1042,11 +1072,11 @@ _NotificationPresentation _presentationForNotification(
           title.contains('annul') ||
           body.contains(' a annule '));
   if (isCancelledStep) {
-    return const _NotificationPresentation(
+    return _NotificationPresentation(
       background: Color(0xFFFFF1E7),
       foreground: Color(0xFFCC6A1C),
       icon: Icons.event_busy_rounded,
-      label: 'Etape annulee',
+      label: 'alerts.notification.labels.step_cancelled'.tr(),
     );
   }
 
@@ -1056,37 +1086,37 @@ _NotificationPresentation _presentationForNotification(
           title.contains('termine') ||
           body.contains(' est passe a '));
   if (isCompletedStep) {
-    return const _NotificationPresentation(
+    return _NotificationPresentation(
       background: AppColors.greenSoft,
       foreground: AppColors.green,
       icon: Icons.check_circle_outline_rounded,
-      label: 'Etape terminee',
+      label: 'alerts.notification.labels.step_completed'.tr(),
     );
   }
 
   if (type == 'planning' || type == 'planning_update') {
-    return const _NotificationPresentation(
+    return _NotificationPresentation(
       background: AppColors.blueSoft,
       foreground: AppColors.blue,
       icon: Icons.calendar_today_rounded,
-      label: 'Planning',
+      label: 'alerts.notification.labels.planning'.tr(),
     );
   }
 
   if (type == 'upcoming_rendezvous') {
-    return const _NotificationPresentation(
+    return _NotificationPresentation(
       background: AppColors.goldSoft,
       foreground: AppColors.gold,
       icon: Icons.alarm_rounded,
-      label: 'Rappel',
+      label: 'alerts.notification.labels.reminder'.tr(),
     );
   }
 
-  return const _NotificationPresentation(
+  return _NotificationPresentation(
     background: AppColors.blueSoft,
     foreground: AppColors.blue,
     icon: Icons.notifications_none_rounded,
-    label: 'Notification',
+    label: 'alerts.notification.labels.generic'.tr(),
   );
 }
 

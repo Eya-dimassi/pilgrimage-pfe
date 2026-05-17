@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../providers/presence_provider.dart';
 import 'appel_presence_screen.dart';
 
@@ -26,7 +27,7 @@ class _CreerAppelScreenState extends ConsumerState<CreerAppelScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Nouvel appel'),
+        title: Text('presence.create.title'.tr()),
       ),
       body: Center(
         child: Padding(
@@ -41,7 +42,7 @@ class _CreerAppelScreenState extends ConsumerState<CreerAppelScreen> {
               ),
               const SizedBox(height: 24),
               Text(
-                'Creer un appel de presence',
+                'presence.create.heading'.tr(),
                 style: theme.textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -49,12 +50,14 @@ class _CreerAppelScreenState extends ConsumerState<CreerAppelScreen> {
               ),
               const SizedBox(height: 16),
               Text(
-                'Groupe : ${widget.groupeNom}',
+                'presence.create.group_label'.tr(
+                  namedArgs: {'group': widget.groupeNom},
+                ),
                 style: theme.textTheme.titleMedium,
               ),
               const SizedBox(height: 8),
               Text(
-                'Un appel de presence sera cree pour tous les pelerins actifs du groupe.',
+                'presence.create.description'.tr(),
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.textTheme.bodySmall?.color,
@@ -76,7 +79,9 @@ class _CreerAppelScreenState extends ConsumerState<CreerAppelScreen> {
                         )
                       : const Icon(Icons.add_circle_outline),
                   label: Text(
-                    _isCreating ? 'Creation en cours...' : 'Creer l\'appel',
+                    _isCreating
+                        ? 'presence.create.creating'.tr()
+                        : 'presence.create.action'.tr(),
                     style: const TextStyle(fontSize: 16),
                   ),
                   style: FilledButton.styleFrom(
@@ -113,7 +118,9 @@ class _CreerAppelScreenState extends ConsumerState<CreerAppelScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Erreur: $e'),
+            content: Text(
+              'presence.error.with_message'.tr(namedArgs: {'error': '$e'}),
+            ),
             backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );

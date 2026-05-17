@@ -1,6 +1,9 @@
+// ignore_for_file: unrelated_type_equality_checks
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../features/notifications/providers/mobile_notifications_provider.dart';
@@ -35,7 +38,6 @@ class RoleShell extends ConsumerStatefulWidget {
 }
 
 class _RoleShellState extends ConsumerState<RoleShell> {
-  static const String _appName = 'Sacred Journey Hub';
   late int _currentIndex;
   int _lastMainIndex = 0;
 
@@ -63,24 +65,24 @@ class _RoleShellState extends ConsumerState<RoleShell> {
   Widget build(BuildContext context) {
     final unreadCount = ref.watch(unreadNotificationsCountProvider);
     final destinations = [
-      const _ShellDestination(
-        label: 'Accueil',
+      _ShellDestination(
+        label: 'nav.home'.tr(),
         icon: Icons.home_outlined,
         activeIcon: Icons.home_rounded,
       ),
-      const _ShellDestination(
-        label: 'Planning',
+      _ShellDestination(
+        label: 'nav.planning'.tr(),
         icon: Icons.calendar_today_outlined,
         activeIcon: Icons.calendar_month_rounded,
       ),
       _ShellDestination(
-        label: 'Alertes',
+        label: 'nav.alerts'.tr(),
         icon: Icons.notifications_none_rounded,
         activeIcon: Icons.notifications_rounded,
         badgeCount: unreadCount,
       ),
-      const _ShellDestination(
-        label: 'Chatbot',
+      _ShellDestination(
+        label: 'nav.chatbot'.tr(),
         icon: Icons.auto_awesome_outlined,
         activeIcon: Icons.auto_awesome_rounded,
       ),
@@ -89,25 +91,22 @@ class _RoleShellState extends ConsumerState<RoleShell> {
     final pages = [
       widget.homeChild,
       widget.planningChild ??
-          const _FeaturePlaceholder(
+          _FeaturePlaceholder(
             icon: Icons.calendar_month_outlined,
-            title: 'Planning',
-            description:
-                'Le planning quotidien, les reperes du groupe et les prochaines etapes apparaitront ici.',
+            title: 'nav.planning'.tr(),
+            description: 'shell.placeholder.planning'.tr(),
           ),
       widget.alertsChild ??
-          const _FeaturePlaceholder(
+          _FeaturePlaceholder(
             icon: Icons.notifications_none_rounded,
-            title: 'Alertes',
-            description:
-                'Les notifications importantes, rappels et alertes de suivi seront centralisees dans cet espace.',
+            title: 'nav.alerts'.tr(),
+            description: 'shell.placeholder.alerts'.tr(),
           ),
       widget.chatbotChild ??
-          const _FeaturePlaceholder(
+          _FeaturePlaceholder(
             icon: Icons.auto_awesome_rounded,
-            title: 'Chatbot',
-            description:
-                'Votre assistant de voyage apparaitra ici pour repondre rapidement aux questions utiles.',
+            title: 'nav.chatbot'.tr(),
+            description: 'shell.placeholder.chatbot'.tr(),
           ),
       widget.profileChild,
     ];
@@ -151,13 +150,15 @@ class _RoleShellState extends ConsumerState<RoleShell> {
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
                 child: _RoleTopBar(
-                  title: _appName,
+                  title: 'appName'.tr(),
                   trailing: Builder(
                     builder: (buttonContext) => _TopActionButton(
                       icon: isProfilePage
                           ? Icons.arrow_back_rounded
                           : Icons.person_outline_rounded,
-                      label: isProfilePage ? 'Retour' : 'Compte',
+                      label: isProfilePage
+                          ? 'actions.back'.tr()
+                          : 'shell.account'.tr(),
                       onTap: isProfilePage
                           ? (_) => _closeProfile()
                           : (tapContext) => _openAccountMenu(tapContext),
@@ -221,11 +222,11 @@ class _RoleShellState extends ConsumerState<RoleShell> {
         overlay.size.height - buttonTopLeft.dy,
       ),
       items: [
-        const PopupMenuItem<String>(
+        PopupMenuItem<String>(
           value: 'profile',
           child: _AccountMenuItem(
             icon: Icons.person_outline_rounded,
-            label: 'Profil',
+            label: 'nav.profile'.tr(),
             toneColor: AppColors.primaryDark,
           ),
         ),
@@ -437,6 +438,7 @@ class _MagicBottomNavigation extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isRtl = Directionality.of(context) == TextDirection.RTL;
     return SafeArea(
       top: false,
       minimum: const EdgeInsets.fromLTRB(16, 6, 16, 8),
@@ -444,8 +446,11 @@ class _MagicBottomNavigation extends StatelessWidget {
         builder: (context, constraints) {
           final slotWidth = constraints.maxWidth / items.length;
           const bubbleSize = 54.0;
-          final bubbleLeft =
-              (slotWidth * currentIndex) + ((slotWidth - bubbleSize) / 2);
+          final visualIndex = isRtl
+              ? (items.length - 1 - currentIndex)
+              : currentIndex;
+          final bubbleStart =
+              (slotWidth * visualIndex) + ((slotWidth - bubbleSize) / 2);
 
           return SizedBox(
             height: 82,
@@ -498,8 +503,8 @@ class _MagicBottomNavigation extends StatelessWidget {
                                             color: AppColors.textMuted,
                                           ),
                                           if (destination.badgeCount > 0)
-                                            Positioned(
-                                              right: -8,
+                                            PositionedDirectional(
+                                              end: -8,
                                               top: -6,
                                               child:
                                                   _UnreadBadge(
@@ -538,10 +543,10 @@ class _MagicBottomNavigation extends StatelessWidget {
                     ),
                   ),
                 ),
-                AnimatedPositioned(
+                AnimatedPositionedDirectional(
                   duration: const Duration(milliseconds: 300),
                   curve: Curves.easeOutCubic,
-                  left: bubbleLeft,
+                  start: bubbleStart,
                   top: 0,
                   child: _ActiveNavBubble(
                     icon: items[currentIndex].activeIcon,
@@ -603,8 +608,8 @@ class _ActiveNavBubble extends StatelessWidget {
             ),
           ),
           if (badgeCount > 0)
-            Positioned(
-              right: -4,
+            PositionedDirectional(
+              end: -4,
               top: -3,
               child: _UnreadBadge(count: badgeCount),
             ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 class QuickActionsBar extends StatelessWidget {
   final VoidCallback onMarquerTousPresents;
@@ -28,7 +29,7 @@ class QuickActionsBar extends StatelessWidget {
             child: ElevatedButton.icon(
               onPressed: onMarquerTousPresents,
               icon: const Icon(Icons.check_circle, size: 18),
-              label: const Text('Tous presents'),
+              label: Text('presence.quick_actions.all_present'.tr()),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.green,
                 foregroundColor: Colors.white,
@@ -40,7 +41,7 @@ class QuickActionsBar extends StatelessWidget {
             child: OutlinedButton.icon(
               onPressed: onRelancerAbsents,
               icon: const Icon(Icons.notifications_active_outlined, size: 18),
-              label: const Text('Relancer absents'),
+              label: Text('presence.quick_actions.remind_absent'.tr()),
             ),
           ),
         ],

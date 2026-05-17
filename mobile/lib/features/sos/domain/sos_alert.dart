@@ -1,3 +1,5 @@
+import 'package:easy_localization/easy_localization.dart';
+
 enum SosIncidentType {
   maladie('MALADIE'),
   perte('PERTE'),
@@ -11,26 +13,26 @@ enum SosIncidentType {
   String get label {
     switch (this) {
       case SosIncidentType.maladie:
-        return 'Maladie';
+        return 'sos.types.maladie.label'.tr();
       case SosIncidentType.perte:
-        return 'Perte';
+        return 'sos.types.perte.label'.tr();
       case SosIncidentType.logistique:
-        return 'Logistique';
+        return 'sos.types.logistique.label'.tr();
       case SosIncidentType.autre:
-        return 'Autre';
+        return 'sos.types.autre.label'.tr();
     }
   }
 
   String get description {
     switch (this) {
       case SosIncidentType.maladie:
-        return 'Probleme de sante';
+        return 'sos.types.maladie.description'.tr();
       case SosIncidentType.perte:
-        return 'Je suis perdu';
+        return 'sos.types.perte.description'.tr();
       case SosIncidentType.logistique:
-        return 'Transport ou organisation';
+        return 'sos.types.logistique.description'.tr();
       case SosIncidentType.autre:
-        return 'Autre situation';
+        return 'sos.types.autre.description'.tr();
     }
   }
 

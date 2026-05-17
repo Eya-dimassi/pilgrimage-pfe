@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../domain/sos_alert.dart';
@@ -51,10 +52,10 @@ Future<void> showSosConfirmationSheet(
                 ),
               ),
               const SizedBox(height: 16),
-              const Text(
-                'Secours alertes',
+              Text(
+                'sos.sheet.confirmation_title'.tr(),
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.w800,
                   letterSpacing: -0.4,
@@ -62,7 +63,9 @@ Future<void> showSosConfirmationSheet(
               ),
               const SizedBox(height: 8),
               Text(
-                'Votre guide et vos proches ont ete informes a $hour:$minute.',
+                'sos.sheet.confirmation_message'.tr(
+                  namedArgs: {'time': '$hour:$minute'},
+                ),
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontSize: 14,
@@ -78,7 +81,7 @@ Future<void> showSosConfirmationSheet(
                   borderRadius: BorderRadius.circular(999),
                 ),
                 child: Text(
-                  alert.type.label,
+                  _sosTypeLabel(alert.type).tr(),
                   style: TextStyle(
                     fontSize: 12.5,
                     fontWeight: FontWeight.w800,
@@ -95,7 +98,12 @@ Future<void> showSosConfirmationSheet(
                   borderRadius: BorderRadius.circular(18),
                 ),
                 child: Text(
-                  'Position transmise: ${alert.latitude.toStringAsFixed(5)}, ${alert.longitude.toStringAsFixed(5)}',
+                  'sos.sheet.position_sent'.tr(
+                    namedArgs: {
+                      'lat': alert.latitude.toStringAsFixed(5),
+                      'lng': alert.longitude.toStringAsFixed(5),
+                    },
+                  ),
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     fontSize: 12.5,
@@ -114,7 +122,7 @@ Future<void> showSosConfirmationSheet(
                     backgroundColor: const Color(0xFFB3292D),
                     foregroundColor: Colors.white,
                   ),
-                  child: const Text('Compris'),
+                  child: Text('sos.sheet.got_it'.tr()),
                 ),
               ),
             ],
@@ -162,7 +170,9 @@ Future<bool?> showSosSendConfirmSheet(
               ),
               const SizedBox(height: 16),
               Text(
-                'Confirmer ${type.label.toLowerCase()}',
+                'sos.sheet.confirm_type_title'.tr(
+                  namedArgs: {'type': _sosTypeLabel(type).tr().toLowerCase()},
+                ),
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontSize: 24,
@@ -173,8 +183,8 @@ Future<bool?> showSosSendConfirmSheet(
               const SizedBox(height: 8),
               Text(
                 type == SosIncidentType.autre
-                    ? 'Une demande d assistance generale sera envoyee a votre guide.'
-                    : 'Votre position et votre demande seront envoyees a votre guide.',
+                    ? 'sos.sheet.confirm_other_message'.tr()
+                    : 'sos.sheet.confirm_default_message'.tr(),
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontSize: 14,
@@ -188,7 +198,7 @@ Future<bool?> showSosSendConfirmSheet(
                   Expanded(
                     child: OutlinedButton(
                       onPressed: () => Navigator.of(context).pop(false),
-                      child: const Text('Annuler'),
+                      child: Text('actions.cancel'.tr()),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -199,7 +209,7 @@ Future<bool?> showSosSendConfirmSheet(
                         backgroundColor: accent,
                         foregroundColor: Colors.white,
                       ),
-                      child: const Text('Confirmer'),
+                      child: Text('actions.confirm'.tr()),
                     ),
                   ),
                 ],
@@ -241,8 +251,8 @@ class _SosTypePickerSheet extends StatelessWidget {
                 ),
               ),
             ),
-            const Text(
-              'Choisir une situation',
+            Text(
+              'sos.sheet.pick_situation_title'.tr(),
               style: TextStyle(
                 fontSize: 21,
                 fontWeight: FontWeight.w800,
@@ -250,8 +260,8 @@ class _SosTypePickerSheet extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 6),
-            const Text(
-              'Selectionnez le type d aide dont vous avez besoin.',
+            Text(
+              'sos.sheet.pick_situation_subtitle'.tr(),
               style: TextStyle(
                 fontSize: 13.5,
                 height: 1.45,
@@ -310,7 +320,7 @@ class _SosTypeCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    type.label,
+                    _sosTypeLabel(type).tr(),
                     style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w800,
@@ -318,7 +328,7 @@ class _SosTypeCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 3),
                   Text(
-                    type.description,
+                    _sosTypeDescription(type).tr(),
                     style: const TextStyle(
                       fontSize: 12.5,
                       color: AppColors.textMuted,
@@ -336,6 +346,32 @@ class _SosTypeCard extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+String _sosTypeLabel(SosIncidentType type) {
+  switch (type) {
+    case SosIncidentType.maladie:
+      return 'sos.types.maladie.label';
+    case SosIncidentType.perte:
+      return 'sos.types.perte.label';
+    case SosIncidentType.logistique:
+      return 'sos.types.logistique.label';
+    case SosIncidentType.autre:
+      return 'sos.types.autre.label';
+  }
+}
+
+String _sosTypeDescription(SosIncidentType type) {
+  switch (type) {
+    case SosIncidentType.maladie:
+      return 'sos.types.maladie.description';
+    case SosIncidentType.perte:
+      return 'sos.types.perte.description';
+    case SosIncidentType.logistique:
+      return 'sos.types.logistique.description';
+    case SosIncidentType.autre:
+      return 'sos.types.autre.description';
   }
 }
 

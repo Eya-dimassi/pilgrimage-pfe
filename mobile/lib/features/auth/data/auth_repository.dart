@@ -7,6 +7,7 @@ import '../domain/auth_exception.dart';
 import '../domain/auth_session.dart';
 import '../domain/auth_user.dart';
 import '../../famille/domain/family_link.dart';
+import '../../famille/domain/family_presence_status.dart';
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
   final dio = ref.watch(dioProvider);
@@ -161,6 +162,24 @@ class AuthRepository {
       return (response.data ?? const [])
           .whereType<Map<String, dynamic>>()
           .map(FamilyLink.fromJson)
+          .toList();
+    } on DioException catch (error) {
+      throw AuthException.fromDio(error);
+    }
+  }
+
+  Future<List<FamilyPresenceStatus>> fetchFamilyPresenceStatuses() async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        ApiEndpoints.mobileFamilyPresenceStatuses,
+      );
+      final raw = response.data?['data'];
+      if (raw is! List) {
+        return const <FamilyPresenceStatus>[];
+      }
+      return raw
+          .whereType<Map<String, dynamic>>()
+          .map(FamilyPresenceStatus.fromJson)
           .toList();
     } on DioException catch (error) {
       throw AuthException.fromDio(error);

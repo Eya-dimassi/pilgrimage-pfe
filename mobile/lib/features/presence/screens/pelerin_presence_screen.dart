@@ -2,6 +2,7 @@
 
 import 'dart:async';
 
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -50,9 +51,9 @@ class _PelerinPresenceScreenState extends ConsumerState<PelerinPresenceScreen> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: _retourDansApp,
-          tooltip: 'Retour',
+          tooltip: 'actions.back'.tr(),
         ),
-        title: const Text('Appel de presence'),
+        title: Text('presence.title'.tr()),
       ),
       body: asyncCall.when(
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -71,7 +72,7 @@ class _PelerinPresenceScreenState extends ConsumerState<PelerinPresenceScreen> {
                 const SizedBox(height: 12),
                 FilledButton(
                   onPressed: _refresh,
-                  child: const Text('Reessayer'),
+                  child: Text('actions.retry'.tr()),
                 ),
               ],
             ),
@@ -79,11 +80,11 @@ class _PelerinPresenceScreenState extends ConsumerState<PelerinPresenceScreen> {
         ),
         data: (data) {
           if (data == null) {
-            return const Center(
+            return Center(
               child: Padding(
                 padding: EdgeInsets.all(24),
                 child: Text(
-                  'Aucun appel de presence en cours.',
+                  'presence.pilgrim.no_active_call'.tr(),
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -115,9 +116,17 @@ class _PelerinPresenceScreenState extends ConsumerState<PelerinPresenceScreen> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                Text('Guide: ${call.appel.guide.fullName}'),
+                Text(
+                  'presence.pilgrim.guide_label'.tr(
+                    namedArgs: {'name': call.appel.guide.fullName},
+                  ),
+                ),
                 const SizedBox(height: 4),
-                Text('Statut appel: ${call.appel.statut}'),
+                Text(
+                  'presence.pilgrim.call_status_label'.tr(
+                    namedArgs: {'status': call.appel.statut},
+                  ),
+                ),
               ],
             ),
           ),
@@ -130,7 +139,9 @@ class _PelerinPresenceScreenState extends ConsumerState<PelerinPresenceScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Votre statut: ${call.confirmation.statut}',
+                  'presence.pilgrim.your_status_label'.tr(
+                    namedArgs: {'status': call.confirmation.statut},
+                  ),
                   style: theme.textTheme.titleMedium,
                 ),
                 const SizedBox(height: 12),
@@ -152,8 +163,8 @@ class _PelerinPresenceScreenState extends ConsumerState<PelerinPresenceScreen> {
                         : const Icon(Icons.check_circle),
                     label: Text(
                       call.confirmation.isPresent
-                          ? 'Deja confirme'
-                          : 'Je suis present',
+                          ? 'presence.pilgrim.already_confirmed'.tr()
+                          : 'presence.pilgrim.confirm_me'.tr(),
                     ),
                   ),
                 ),
@@ -180,8 +191,8 @@ class _PelerinPresenceScreenState extends ConsumerState<PelerinPresenceScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Presence confirmee'),
+          SnackBar(
+            content: Text('presence.pilgrim.confirm_success'.tr()),
             backgroundColor: Colors.green,
           ),
         );
@@ -190,7 +201,9 @@ class _PelerinPresenceScreenState extends ConsumerState<PelerinPresenceScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Erreur: $error'),
+            content: Text(
+              'presence.error.with_message'.tr(namedArgs: {'error': '$error'}),
+            ),
             backgroundColor: Colors.red,
           ),
         );

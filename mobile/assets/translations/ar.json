@@ -1,0 +1,501 @@
+﻿{
+  "appName": "Sacred Journey Hub",
+  "nav": {
+    "home": "الرئيسية",
+    "profile": "الملف الشخصي",
+    "planning": "التخطيط",
+    "alerts": "التنبيهات",
+    "chatbot": "المساعد",
+    "settings": "الإعدادات",
+    "logout": "تسجيل الخروج"
+  },
+  "auth": {
+    "login": "تسجيل الدخول",
+    "register": "إنشاء حساب",
+    "email": "البريد الإلكتروني",
+    "password": "كلمة المرور",
+    "forgotPassword": "نسيت كلمة المرور؟",
+    "loginBtn": "تسجيل الدخول",
+    "registerBtn": "إنشاء حساب جديد",
+    "welcomeBack": "مرحباً بعودتك، {name}!",
+    "logout": "تسجيل الخروج"
+  },
+  "home": {
+    "greeting": "مرحباً، {name}!",
+    "subtitle": "ماذا تريد أن تفعل اليوم؟"
+  },
+  "items": {
+    "zero": "لا توجد عناصر",
+    "one": "عنصر واحد",
+    "two": "عنصران",
+    "few": "{} عناصر",
+    "many": "{} عنصراً",
+    "other": "{} عنصر"
+  },
+  "messages": {
+    "zero": "لا توجد رسائل",
+    "one": "رسالة غير مقروءة",
+    "two": "رسالتان غير مقروءتان",
+    "few": "{} رسائل غير مقروءة",
+    "many": "{} رسالة غير مقروءة",
+    "other": "{} رسالة"
+  },
+  "errors": {
+    "required": "هذا الحقل مطلوب",
+    "invalidEmail": "البريد الإلكتروني غير صالح",
+    "networkError": "خطأ في الاتصال بالشبكة",
+    "tryAgain": "يرجى المحاولة مرة أخرى"
+  },
+  "actions": {
+    "save": "حفظ",
+    "cancel": "إلغاء",
+    "delete": "حذف",
+    "edit": "تعديل",
+    "confirm": "تأكيد",
+    "back": "رجوع",
+    "retry": "إعادة المحاولة",
+    "next": "التالي",
+    "done": "تم",
+    "continue": "متابعة"
+  },
+  "date": {
+    "today": "اليوم",
+    "yesterday": "أمس",
+    "tomorrow": "غداً"
+  },
+  "shell": {
+    "account": "الحساب",
+    "placeholder": {
+      "planning": "سيظهر هنا التخطيط اليومي ومراحل المجموعة والخطوات القادمة.",
+      "alerts": "ستُجمع هنا الإشعارات المهمة والتذكيرات وتنبيهات التتبع.",
+      "chatbot": "سيظهر هنا مساعد السفر للإجابة على أسئلتك بسرعة."
+    }
+  },
+  "alerts": {
+    "title": "الإشعارات",
+    "mark_all_read": "تحديد الكل كمقروء",
+    "all_caught_up": "لا يوجد شيء جديد.",
+    "unread_one": "إشعار واحد غير مقروء",
+    "unread_count": "{count} إشعارات غير مقروءة.",
+    "scope": {
+      "today": "اليوم",
+      "yesterday": "أمس",
+      "earlier": "سابقاً"
+    },
+    "empty": {
+      "today": "لا توجد إشعارات اليوم",
+      "yesterday": "لا توجد إشعارات أمس",
+      "earlier": "لا توجد إشعارات قديمة",
+      "feed_subtitle": "ستظهر هنا تحديثات التخطيط والتذكيرات والتنبيهات المهمة."
+    },
+    "errors": {
+      "load_notifications": "تعذّر تحميل الإشعارات",
+      "load_sos": "تعذّر تحميل تنبيهات الطوارئ"
+    },
+    "guide_sos": {
+      "chip": "SOS المرشد",
+      "none_active": "لا توجد حالة طوارئ نشطة في الوقت الحالي.",
+      "live_title": "تنبيه طوارئ مباشر",
+      "pilgrim_fallback": "حاج",
+      "group_unknown": "المجموعة غير محددة",
+      "situation": "الوضع",
+      "message": "الرسالة",
+      "resolving": "جارٍ الحل...",
+      "resolve": "حل",
+      "call": "اتصال",
+      "location": "الموقع",
+      "resolve_sheet_title": "حل التنبيه",
+      "resolve_sheet_message": "هل يمكنك تأكيد أن {name} بأمان وأن الوضع قد عولج؟",
+      "resolved_toast": "تم حل تنبيه الطوارئ",
+      "phone_unavailable": "رقم هاتف الحاج غير متوفر",
+      "elapsed": {
+        "now": "الآن",
+        "minutes_ago": "منذ {count} دقيقة",
+        "hours_ago": "منذ {count} ساعة"
+      },
+      "summary": {
+        "maladie": "أبلغ الحاج عن مشكلة صحية.",
+        "perte": "يُفيد الحاج بأنه فقد طريقه.",
+        "logistique": "يحتاج الحاج إلى مساعدة لوجستية.",
+        "autre": "طلب مساعدة عام."
+      }
+    },
+    "notification": {
+      "instant": "الآن",
+      "minutes_ago": "منذ {count} دقيقة",
+      "hours_ago": "منذ {count} ساعة",
+      "days_ago": "منذ {count} يوم",
+      "labels": {
+        "sos_resolved": "تم حل الطوارئ",
+        "step_cancelled": "تم إلغاء الخطوة",
+        "step_completed": "تمت الخطوة",
+        "planning": "التخطيط",
+        "reminder": "تذكير",
+        "generic": "إشعار"
+      }
+    }
+  },
+  "planning": {
+    "header": {
+      "today": "تخطيط اليوم",
+      "days": "الأيام"
+    },
+    "empty": {
+      "no_group_title": "لا توجد مجموعة متاحة",
+      "no_group_message": "سيظهر تخطيطك هنا بمجرد تعيين مجموعة نشطة لك.",
+      "no_today_title": "لا يوجد تخطيط اليوم",
+      "no_today_message": "لم تشارك المجموعة جدولاً لهذا اليوم بعد.",
+      "no_day_title": "لا يوجد يوم متاح",
+      "no_day_message": "لا يوجد يوم رحلة متاح في الوقت الحالي.",
+      "no_event_day": "لا توجد أحداث لهذا اليوم"
+    },
+    "feedback": {
+      "step_cancelled": "تم إلغاء الخطوة",
+      "step_completed": "تمت الخطوة",
+      "cancel_failed": "فشل الإلغاء",
+      "update_failed": "فشل التحديث"
+    },
+    "common": {
+      "trip_progress": "تقدم الرحلة",
+      "day_of": "اليوم {day} من {total}",
+      "group_hajj": "مجموعة الحج",
+      "group_omra": "مجموعة العمرة",
+      "day_label": "اليوم",
+      "day": "اليوم {day}",
+      "day_with_title": "اليوم {day} - {title}",
+      "day_short": "ي{day}"
+    },
+    "family": {
+      "live_now": "مباشر الآن",
+      "no_shared_today": "لا يوجد برنامج مشترك لهذا اليوم.",
+      "location": "الموقع",
+      "to_confirm": "في انتظار التأكيد",
+      "activity": "النشاط",
+      "no_activity": "لا يوجد نشاط حالي",
+      "next": "التالي",
+      "nothing_next": "لا يوجد شيء آخر مخطط لهذا اليوم"
+    },
+    "dialog": {
+      "confirm_cancel_title": "تأكيد الإلغاء",
+      "confirm_finish_title": "تأكيد إتمام الخطوة",
+      "confirm_cancel_message": "هل تريد إلغاء هذا الحدث: \"{title}\"؟",
+      "confirm_finish_message": "هل تريد تحديد هذا الحدث كمكتمل: \"{title}\"؟"
+    },
+    "actions": {
+      "cancel_step": "إلغاء الخطوة",
+      "finish": "إتمام",
+      "updating": "جارٍ التحديث..."
+    },
+    "event": {
+      "completed_at": "اكتمل في {time}",
+      "full_description": "الوصف الكامل"
+    },
+    "error": {
+      "load_title": "تعذّر تحميل التخطيط",
+      "retry": "إعادة المحاولة"
+    },
+    "event_type": {
+      "transport": "نقل",
+      "visit": "زيارة",
+      "rite": "شعيرة",
+      "prayer": "صلاة",
+      "meal": "وجبة",
+      "rest": "راحة",
+      "other": "أخرى"
+    },
+    "status": {
+      "cancelled": "ملغى",
+      "completed": "مكتمل",
+      "in_progress": "جارٍ",
+      "planned": "مخطط"
+    },
+    "month_short": {
+      "jan": "يناير",
+      "feb": "فبراير",
+      "mar": "مارس",
+      "apr": "أبريل",
+      "may": "مايو",
+      "jun": "يونيو",
+      "jul": "يوليو",
+      "aug": "أغسطس",
+      "sep": "سبتمبر",
+      "oct": "أكتوبر",
+      "nov": "نوفمبر",
+      "dec": "ديسمبر"
+    }
+  },
+  "roles": {
+    "pelerin": "حاج",
+    "guide": "مرشد"
+  },
+  "profile": {
+    "title": "الملف الشخصي",
+    "personal_info": "المعلومات الشخصية",
+    "account_active": "{role} - حساب نشط",
+    "code_copied": "تم نسخ الرمز الفريد",
+    "common": {
+      "not_provided": "غير مذكور",
+      "not_assigned": "غير مخصص"
+    },
+    "fields": {
+      "first_name": "الاسم",
+      "last_name": "اللقب",
+      "email": "البريد الإلكتروني",
+      "phone": "الهاتف",
+      "relationship": "صلة القرابة",
+      "specialty": "الاختصاص",
+      "availability": "التوفر",
+      "current_group": "المجموعة الحالية",
+      "birth_date": "تاريخ الميلاد",
+      "nationality": "الجنسية",
+      "passport_number": "رقم جواز السفر"
+    },
+    "availability": {
+      "updating": "جارٍ التحديث...",
+      "available_desc": "يمكن إسنادك إلى مجموعة.",
+      "unavailable_desc": "لن يتم إسنادك إلى مجموعة."
+    }
+  },
+  "pelerin": {
+    "common": {
+      "hajj": "حج",
+      "omra": "عمرة"
+    },
+    "status": {
+      "planifie": "مخطط",
+      "en_cours": "جارٍ",
+      "termine": "مكتمل",
+      "annule": "ملغى",
+      "inconnu": "غير معروف"
+    },
+    "home": {
+      "hello": "مرحباً",
+      "history_groups": "سجل المجموعات",
+      "language": "اللغة",
+      "choose_language": "اختر اللغة",
+      "language_french": "الفرنسية",
+      "language_english": "الإنجليزية",
+      "language_arabic": "العربية",
+      "group_history_title": "سجل مجموعاتك",
+      "group_history_empty": "لا يوجد سجل مجموعات متاح.",
+      "depart_only": "المغادرة: {date}",
+      "retour_only": "العودة: {date}",
+      "no_step_today": "لا توجد خطوة اليوم",
+      "today_program": "برنامج اليوم",
+      "trip_progress": "{percent}٪ من الرحلة",
+      "shared_program_coming": "البرنامج المشترك قريباً",
+      "next_step": "الخطوة التالية"
+    },
+    "sos": {
+      "title": "طوارئ SOS",
+      "description": "استخدم هذا الزر فقط في حالات الطوارئ الحقيقية.",
+      "active_since": "تنبيه نشط منذ {time}",
+      "choose_help_type": "اختر نوع المساعدة",
+      "choose_help_desc": "حدد وضعك ثم أكد إرسال التنبيه.",
+      "sending": "جارٍ الإرسال..."
+    }
+  },
+  "guide": {
+    "home": {
+      "groupes_list": "قائمة المجموعات",
+      "pelerins_list": "قائمة الحجاج",
+      "language": "اللغة",
+      "choose_language": "اختر اللغة",
+      "language_french": "الفرنسية",
+      "language_english": "الإنجليزية",
+      "language_arabic": "العربية",
+      "logout": "تسجيل الخروج",
+      "disponible_toast": "أنت متاح الآن",
+      "indisponible_toast": "أنت غير متاح الآن",
+      "disponibilite_error": "تعذّر تحديث حالة التوفر"
+    },
+    "groups_sheet": {
+      "title": "المجموعات",
+      "available_count": "{count} مجموعة متاحة",
+      "results_count": "{count} نتيجة",
+      "depart_on": "المغادرة {date}",
+      "pilgrims_count": "{count} حاج",
+      "retry": "إعادة التحميل",
+      "search_hint": "ابحث عن مجموعة",
+      "filters": {
+        "all": "الكل",
+        "in_progress": "جارٍ",
+        "planned": "مخطط",
+        "completed": "مكتمل"
+      },
+      "status": {
+        "completed": "مكتمل",
+        "in_progress": "جارٍ",
+        "planned": "مخطط",
+        "info": "معلومة"
+      },
+      "empty": {
+        "search_title": "لا توجد نتائج",
+        "search_subtitle": "جرّب كلمة بحث أخرى.",
+        "no_group_title": "لا توجد مجموعة",
+        "no_group_subtitle": "لا توجد مجموعة نشطة متاحة حالياً."
+      }
+    },
+    "group_pilgrims_sheet": {
+      "attendance_call_tooltip": "نداء الحضور",
+      "title": "الحجاج",
+      "people_count": "{count} شخص",
+      "search_hint": "ابحث بالاسم أو الهاتف",
+      "empty": "لا يوجد حجاج في هذه المجموعة حالياً.",
+      "retry": "إعادة المحاولة"
+    },
+    "presence": {
+      "card_title": "نداء الحضور",
+      "card_subtitle": "فتح المجموعات وبدء النداء",
+      "home": {
+        "title": "نداء الحضور",
+        "search_hint": "ابحث عن مجموعة",
+        "load_error_title": "تعذّر تحميل المجموعات",
+        "empty_groups_title": "لا توجد مجموعة متاحة",
+        "empty_groups_subtitle": "لا توجد مجموعة مرتبطة بحساب المرشد هذا.",
+        "no_result_title": "لا توجد نتائج",
+        "no_result_subtitle": "لا توجد مجموعة تطابق بحثك الحالي."
+      },
+      "groups": {
+        "section_title": "نداءات الحضور",
+        "open_error": "تعذّر فتح النداء",
+        "no_active_call": "لا يوجد نداء نشط",
+        "pending_summary": "{pending} قيد الانتظار من {total}",
+        "loading": "جارٍ التحقق...",
+        "unavailable": "الحالة غير متاحة",
+        "action_open": "فتح",
+        "action_launch": "بدء"
+      }
+    }
+  },
+  "presence": {
+    "title": "نداء الحضور",
+    "save_changes": "حفظ ({count})",
+    "stats": {
+      "total": "الإجمالي",
+      "present": "حاضر",
+      "absent": "غائب",
+      "excuse": "معذور"
+    },
+    "status": {
+      "present": "حاضر",
+      "absent": "غائب",
+      "excuse": "معذور"
+    },
+    "quick_actions": {
+      "all_present": "تحديد الكل حاضر",
+      "remind_absent": "تذكير الغائبين"
+    },
+    "guide": {
+      "empty_group": "لا يوجد حاج في هذه المجموعة",
+      "note_title": "ملاحظة - {name}",
+      "note_hint": "مثال: متأخر 10 دقائق، مريض...",
+      "all_present_success": "تم تحديد جميع الحجاج كحاضرين",
+      "reset_absent_title": "تذكير الغائبين",
+      "reset_absent_message": "سيتم إعادة الغائبين إلى حالة انتظار وسيتلقون إشعار تذكير.",
+      "reset_absent_action": "تذكير",
+      "reset_absent_success": "تمت إعادة {count} غائب/غائبة وإشعارهم",
+      "no_valid_changes": "لا توجد تعديلات صالحة للحفظ",
+      "save_success": "تم حفظ الحضور بنجاح"
+    },
+    "close_call": {
+      "tooltip": "إغلاق النداء",
+      "title": "إغلاق النداء",
+      "message": "هل أنت متأكد من إغلاق نداء الحضور هذا؟\n\nهذا الإجراء غير قابل للتراجع.",
+      "action": "إغلاق",
+      "success": "تم إغلاق النداء بنجاح"
+    },
+    "error": {
+      "title": "خطأ",
+      "with_message": "خطأ: {error}",
+      "data_unavailable": "البيانات غير متاحة، أعد المحاولة."
+    },
+    "pilgrim": {
+      "no_active_call": "لا يوجد نداء حضور نشط.",
+      "guide_label": "المرشد: {name}",
+      "call_status_label": "حالة النداء: {status}",
+      "your_status_label": "حالتك: {status}",
+      "already_confirmed": "تم التأكيد مسبقاً",
+      "confirm_me": "أنا حاضر",
+      "confirm_success": "تم تأكيد الحضور"
+    },
+    "create": {
+      "title": "نداء جديد",
+      "heading": "إنشاء نداء حضور",
+      "group_label": "المجموعة: {group}",
+      "description": "سيتم إنشاء نداء حضور لكل الحجاج النشطين في المجموعة.",
+      "creating": "جارٍ الإنشاء...",
+      "action": "إنشاء النداء"
+    }
+  },
+  "sos": {
+    "errors": {
+      "location_permission_required": "اسمح بالموقع لإرسال تنبيه SOS",
+      "location_service_disabled": "فعّل موقع الهاتف لإرسال تنبيه SOS",
+      "location_permission_needed": "إذن الموقع مطلوب لإرسال تنبيه SOS"
+    },
+    "hold_button": {
+      "hold_3s": "اضغط لمدة 3 ثوانٍ",
+      "send_with_position": "سيتم إرسال تنبيه SOS مع موقعك."
+    },
+    "sheet": {
+      "confirmation_title": "تم إرسال الطوارئ",
+      "confirmation_message": "تم إبلاغ مرشدك وأقاربك عند {time}.",
+      "position_sent": "تم إرسال الموقع: {lat}, {lng}",
+      "got_it": "تم",
+      "confirm_type_title": "تأكيد {type}",
+      "confirm_other_message": "سيتم إرسال طلب مساعدة عام إلى مرشدك.",
+      "confirm_default_message": "سيتم إرسال موقعك وطلبك إلى مرشدك.",
+      "pick_situation_title": "اختر الحالة",
+      "pick_situation_subtitle": "حدد نوع المساعدة التي تحتاجها."
+    },
+    "types": {
+      "maladie": {
+        "label": "مشكلة صحية",
+        "description": "وعكة صحية"
+      },
+      "perte": {
+        "label": "ضياع",
+        "description": "أنا تائه"
+      },
+      "logistique": {
+        "label": "لوجستيات",
+        "description": "نقل أو تنظيم"
+      },
+      "autre": {
+        "label": "أخرى",
+        "description": "حالة أخرى"
+      }
+    }
+  },
+  "adhan": {
+  "title": "الأذان",
+  "schedule_title": "مواقيت الصلاة",
+  "footer_prefix": "المواقيت محسوبة لمكة المكرمة.",
+  "in_progress": "جارية",
+  "next_prayer_label": "الصلاة القادمة:",
+  "prayer_fallback": "صلاة",
+  "sunrise": "الشروق",
+  "prayers": {
+    "fajr": "الفجر",
+    "dhuhr": "الظهر",
+    "asr": "العصر",
+    "maghrib": "المغرب",
+    "isha": "العشاء"
+  },
+  "message": {
+    "fajr": "يبدأ اليوم بصلاة الفجر. احرص على بداية هادئة قبل تحرك المجموعة.",
+    "dhuhr": "تُمثّل صلاة الظهر قلب اليوم. احتفظ بمرجع واضح بين الشعائر والتنقلات.",
+    "asr": "تدعوك صلاة العصر للتوقف لحظة، والتحقق من المجموعة وإعادة التركيز.",
+    "maghrib": "تفتح صلاة المغرب لحظة شكر وامتنان بعد جهد التنقلات ومشقة اليوم.",
+    "isha": "تدعو صلاة العشاء إلى الهدوء والاستعداد ليوم الغد.",
+    "upcoming_fajr": "الصلاة القادمة هي الفجر. استرح واحتفظ بنية الغد في قلبك.",
+    "upcoming_dhuhr": "الصلاة القادمة هي الظهر. رتّب أمورك قبل استئناف الإيقاع.",
+    "upcoming_asr": "الصلاة القادمة هي العصر. خصص وقتاً لإعادة تركيز نفسك.",
+    "upcoming_maghrib": "الصلاة القادمة هي المغرب. تقترب نهاية اليوم بلطف.",
+    "upcoming_isha": "الصلاة القادمة هي العشاء. يقترب المساء بمزيد من الهدوء والسكينة.",
+    "upcoming_sunrise": "يقترب الفجر. حافظ على إيقاع هادئ قبل التحرك القادم.",
+    "none": "احتفظ بمرجع روحي واضح طوال رحلتك المباركة."
+  }
+}
+}

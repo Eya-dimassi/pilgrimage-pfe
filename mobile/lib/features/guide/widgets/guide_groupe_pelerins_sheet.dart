@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../planning/domain/mobile_planning_models.dart';
@@ -132,7 +133,8 @@ class _GuideGroupePelerinsSheetState
                                   ),
                                 );
                               },
-                              tooltip: 'Appel de presence',
+                              tooltip: 'guide.group_pilgrims_sheet.attendance_call_tooltip'
+                                  .tr(),
                               icon: const Icon(Icons.how_to_reg_rounded),
                             ),
                             IconButton(
@@ -150,8 +152,8 @@ class _GuideGroupePelerinsSheetState
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
-                              'Pelerins',
+                            Text(
+                              'guide.group_pilgrims_sheet.title'.tr(),
                               style: TextStyle(
                                 fontSize: 19,
                                 fontWeight: FontWeight.w900,
@@ -160,7 +162,9 @@ class _GuideGroupePelerinsSheetState
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              '${visibleItems.length} personne(s)',
+                              'guide.group_pilgrims_sheet.people_count'.tr(
+                                namedArgs: {'count': '${visibleItems.length}'},
+                              ),
                               style: const TextStyle(
                                 fontSize: 11.5,
                                 color: AppColors.textMuted,
@@ -171,9 +175,10 @@ class _GuideGroupePelerinsSheetState
                             TextField(
                               controller: _searchController,
                               onChanged: (_) => setState(() {}),
-                              decoration: const InputDecoration(
-                                prefixIcon: Icon(Icons.search_rounded),
-                                hintText: 'Rechercher par nom ou telephone',
+                              decoration: InputDecoration(
+                                prefixIcon: const Icon(Icons.search_rounded),
+                                hintText:
+                                    'guide.group_pilgrims_sheet.search_hint'.tr(),
                               ),
                             ),
                           ],
@@ -286,14 +291,14 @@ class _EmptyState extends StatelessWidget {
         borderRadius: BorderRadius.circular(22),
         border: Border.all(color: AppColors.border),
       ),
-      child: const Row(
+      child: Row(
         children: [
-          Icon(Icons.info_outline_rounded, color: AppColors.textMuted),
-          SizedBox(width: 10),
+          const Icon(Icons.info_outline_rounded, color: AppColors.textMuted),
+          const SizedBox(width: 10),
           Expanded(
             child: Text(
-              'Aucun pelerin dans ce groupe pour le moment.',
-              style: TextStyle(
+              'guide.group_pilgrims_sheet.empty'.tr(),
+              style: const TextStyle(
                 color: AppColors.textMuted,
                 fontWeight: FontWeight.w600,
               ),
@@ -337,7 +342,7 @@ class _ErrorView extends StatelessWidget {
           OutlinedButton.icon(
             onPressed: onRetry,
             icon: const Icon(Icons.refresh_rounded),
-            label: const Text('Reessayer'),
+            label: Text('guide.group_pilgrims_sheet.retry'.tr()),
           ),
         ],
       ),

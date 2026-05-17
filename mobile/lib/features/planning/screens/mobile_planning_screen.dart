@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_theme.dart';
@@ -84,10 +85,9 @@ class _MobilePlanningScreenState extends ConsumerState<MobilePlanningScreen> {
         }
 
         if (groups.isEmpty) {
-          return const _PlanningEmptyState(
-            title: 'Aucun groupe disponible',
-            message:
-                'Votre planning apparaitra ici des qu un groupe actif vous sera rattache.',
+          return _PlanningEmptyState(
+            title: 'planning.empty.no_group_title'.tr(),
+            message: 'planning.empty.no_group_message'.tr(),
           );
         }
 
@@ -191,17 +191,16 @@ class _MobilePlanningScreenState extends ConsumerState<MobilePlanningScreen> {
                   if (visiblePlannings.isEmpty)
                     _PlanningEmptyState(
                       title: widget.view == PlanningRoleView.famille
-                          ? 'Aucun planning aujourd hui'
-                          : 'Aucune journee disponible',
+                          ? 'planning.empty.no_today_title'.tr()
+                          : 'planning.empty.no_day_title'.tr(),
                       message: widget.view == PlanningRoleView.famille
-                          ? 'Le groupe n a pas encore de programme partage pour aujourd hui.'
-                          : 'Aucune journee du voyage n est disponible pour le moment.',
+                          ? 'planning.empty.no_today_message'.tr()
+                          : 'planning.empty.no_day_message'.tr(),
                     )
                   else if (isDayOnly && selectedDay == null)
-                    const _PlanningEmptyState(
-                      title: 'Aucun planning aujourd hui',
-                      message:
-                          'Le groupe n a pas encore de programme partage pour aujourd hui.',
+                    _PlanningEmptyState(
+                      title: 'planning.empty.no_today_title'.tr(),
+                      message: 'planning.empty.no_today_message'.tr(),
                     )
                   else ...[
                     if (!isDayOnly) ...[
@@ -261,8 +260,8 @@ class _MobilePlanningScreenState extends ConsumerState<MobilePlanningScreen> {
                     ] else ...[
                       _DayOnlyHeader(
                         title: widget.view == PlanningRoleView.famille
-                            ? 'Aujourd hui'
-                            : 'Planning du jour',
+                            ? 'date.today'.tr()
+                            : 'planning.header.today'.tr(),
                       ),
                       const SizedBox(height: AppSpacing.sm),
                     ],
@@ -377,7 +376,9 @@ class _MobilePlanningScreenState extends ConsumerState<MobilePlanningScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              status == 'ANNULE' ? 'Etape annulee' : 'Etape terminee',
+              status == 'ANNULE'
+                  ? 'planning.feedback.step_cancelled'.tr()
+                  : 'planning.feedback.step_completed'.tr(),
             ),
           ),
         );
@@ -387,7 +388,7 @@ class _MobilePlanningScreenState extends ConsumerState<MobilePlanningScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              '${status == 'ANNULE' ? 'Annulation impossible' : 'Mise a jour impossible'}: $error',
+              '${status == 'ANNULE' ? 'planning.feedback.cancel_failed'.tr() : 'planning.feedback.update_failed'.tr()}: $error',
             ),
           ),
         );
@@ -536,8 +537,13 @@ class _TripSummaryCard extends StatelessWidget {
     );
     final percentageLabel = '${(progress * 100).round()}%';
     final progressDetail = totalTripDays == 0
-        ? 'Progression du voyage'
-        : 'Jour ${boundedCurrentTripDay ?? 0} sur $totalTripDays';
+        ? 'planning.common.trip_progress'.tr()
+        : 'planning.common.day_of'.tr(
+            namedArgs: {
+              'day': '${boundedCurrentTripDay ?? 0}',
+              'total': '$totalTripDays',
+            },
+          );
  
     return AppCard(
       padding: EdgeInsets.fromLTRB(
@@ -700,7 +706,7 @@ class _TripSummaryCard extends StatelessWidget {
               SizedBox(
                 width: compact ? 170 : double.infinity,
                 child: Text(
-                  _tripSubtitle(groupe),
+                  _tripSubtitle(context, groupe),
                   style: TextStyle(
                     fontSize: compact ? 11.5 : 12.5,
                     color: AppColors.textMuted,
@@ -719,7 +725,7 @@ class _TripSummaryCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 10),
                     Text(
-                      '${_formatMediumDate(groupe.dateDepart!)} -> ${_formatMediumDate(groupe.dateRetour!)}',
+                      '${_formatMediumDate(context, groupe.dateDepart!)} -> ${_formatMediumDate(context, groupe.dateRetour!)}',
                       style: TextStyle(
                         fontSize: compact ? 11.5 : 13,
                         fontWeight: FontWeight.w700,
@@ -830,7 +836,7 @@ class _FamilyCurrentMomentCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           AppStatusChip(
-            label: 'Live now',
+            label: 'planning.family.live_now'.tr(),
             icon: Icons.bolt_rounded,
             backgroundColor: accentColor.withValues(alpha: 0.12),
             foregroundColor: accentColor,
@@ -847,8 +853,8 @@ class _FamilyCurrentMomentCard extends StatelessWidget {
           const SizedBox(height: AppSpacing.xs),
           Text(
             planning == null
-                ? 'Aucun programme partage pour aujourd hui.'
-                : _planningSectionHeading(dayNumber, planning!),
+                ? 'planning.family.no_shared_today'.tr()
+                : _planningSectionHeading(context, dayNumber, planning!),
             style: const TextStyle(
               fontSize: 14,
               color: AppColors.textMuted,
@@ -861,8 +867,13 @@ class _FamilyCurrentMomentCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   totalTripDays == 0
-                      ? 'Progression du voyage'
-                      : 'Jour $dayNumber sur $totalTripDays',
+                      ? 'planning.common.trip_progress'.tr()
+                      : 'planning.common.day_of'.tr(
+                          namedArgs: {
+                            'day': '$dayNumber',
+                            'total': '$totalTripDays',
+                          },
+                        ),
                   style: const TextStyle(
                     fontSize: 13,
                     color: AppColors.textMuted,
@@ -892,18 +903,18 @@ class _FamilyCurrentMomentCard extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.m),
           _FamilyInfoRow(
-            label: 'Lieu',
-            value: currentLocation ?? 'A confirmer',
+            label: 'planning.family.location'.tr(),
+            value: currentLocation ?? 'planning.family.to_confirm'.tr(),
           ),
           const SizedBox(height: AppSpacing.sm),
           _FamilyInfoRow(
-            label: 'Activite',
-            value: currentEvent?.titre ?? 'Aucune activite en cours',
+            label: 'planning.family.activity'.tr(),
+            value: currentEvent?.titre ?? 'planning.family.no_activity'.tr(),
           ),
           const SizedBox(height: AppSpacing.sm),
           _FamilyInfoRow(
-            label: 'Ensuite',
-            value: nextEvent?.titre ?? 'Rien d autre de prevu pour aujourd hui',
+            label: 'planning.family.next'.tr(),
+            value: nextEvent?.titre ?? 'planning.family.nothing_next'.tr(),
           ),
         ],
       ),
@@ -966,7 +977,7 @@ class _DayRailHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SectionTitle(
-      'Journees',
+      'planning.header.days'.tr(),
       subtitle: '',
       bottomPadding: AppSpacing.sm,
       titleStyle: const TextStyle(
@@ -1081,7 +1092,9 @@ class _PlanningDayCard extends StatelessWidget {
         child: Column(
           children: [
             Text(
-              'J$dayNumber',
+              'planning.common.day_short'.tr(
+                namedArgs: {'day': '$dayNumber'},
+              ),
               style: TextStyle(
                 fontSize: 10,
                 fontWeight: FontWeight.w600,
@@ -1099,7 +1112,7 @@ class _PlanningDayCard extends StatelessWidget {
             ),
             const SizedBox(height: 2),
             Text(
-              _monthLabel(planning.date),
+              _monthLabel(context, planning.date),
               style: const TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w500,
@@ -1146,7 +1159,7 @@ class _SelectedDaySection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          _planningSectionHeading(dayNumber, planning),
+          _planningSectionHeading(context, dayNumber, planning),
           style: const TextStyle(
             fontSize: 15.5,
             fontWeight: FontWeight.w800,
@@ -1156,8 +1169,8 @@ class _SelectedDaySection extends StatelessWidget {
         ),
         const SizedBox(height: AppSpacing.sm),
         if (planning.evenements.isEmpty)
-          const _PlanningEmptyState(
-            title: 'Aucun evenement pour cette journee',
+          _PlanningEmptyState(
+            title: 'planning.empty.no_event_day'.tr(),
             compact: true,
           )
         else
@@ -1210,22 +1223,30 @@ Future<void> _confirmAndUpdateEventStatus(
         builder: (dialogContext) => AlertDialog(
           title: Text(
             isCancellation
-                ? 'Confirmer l annulation'
-                : 'Confirmer la fin de l etape',
+                ? 'planning.dialog.confirm_cancel_title'.tr()
+                : 'planning.dialog.confirm_finish_title'.tr(),
           ),
           content: Text(
             isCancellation
-                ? 'Voulez-vous annuler cet evenement : "${event.titre}" ?'
-                : 'Voulez-vous marquer cet evenement comme termine : "${event.titre}" ?',
+                ? 'planning.dialog.confirm_cancel_message'.tr(
+                    namedArgs: {'title': event.titre},
+                  )
+                : 'planning.dialog.confirm_finish_message'.tr(
+                    namedArgs: {'title': event.titre},
+                  ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: const Text('Retour'),
+              child: Text('actions.back'.tr()),
             ),
             ElevatedButton(
               onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: Text(isCancellation ? 'Annuler l etape' : 'Terminer'),
+              child: Text(
+                isCancellation
+                    ? 'planning.actions.cancel_step'.tr()
+                    : 'planning.actions.finish'.tr(),
+              ),
             ),
           ],
         ),
@@ -1270,7 +1291,7 @@ class _TimelineEventTile extends StatelessWidget {
     final statusAccent = _eventStatusColor(event);
     final statusSoft = _eventStatusSoftColor(event);
     final statusIcon = _eventStatusIcon(event);
-    final statusLabel = _eventStatusLabel(event);
+    final statusLabel = _eventStatusLabel(context, event);
     final isResolved = event.isResolved;
 
     return IntrinsicHeight(
@@ -1365,7 +1386,7 @@ class _TimelineEventTile extends StatelessWidget {
                       runSpacing: 6,
                       children: [
                         AppStatusChip(
-                          label: _eventTypeLabel(event.type),
+                          label: _eventTypeLabel(context, event.type),
                           icon: _eventTypeIcon(event.type),
                           backgroundColor: _eventTypeSoftColor(event.type),
                           foregroundColor: _eventTypeStrongColor(event.type),
@@ -1404,7 +1425,9 @@ class _TimelineEventTile extends StatelessWidget {
                     if (event.isCompleted && event.valideeAt != null) ...[
                       const SizedBox(height: 10),
                       Text(
-                        'Terminee a ${_formatHour(event.valideeAt!)}',
+                        'planning.event.completed_at'.tr(
+                          namedArgs: {'time': _formatHour(event.valideeAt!)},
+                        ),
                         style: TextStyle(
                           fontSize: 12,
                           color: statusAccent,
@@ -1441,8 +1464,8 @@ class _TimelineEventTile extends StatelessWidget {
                       ),
                       if (hasLongDescription) ...[
                         const SizedBox(height: 4),
-                        const Text(
-                          'Description complete',
+                        Text(
+                          'planning.event.full_description'.tr(),
                           style: TextStyle(
                             fontSize: 11.5,
                             fontWeight: FontWeight.w700,
@@ -1495,7 +1518,9 @@ class _TimelineEventTile extends StatelessWidget {
                   const Icon(Icons.check_rounded, size: 17),
                 const SizedBox(width: 8),
                 Text(
-                  isUpdating ? 'Mise a jour...' : 'Terminer',
+                  isUpdating
+                      ? 'planning.actions.updating'.tr()
+                      : 'planning.actions.finish'.tr(),
                   style: const TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
@@ -1515,8 +1540,8 @@ class _TimelineEventTile extends StatelessWidget {
               borderRadius: BorderRadius.circular(18),
             ),
           ),
-          child: const Text(
-            'Annuler',
+          child: Text(
+            'actions.cancel'.tr(),
             style: TextStyle(
               color: AppColors.red,
               fontWeight: FontWeight.w700,
@@ -1658,10 +1683,10 @@ class _PlanningErrorState extends StatelessWidget {
               foregroundColor: AppColors.red,
             ),
             const SizedBox(height: AppSpacing.sm),
-            const Text(
-              'Impossible de charger le planning',
+            Text(
+              'planning.error.load_title'.tr(),
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 8),
             Text(
@@ -1675,7 +1700,7 @@ class _PlanningErrorState extends StatelessWidget {
             const SizedBox(height: AppSpacing.m),
             OutlinedButton(
               onPressed: onRetry,
-              child: const Text('Reessayer'),
+              child: Text('planning.error.retry'.tr()),
             ),
           ],
         ),
@@ -1698,30 +1723,44 @@ int _tripDayNumber(DateTime? start, DateTime date) {
   return difference < 0 ? 1 : difference + 1;
 }
 
-String _tripSubtitle(MobilePlanningGroup groupe) {
-  final type = groupe.typeVoyage == 'HAJJ' ? 'Groupe Hajj' : 'Groupe Omra';
+String _tripSubtitle(BuildContext context, MobilePlanningGroup groupe) {
+  final type = groupe.typeVoyage == 'HAJJ'
+      ? 'planning.common.group_hajj'.tr()
+      : 'planning.common.group_omra'.tr();
   return '$type - ${groupe.annee}';
 }
 
-String _planningTitleLabel(MobilePlanningDay planning) {
+String _planningTitleLabel(BuildContext context, MobilePlanningDay planning) {
   final rawTitle = planning.titre?.trim();
   if (rawTitle == null || rawTitle.isEmpty) {
-    return 'Journee';
+    return 'planning.common.day_label'.tr();
   }
 
   final cleanedTitle = rawTitle.replaceFirst(
     RegExp(r'^(?:j(?:our)?\s*\d+)(?:\s*[-:]\s*|\s*$)', caseSensitive: false),
     '',
   );
-  return cleanedTitle.trim().isEmpty ? 'Journee' : cleanedTitle.trim();
+  return cleanedTitle.trim().isEmpty
+      ? 'planning.common.day_label'.tr()
+      : cleanedTitle.trim();
 }
 
-String _planningSectionHeading(int dayNumber, MobilePlanningDay planning) {
-  final cleanedTitle = _planningTitleLabel(planning);
-  if (cleanedTitle == 'Journee') {
-    return 'Jour $dayNumber';
+String _planningSectionHeading(
+  BuildContext context,
+  int dayNumber,
+  MobilePlanningDay planning,
+) {
+  final cleanedTitle = _planningTitleLabel(context, planning);
+  final fallbackDayLabel = 'planning.common.day_label'.tr();
+  if (cleanedTitle == fallbackDayLabel) {
+    return 'planning.common.day'.tr(namedArgs: {'day': '$dayNumber'});
   }
-  return 'Jour $dayNumber - $cleanedTitle';
+  return 'planning.common.day_with_title'.tr(
+    namedArgs: {
+      'day': '$dayNumber',
+      'title': cleanedTitle,
+    },
+  );
 }
 
 int _planningDisplayDayNumber(
@@ -1770,10 +1809,10 @@ Future<void> _showDescriptionDialog(BuildContext context, String description) {
           children: [
             Row(
               children: [
-                const Expanded(
+                Expanded(
                   child: Text(
-                    'Description complete',
-                    style: TextStyle(
+                    'planning.event.full_description'.tr(),
+                    style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w800,
                       color: AppColors.primaryDark,
@@ -1814,59 +1853,31 @@ Future<void> _showDescriptionDialog(BuildContext context, String description) {
   );
 }
 
-String _formatMediumDate(DateTime value) {
-  const months = [
-    'janv',
-    'fevr',
-    'mars',
-    'avr',
-    'mai',
-    'juin',
-    'juil',
-    'aout',
-    'sept',
-    'oct',
-    'nov',
-    'dec',
-  ];
+String _formatMediumDate(BuildContext context, DateTime value) {
   final astDate = SaudiTime.inSaudi(value);
-  return '${astDate.day.toString().padLeft(2, '0')} ${months[astDate.month - 1]}';
+  return '${astDate.day.toString().padLeft(2, '0')} ${_monthKey(astDate.month).tr()}';
 }
 
-String _monthLabel(DateTime value) {
-  const months = [
-    'janv',
-    'fevr',
-    'mars',
-    'avr',
-    'mai',
-    'juin',
-    'juil',
-    'aout',
-    'sept',
-    'oct',
-    'nov',
-    'dec',
-  ];
-  return months[value.month - 1];
+String _monthLabel(BuildContext context, DateTime value) {
+  return _monthKey(value.month).tr();
 }
 
-String _eventTypeLabel(String type) {
+String _eventTypeLabel(BuildContext context, String type) {
   switch (type) {
     case 'TRANSPORT':
-      return 'Transport';
+      return 'planning.event_type.transport'.tr();
     case 'VISITE':
-      return 'Visite';
+      return 'planning.event_type.visit'.tr();
     case 'RITE':
-      return 'Rite';
+      return 'planning.event_type.rite'.tr();
     case 'PRIERE':
-      return 'Priere';
+      return 'planning.event_type.prayer'.tr();
     case 'REPAS':
-      return 'Repas';
+      return 'planning.event_type.meal'.tr();
     case 'REPOS':
-      return 'Repos';
+      return 'planning.event_type.rest'.tr();
     default:
-      return 'Autre';
+      return 'planning.event_type.other'.tr();
   }
 }
 
@@ -1897,11 +1908,40 @@ String _formatEtapeLabel(String value) {
       .join(' ');
 }
 
-String _eventStatusLabel(MobilePlanningEvent event) {
-  if (event.isCancelled) return 'Annulee';
-  if (event.isCompleted) return 'Terminee';
-  if (event.status == 'EN_COURS') return 'En cours';
-  return 'Planifiee';
+String _eventStatusLabel(BuildContext context, MobilePlanningEvent event) {
+  if (event.isCancelled) return 'planning.status.cancelled'.tr();
+  if (event.isCompleted) return 'planning.status.completed'.tr();
+  if (event.status == 'EN_COURS') return 'planning.status.in_progress'.tr();
+  return 'planning.status.planned'.tr();
+}
+
+String _monthKey(int month) {
+  switch (month) {
+    case 1:
+      return 'planning.month_short.jan';
+    case 2:
+      return 'planning.month_short.feb';
+    case 3:
+      return 'planning.month_short.mar';
+    case 4:
+      return 'planning.month_short.apr';
+    case 5:
+      return 'planning.month_short.may';
+    case 6:
+      return 'planning.month_short.jun';
+    case 7:
+      return 'planning.month_short.jul';
+    case 8:
+      return 'planning.month_short.aug';
+    case 9:
+      return 'planning.month_short.sep';
+    case 10:
+      return 'planning.month_short.oct';
+    case 11:
+      return 'planning.month_short.nov';
+    default:
+      return 'planning.month_short.dec';
+  }
 }
 
 IconData _eventStatusIcon(MobilePlanningEvent event) {

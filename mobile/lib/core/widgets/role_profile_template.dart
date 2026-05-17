@@ -1,9 +1,14 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 import '../../features/auth/domain/auth_user.dart';
 import '../theme/app_theme.dart';
 import 'app_surfaces.dart';
+
+typedef GuideDisponibiliteChanged = Future<void> Function(bool isDisponible);
 
 class RoleProfileTemplate extends StatelessWidget {
   const RoleProfileTemplate({
@@ -12,6 +17,9 @@ class RoleProfileTemplate extends StatelessWidget {
     required this.roleLabel,
     required this.accentColor,
     required this.onEdit,
+    this.onGuideDisponibiliteChanged,
+    this.guideDisponibiliteUpdating = false,
+    this.guideDisponibiliteOverride,
     this.extraChildren = const [],
   });
 
@@ -19,39 +27,43 @@ class RoleProfileTemplate extends StatelessWidget {
   final String roleLabel;
   final Color accentColor;
   final VoidCallback onEdit;
+  final GuideDisponibiliteChanged? onGuideDisponibiliteChanged;
+  final bool guideDisponibiliteUpdating;
+  final bool? guideDisponibiliteOverride;
   final List<Widget> extraChildren;
 
   @override
   Widget build(BuildContext context) {
     final fullName = user.fullName.isNotEmpty ? user.fullName : user.email;
-    final email = user.email.isNotEmpty ? user.email : 'Non renseigne';
+    final email = user.email.isNotEmpty
+        ? user.email
+        : 'profile.common.not_provided'.tr();
     final phone = user.telephone?.isNotEmpty == true
         ? user.telephone!
-        : 'Non renseigne';
+        : 'profile.common.not_provided'.tr();
     final birthDate = _formatDate(user.dateNaissance);
     final nationality = user.nationalite?.isNotEmpty == true
         ? user.nationalite!
-        : 'Non renseigne';
+        : 'profile.common.not_provided'.tr();
     final passport = user.numeroPasseport?.isNotEmpty == true
         ? user.numeroPasseport!
-        : 'Non renseigne';
+        : 'profile.common.not_provided'.tr();
     final specialite = user.specialite?.isNotEmpty == true
         ? user.specialite!
-        : 'Non renseigne';
-    final disponibiliteGuide = user.disponibilite == 'INDISPONIBLE'
-        ? 'Indisponible'
-        : 'Disponible';
+        : 'profile.common.not_provided'.tr();
+    final disponibiliteGuide =
+        guideDisponibiliteOverride ?? user.disponibilite != 'INDISPONIBLE';
     final groupeNom = user.groupeNom?.isNotEmpty == true
         ? user.groupeNom!
-        : 'Non attribue';
+        : 'profile.common.not_assigned'.tr();
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
       children: [
-        const SectionTitle(
-          'Profil',
+        SectionTitle(
+          'profile.title'.tr(),
           bottomPadding: AppSpacing.sm,
-          titleStyle: TextStyle(
+          titleStyle: const TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.w800,
             letterSpacing: -0.4,
@@ -101,7 +113,9 @@ class RoleProfileTemplate extends StatelessWidget {
                     ),
                     const SizedBox(height: 6),
                     AppStatusChip(
-                      label: '$roleLabel - Compte actif',
+                      label: 'profile.account_active'.tr(
+                        namedArgs: {'role': roleLabel},
+                      ),
                       icon: Icons.verified_rounded,
                       backgroundColor: Colors.white.withValues(alpha: 0.16),
                       foregroundColor: Colors.white,
@@ -139,65 +153,67 @@ class RoleProfileTemplate extends StatelessWidget {
         ),
         const SizedBox(height: AppSpacing.m),
         _ProfileSection(
-          title: 'Informations personnelles',
+          title: 'profile.personal_info'.tr(),
           children: [
             _ProfileTile(
               icon: Icons.person_outline_rounded,
-              title: 'Prenom',
+              title: 'profile.fields.first_name'.tr(),
               subtitle: user.prenom.isEmpty ? '-' : user.prenom,
             ),
             _ProfileTile(
               icon: Icons.badge_outlined,
-              title: 'Nom',
+              title: 'profile.fields.last_name'.tr(),
               subtitle: user.nom.isEmpty ? '-' : user.nom,
             ),
             _ProfileTile(
               icon: Icons.alternate_email_rounded,
-              title: 'Email',
+              title: 'profile.fields.email'.tr(),
               subtitle: email,
             ),
             _ProfileTile(
               icon: Icons.phone_outlined,
-              title: 'Telephone',
+              title: 'profile.fields.phone'.tr(),
               subtitle: phone,
             ),
             if (user.lienParente?.isNotEmpty == true)
               _ProfileTile(
                 icon: Icons.family_restroom_outlined,
-                title: 'Lien de parente',
+                title: 'profile.fields.relationship'.tr(),
                 subtitle: user.lienParente!,
               ),
             if (user.role == 'GUIDE')
               _ProfileTile(
                 icon: Icons.workspace_premium_outlined,
-                title: 'Specialite',
+                title: 'profile.fields.specialty'.tr(),
                 subtitle: specialite,
               ),
             if (user.role == 'GUIDE')
-              _ProfileTile(
+              _GuideDisponibiliteTile(
                 icon: Icons.event_available_outlined,
-                title: 'Disponibilite',
-                subtitle: disponibiliteGuide,
+                title: 'profile.fields.availability'.tr(),
+                isDisponible: disponibiliteGuide,
+                isUpdating: guideDisponibiliteUpdating,
+                onChanged: onGuideDisponibiliteChanged,
               ),
             if (user.role == 'PELERIN') ...[
               _ProfileTile(
                 icon: Icons.groups_outlined,
-                title: 'Groupe actuel',
+                title: 'profile.fields.current_group'.tr(),
                 subtitle: groupeNom,
               ),
               _ProfileTile(
                 icon: Icons.cake_outlined,
-                title: 'Date de naissance',
+                title: 'profile.fields.birth_date'.tr(),
                 subtitle: birthDate,
               ),
               _ProfileTile(
                 icon: Icons.public_outlined,
-                title: 'Nationalite',
+                title: 'profile.fields.nationality'.tr(),
                 subtitle: nationality,
               ),
               _ProfileTile(
                 icon: Icons.airplane_ticket_outlined,
-                title: 'Numero de passeport',
+                title: 'profile.fields.passport_number'.tr(),
                 subtitle: passport,
               ),
             ],
@@ -213,7 +229,7 @@ class RoleProfileTemplate extends StatelessWidget {
 
   String _formatDate(DateTime? value) {
     if (value == null) {
-      return 'Non renseigne';
+      return 'profile.common.not_provided'.tr();
     }
     final day = value.day.toString().padLeft(2, '0');
     final month = value.month.toString().padLeft(2, '0');
@@ -229,7 +245,7 @@ class RoleProfileTemplate extends StatelessWidget {
     final messenger = ScaffoldMessenger.of(context);
     messenger.hideCurrentSnackBar();
     messenger.showSnackBar(
-      const SnackBar(content: Text('Code unique copie')),
+      SnackBar(content: Text('profile.code_copied'.tr())),
     );
   }
 }
@@ -413,6 +429,89 @@ class _ProfileTile extends StatelessWidget {
               ],
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _GuideDisponibiliteTile extends StatelessWidget {
+  const _GuideDisponibiliteTile({
+    required this.icon,
+    required this.title,
+    required this.isDisponible,
+    required this.isUpdating,
+    this.onChanged,
+  });
+
+  final IconData icon;
+  final String title;
+  final bool isDisponible;
+  final bool isUpdating;
+  final GuideDisponibiliteChanged? onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox.shrink(),
+          AppIconBadge(
+            icon: icon,
+            size: 38,
+            backgroundColor: AppColors.section,
+            foregroundColor: AppColors.textPrimary,
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 12.5,
+                    color: AppColors.textMuted,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  isUpdating
+                      ? 'profile.availability.updating'.tr()
+                      : isDisponible
+                      ? 'profile.availability.available_desc'.tr()
+                      : 'profile.availability.unavailable_desc'.tr(),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: AppSpacing.s),
+          if (isUpdating)
+            const SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: AppColors.green,
+              ),
+            )
+          else
+            Switch.adaptive(
+              value: isDisponible,
+              onChanged: onChanged == null
+                  ? null
+                  : (value) {
+                      onChanged!(value);
+                    },
+              activeColor: AppColors.green,
+            ),
         ],
       ),
     );

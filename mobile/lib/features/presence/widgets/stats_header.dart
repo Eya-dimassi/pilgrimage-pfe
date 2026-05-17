@@ -1,6 +1,7 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../domain/models/presence_stats.dart';
 
 class StatsHeader extends StatelessWidget {
@@ -28,25 +29,25 @@ class StatsHeader extends StatelessWidget {
         children: [
           _StatChip(
             icon: Icons.people,
-            label: 'Total',
+            label: 'presence.stats.total'.tr(),
             value: stats.total.toString(),
             color: Colors.grey.shade700,
           ),
           _StatChip(
             icon: Icons.check_circle,
-            label: 'Presents',
+            label: 'presence.stats.present'.tr(),
             value: stats.presents.toString(),
             color: Colors.green.shade700,
           ),
           _StatChip(
             icon: Icons.cancel,
-            label: 'Absents',
+            label: 'presence.stats.absent'.tr(),
             value: stats.absents.toString(),
             color: Colors.red.shade700,
           ),
           _StatChip(
             icon: Icons.info,
-            label: 'Excuses',
+            label: 'presence.stats.excuse'.tr(),
             value: stats.excuses.toString(),
             color: Colors.orange.shade700,
           ),

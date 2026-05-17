@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 import '../../auth/providers/auth_provider.dart';
 import '../../../services/notification_feed_refresh_service.dart';
@@ -73,16 +74,12 @@ class SosController extends AsyncNotifier<SosAlert?> {
   Future<void> _ensureLocationReady() async {
     final permissionStatus = await Permission.locationWhenInUse.request();
     if (!permissionStatus.isGranted) {
-      throw const AuthException(
-        'Autorisez la localisation pour envoyer une alerte SOS',
-      );
+      throw AuthException('sos.errors.location_permission_required'.tr());
     }
 
     final serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
-      throw const AuthException(
-        'Activez la localisation de votre telephone pour envoyer une alerte SOS',
-      );
+      throw AuthException('sos.errors.location_service_disabled'.tr());
     }
 
     LocationPermission geolocatorPermission =
@@ -93,9 +90,7 @@ class SosController extends AsyncNotifier<SosAlert?> {
 
     if (geolocatorPermission == LocationPermission.denied ||
         geolocatorPermission == LocationPermission.deniedForever) {
-      throw const AuthException(
-        'La permission de localisation est necessaire pour envoyer une alerte SOS',
-      );
+      throw AuthException('sos.errors.location_permission_needed'.tr());
     }
   }
 }

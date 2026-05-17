@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../planning/domain/mobile_planning_models.dart';
@@ -213,8 +214,8 @@ class _Header extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'Groupes',
+                      Text(
+                        'guide.groups_sheet.title'.tr(),
                         style: TextStyle(
                           fontSize: 19,
                           fontWeight: FontWeight.w900,
@@ -223,7 +224,9 @@ class _Header extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        '$visibleCount groupe(s) disponibles',
+                        'guide.groups_sheet.available_count'.tr(
+                          namedArgs: {'count': '$visibleCount'},
+                        ),
                         style: const TextStyle(
                           fontSize: 11.5,
                           color: AppColors.textMuted,
@@ -251,16 +254,6 @@ class _Header extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 7),
-            const Text(
-              'Consultez vos groupes et accedez rapidement a la liste des pelerins.',
-              style: TextStyle(
-                fontSize: 11.5,
-                height: 1.35,
-                color: AppColors.textMuted,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
             const SizedBox(height: 10),
             _SearchField(
               controller: searchController,
@@ -283,7 +276,9 @@ class _Header extends StatelessWidget {
                   border: Border.all(color: AppColors.borderSoft),
                 ),
                 child: Text(
-                  '$visibleCount resultat(s)',
+                  'guide.groups_sheet.results_count'.tr(
+                    namedArgs: {'count': '$visibleCount'},
+                  ),
                   style: const TextStyle(
                     fontSize: 11,
                     color: AppColors.textMuted,
@@ -405,7 +400,11 @@ class _GroupCard extends StatelessWidget {
                           Text(
                             group.dateDepart == null
                                 ? group.typeVoyage
-                                : 'Depart ${formatDate(group.dateDepart!)}',
+                                : 'guide.groups_sheet.depart_on'.tr(
+                                    namedArgs: {
+                                      'date': formatDate(group.dateDepart!),
+                                    },
+                                  ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
@@ -429,7 +428,9 @@ class _GroupCard extends StatelessWidget {
                     _GroupStatusChip.fromStatus(status: group.status ?? ''),
                     _InfoPill(
                       icon: Icons.group_rounded,
-                      label: '${group.nbPelerins ?? 0} pelerins',
+                      label: 'guide.groups_sheet.pilgrims_count'.tr(
+                        namedArgs: {'count': '${group.nbPelerins ?? 0}'},
+                      ),
                     ),
                   ],
                 ),
@@ -574,7 +575,9 @@ class _EmptyState extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           Text(
-            isSearch ? 'Aucun resultat' : 'Aucun groupe',
+            isSearch
+                ? 'guide.groups_sheet.empty.search_title'.tr()
+                : 'guide.groups_sheet.empty.no_group_title'.tr(),
             textAlign: TextAlign.center,
             style: const TextStyle(
               fontSize: 14.5,
@@ -584,8 +587,8 @@ class _EmptyState extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             isSearch
-                ? 'Essayez un autre mot-cle.'
-                : "Aucun groupe actif n'est disponible pour le moment.",
+                ? 'guide.groups_sheet.empty.search_subtitle'.tr()
+                : 'guide.groups_sheet.empty.no_group_subtitle'.tr(),
             textAlign: TextAlign.center,
             style: const TextStyle(
               fontSize: 12.8,
@@ -652,7 +655,7 @@ class _ErrorView extends StatelessWidget {
             width: double.infinity,
             child: ElevatedButton(
               onPressed: () async => onRetry(),
-              child: const Text('Recharger'),
+              child: Text('guide.groups_sheet.retry'.tr()),
             ),
           ),
         ],
@@ -678,7 +681,7 @@ class _SearchField extends StatelessWidget {
       textInputAction: TextInputAction.search,
       style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
       decoration: InputDecoration(
-        hintText: 'Rechercher un groupe',
+        hintText: 'guide.groups_sheet.search_hint'.tr(),
         prefixIcon: const Icon(Icons.search_rounded, size: 20),
         filled: true,
         fillColor: AppColors.section,
@@ -729,25 +732,25 @@ class _FilterRow extends StatelessWidget {
       child: Row(
         children: [
           _FilterChip(
-            label: 'Tous',
+            label: 'guide.groups_sheet.filters.all'.tr(),
             selected: value == _GroupFilter.all,
             onTap: () => onChanged(_GroupFilter.all),
           ),
           const SizedBox(width: 8),
           _FilterChip(
-            label: 'En cours',
+            label: 'guide.groups_sheet.filters.in_progress'.tr(),
             selected: value == _GroupFilter.enCours,
             onTap: () => onChanged(_GroupFilter.enCours),
           ),
           const SizedBox(width: 8),
           _FilterChip(
-            label: 'Planifies',
+            label: 'guide.groups_sheet.filters.planned'.tr(),
             selected: value == _GroupFilter.planifie,
             onTap: () => onChanged(_GroupFilter.planifie),
           ),
           const SizedBox(width: 8),
           _FilterChip(
-            label: 'Termines',
+            label: 'guide.groups_sheet.filters.completed'.tr(),
             selected: value == _GroupFilter.termine,
             onTap: () => onChanged(_GroupFilter.termine),
           ),
@@ -819,28 +822,28 @@ class _GroupStatusChip extends StatelessWidget {
     required String status,
   }) {
     if (status == 'TERMINE') {
-      return const _GroupStatusChip(
-        label: 'TERMINE',
+      return _GroupStatusChip(
+        label: 'guide.groups_sheet.status.completed'.tr(),
         color: AppColors.green,
         icon: Icons.check_circle_rounded,
       );
     }
     if (status == 'EN_COURS') {
-      return const _GroupStatusChip(
-        label: 'EN COURS',
+      return _GroupStatusChip(
+        label: 'guide.groups_sheet.status.in_progress'.tr(),
         color: AppColors.blue,
         icon: Icons.autorenew_rounded,
       );
     }
     if (status == 'PLANIFIE') {
-      return const _GroupStatusChip(
-        label: 'PLANIFIE',
+      return _GroupStatusChip(
+        label: 'guide.groups_sheet.status.planned'.tr(),
         color: AppColors.textMuted,
         icon: Icons.schedule_rounded,
       );
     }
-    return const _GroupStatusChip(
-      label: 'INFO',
+    return _GroupStatusChip(
+      label: 'guide.groups_sheet.status.info'.tr(),
       color: AppColors.textMuted,
       icon: Icons.info_outline_rounded,
     );

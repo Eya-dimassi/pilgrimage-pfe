@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 class SosHoldButton extends StatefulWidget {
@@ -85,20 +86,20 @@ class _SosHoldButtonState extends State<SosHoldButton> {
           padding: const EdgeInsets.fromLTRB(18, 14, 18, 14),
           child: Column(
             children: [
-              const Text(
-                'Maintenez 3 secondes',
+              Text(
+                'sos.hold_button.hold_3s'.tr(),
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 13.5,
                   fontWeight: FontWeight.w800,
                   color: Colors.white,
                 ),
               ),
               const SizedBox(height: 4),
-              const Text(
-                'Une alerte SOS sera envoyee avec votre position.',
+              Text(
+                'sos.hold_button.send_with_position'.tr(),
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 11,
                   height: 1.25,
                   color: Color(0xFFFDECEC),

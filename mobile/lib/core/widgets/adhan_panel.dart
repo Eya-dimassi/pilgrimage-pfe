@@ -1,4 +1,5 @@
 import 'package:adhan/adhan.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -18,7 +19,7 @@ class AdhanPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final timeline = _PrayerTimeline.forNow();
+    final timeline = _PrayerTimeline.forNow(context);
 
     return Container(
       padding: EdgeInsets.all(compact ? 12 : 22),
@@ -78,7 +79,7 @@ class _ExpandedPrayerBlock extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Appel a la priere',
+                    'adhan.title'.tr(),
                     style: GoogleFonts.amiri(
                       fontSize: 24,
                       fontWeight: FontWeight.w700,
@@ -123,7 +124,7 @@ class _ExpandedPrayerBlock extends StatelessWidget {
             border: Border.all(color: AppColors.borderSoft),
           ),
           child: Text(
-            'Horaires calcules pour Makkah. ${timeline.footer}',
+            '${'adhan.footer_prefix'.tr()} ${timeline.footer}',
             style: const TextStyle(
               fontSize: 12,
               height: 1.45,
@@ -172,7 +173,7 @@ class _CompactPrayerBlock extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Horaires de priere',
+                    'adhan.schedule_title'.tr(),
                     style: const TextStyle(
                       fontSize: 13.5,
                       fontWeight: FontWeight.w800,
@@ -243,7 +244,7 @@ class _CompactPrayerBlock extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Icon(
-                      _iconFor(entry.name),
+                      _iconFor(entry.prayerKey),
                       size: 14,
                       color: isActive
                           ? const Color(0xFFD4AF37)
@@ -259,17 +260,17 @@ class _CompactPrayerBlock extends StatelessWidget {
     );
   }
 
-  IconData _iconFor(String name) {
-    switch (name) {
-      case 'Fajr':
+  IconData _iconFor(String key) {
+    switch (key) {
+      case 'fajr':
         return Icons.wb_twilight_outlined;
-      case 'Dhuhr':
+      case 'dhuhr':
         return Icons.wb_sunny_outlined;
-      case 'Asr':
+      case 'asr':
         return Icons.cloud_outlined;
-      case 'Maghrib':
+      case 'maghrib':
         return Icons.wb_twilight;
-      case 'Isha':
+      case 'isha':
         return Icons.nightlight_round;
       default:
         return Icons.access_time;
@@ -320,12 +321,12 @@ class _PrayerChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isActive = entry.isActive;
-    final icon = switch (entry.name) {
-      'Fajr' => Icons.wb_twilight_outlined,
-      'Dhuhr' => Icons.wb_sunny_outlined,
-      'Asr' => Icons.cloud_outlined,
-      'Maghrib' => Icons.wb_twilight,
-      'Isha' => Icons.nightlight_round,
+    final icon = switch (entry.prayerKey) {
+      'fajr' => Icons.wb_twilight_outlined,
+      'dhuhr' => Icons.wb_sunny_outlined,
+      'asr' => Icons.cloud_outlined,
+      'maghrib' => Icons.wb_twilight,
+      'isha' => Icons.nightlight_round,
       _ => Icons.access_time_rounded,
     };
 
@@ -337,7 +338,7 @@ class _PrayerChip extends StatelessWidget {
       ),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(compact ? 18 : 18),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(
           color: isActive ? AppColors.gold : AppColors.borderSoft,
           width: isActive ? 1.3 : 1,
@@ -388,11 +389,13 @@ class _PrayerChip extends StatelessWidget {
 
 class _PrayerEntry {
   const _PrayerEntry({
-    required this.name,
+    required this.prayerKey, // clé brute ex: 'fajr'
+    required this.name,      // nom traduit affiché
     required this.time,
     this.isActive = false,
   });
 
+  final String prayerKey;
   final String name;
   final String time;
   final bool isActive;
@@ -415,7 +418,7 @@ class _PrayerTimeline {
 
   static final Coordinates _makkahCoordinates = Coordinates(21.4225, 39.8262);
 
-  static _PrayerTimeline forNow() {
+  static _PrayerTimeline forNow(BuildContext context) {
     final params = CalculationMethod.umm_al_qura.getParameters();
     final prayerTimes = PrayerTimes.today(_makkahCoordinates, params);
     final currentPrayer = prayerTimes.currentPrayer();
@@ -424,27 +427,32 @@ class _PrayerTimeline {
 
     final entries = [
       _PrayerEntry(
-        name: 'Fajr',
+        prayerKey: 'fajr',
+        name: 'adhan.prayers.fajr'.tr(),
         time: _formatHour(prayerTimes.fajr),
         isActive: currentPrayer == Prayer.fajr,
       ),
       _PrayerEntry(
-        name: 'Dhuhr',
+        prayerKey: 'dhuhr',
+        name: 'adhan.prayers.dhuhr'.tr(),
         time: _formatHour(prayerTimes.dhuhr),
         isActive: currentPrayer == Prayer.dhuhr,
       ),
       _PrayerEntry(
-        name: 'Asr',
+        prayerKey: 'asr',
+        name: 'adhan.prayers.asr'.tr(),
         time: _formatHour(prayerTimes.asr),
         isActive: currentPrayer == Prayer.asr,
       ),
       _PrayerEntry(
-        name: 'Maghrib',
+        prayerKey: 'maghrib',
+        name: 'adhan.prayers.maghrib'.tr(),
         time: _formatHour(prayerTimes.maghrib),
         isActive: currentPrayer == Prayer.maghrib,
       ),
       _PrayerEntry(
-        name: 'Isha',
+        prayerKey: 'isha',
+        name: 'adhan.prayers.isha'.tr(),
         time: _formatHour(prayerTimes.isha),
         isActive: currentPrayer == Prayer.isha,
       ),
@@ -458,7 +466,7 @@ class _PrayerTimeline {
           : '${_labelForPrayer(nextPrayer)} ${_formatHour(nextPrayerTime)}',
       nextMeta: nextPrayerTime == null
           ? null
-          : 'Makkah · ${_labelForPrayer(nextPrayer)} a ${_formatHour(nextPrayerTime)}',
+          : 'Makkah · ${_labelForPrayer(nextPrayer)} ${_formatHour(nextPrayerTime)}',
       entries: entries,
     );
   }
@@ -466,15 +474,15 @@ class _PrayerTimeline {
   static String _messageForPrayer(Prayer currentPrayer, Prayer nextPrayer) {
     switch (currentPrayer) {
       case Prayer.fajr:
-        return 'Le jour commence avec Fajr. Gardez un depart calme avant le mouvement du groupe.';
+        return 'adhan.message.fajr'.tr();
       case Prayer.dhuhr:
-        return 'Dhuhr marque le coeur de la journee. Gardez un repere clair entre rites et deplacements.';
+        return 'adhan.message.dhuhr'.tr();
       case Prayer.asr:
-        return 'Asr invite a ralentir un instant, verifier le groupe et se recentrer.';
+        return 'adhan.message.asr'.tr();
       case Prayer.maghrib:
-        return 'Maghrib ouvre un moment de gratitude apres l effort et les deplacements.';
+        return 'adhan.message.maghrib'.tr();
       case Prayer.isha:
-        return 'Isha appelle au calme et a la preparation du lendemain.';
+        return 'adhan.message.isha'.tr();
       case Prayer.sunrise:
       case Prayer.none:
         return _messageForUpcoming(nextPrayer);
@@ -484,48 +492,48 @@ class _PrayerTimeline {
   static String _messageForUpcoming(Prayer nextPrayer) {
     switch (nextPrayer) {
       case Prayer.fajr:
-        return 'La prochaine priere sera Fajr. Reposez-vous et gardez l intention du lendemain.';
+        return 'adhan.message.upcoming_fajr'.tr();
       case Prayer.dhuhr:
-        return 'La prochaine priere sera Dhuhr. Prenez vos reperes avant la reprise du rythme.';
+        return 'adhan.message.upcoming_dhuhr'.tr();
       case Prayer.asr:
-        return 'La prochaine priere sera Asr. Gardez un temps pour vous recentrer.';
+        return 'adhan.message.upcoming_asr'.tr();
       case Prayer.maghrib:
-        return 'La prochaine priere sera Maghrib. La fin du jour approche avec douceur.';
+        return 'adhan.message.upcoming_maghrib'.tr();
       case Prayer.isha:
-        return 'La prochaine priere sera Isha. Le soir approche, avec plus de calme.';
+        return 'adhan.message.upcoming_isha'.tr();
       case Prayer.sunrise:
-        return 'Le lever du jour approche. Gardez un rythme calme avant le prochain mouvement.';
+        return 'adhan.message.upcoming_sunrise'.tr();
       case Prayer.none:
-        return 'Gardez un repere spirituel clair pendant tout le voyage.';
+        return 'adhan.message.none'.tr();
     }
   }
 
   static String _shortLabel(Prayer currentPrayer, Prayer nextPrayer) {
     if (currentPrayer != Prayer.none) {
-      return '${_labelForPrayer(currentPrayer)} en cours';
+      return '${_labelForPrayer(currentPrayer)} ${'adhan.in_progress'.tr()}';
     }
     if (nextPrayer != Prayer.none) {
-      return 'Prochaine priere: ${_labelForPrayer(nextPrayer)}';
+      return '${'adhan.next_prayer_label'.tr()} ${_labelForPrayer(nextPrayer)}';
     }
-    return 'Horaires de priere';
+    return 'adhan.schedule_title'.tr();
   }
 
   static String _labelForPrayer(Prayer prayer) {
     switch (prayer) {
       case Prayer.fajr:
-        return 'Fajr';
+        return 'adhan.prayers.fajr'.tr();
       case Prayer.dhuhr:
-        return 'Dhuhr';
+        return 'adhan.prayers.dhuhr'.tr();
       case Prayer.asr:
-        return 'Asr';
+        return 'adhan.prayers.asr'.tr();
       case Prayer.maghrib:
-        return 'Maghrib';
+        return 'adhan.prayers.maghrib'.tr();
       case Prayer.isha:
-        return 'Isha';
+        return 'adhan.prayers.isha'.tr();
       case Prayer.sunrise:
-        return 'Sunrise';
+        return 'adhan.sunrise'.tr();
       case Prayer.none:
-        return 'Priere';
+        return 'adhan.prayer_fallback'.tr();
     }
   }
 

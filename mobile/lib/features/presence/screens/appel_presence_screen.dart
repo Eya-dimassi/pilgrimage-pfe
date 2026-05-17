@@ -5,6 +5,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:easy_localization/easy_localization.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../domain/models/appel_presence.dart';
 import '../domain/models/confirmation_presence.dart';
@@ -59,15 +60,15 @@ class _AppelPresenceScreenState extends ConsumerState<AppelPresenceScreen> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: _retourDansApp,
-          tooltip: 'Retour',
+          tooltip: 'actions.back'.tr(),
         ),
-        title: const Text('Appel de presence'),
+        title: Text('presence.title'.tr()),
         actions: [
           if (appelAsync.hasValue && appelAsync.value!.appel.statut == 'EN_COURS')
             IconButton(
               icon: const Icon(Icons.check_circle_outline),
               onPressed: () => _cloturerAppel(context),
-              tooltip: 'Cloturer l\'appel',
+              tooltip: 'presence.close_call.tooltip'.tr(),
             ),
         ],
       ),
@@ -91,7 +92,11 @@ class _AppelPresenceScreenState extends ConsumerState<AppelPresenceScreen> {
                       ),
                     )
                   : const Icon(Icons.save),
-              label: Text('Enregistrer (${localKeys.length})'),
+              label: Text(
+                'presence.save_changes'.tr(
+                  namedArgs: {'count': '${localKeys.length}'},
+                ),
+              ),
             )
           : null,
     );
@@ -113,8 +118,8 @@ class _AppelPresenceScreenState extends ConsumerState<AppelPresenceScreen> {
           ),
         Expanded(
           child: data.appel.confirmations.isEmpty
-              ? const Center(
-                  child: Text('Aucun pelerin dans ce groupe'),
+              ? Center(
+                  child: Text('presence.guide.empty_group'.tr()),
                 )
               : ListView.builder(
                   padding: const EdgeInsets.only(bottom: 80),
@@ -159,7 +164,7 @@ class _AppelPresenceScreenState extends ConsumerState<AppelPresenceScreen> {
             ),
             const SizedBox(height: 16),
             Text(
-              'Erreur',
+              'presence.error.title'.tr(),
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 8),
@@ -173,7 +178,7 @@ class _AppelPresenceScreenState extends ConsumerState<AppelPresenceScreen> {
               onPressed: () =>
                   ref.invalidate(appelPresenceProvider(widget.appelId)),
               icon: const Icon(Icons.refresh),
-              label: const Text('Reessayer'),
+              label: Text('actions.retry'.tr()),
             ),
           ],
         ),
@@ -199,11 +204,15 @@ class _AppelPresenceScreenState extends ConsumerState<AppelPresenceScreen> {
     final result = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Note - ${confirmation.pelerin.nomComplet}'),
+        title: Text(
+          'presence.guide.note_title'.tr(
+            namedArgs: {'name': confirmation.pelerin.nomComplet},
+          ),
+        ),
         content: TextField(
           controller: controller,
-          decoration: const InputDecoration(
-            hintText: 'Ex: Retard 10 min, Malade...',
+          decoration: InputDecoration(
+            hintText: 'presence.note_hint'.tr(),
             border: OutlineInputBorder(),
           ),
           maxLines: 3,
@@ -212,11 +221,11 @@ class _AppelPresenceScreenState extends ConsumerState<AppelPresenceScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Annuler'),
+            child: Text('actions.cancel'.tr()),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, controller.text),
-            child: const Text('Enregistrer'),
+            child: Text('actions.save'.tr()),
           ),
         ],
       ),
@@ -246,8 +255,8 @@ class _AppelPresenceScreenState extends ConsumerState<AppelPresenceScreen> {
     });
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Tous les pelerins marques comme PRESENT'),
+      SnackBar(
+        content: Text('presence.guide.all_present_success'.tr()),
         duration: Duration(seconds: 2),
       ),
     );
@@ -257,18 +266,18 @@ class _AppelPresenceScreenState extends ConsumerState<AppelPresenceScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Relancer les absents'),
-        content: const Text(
-          'Les pelerins ABSENT seront remis EN_ATTENTE et recevront une notification de rappel.',
+        title: Text('presence.guide.reset_absent_title'.tr()),
+        content: Text(
+          'presence.guide.reset_absent_message'.tr(),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Annuler'),
+            child: Text('actions.cancel'.tr()),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Relancer'),
+            child: Text('presence.guide.reset_absent_action'.tr()),
           ),
         ],
       ),
@@ -286,7 +295,11 @@ class _AppelPresenceScreenState extends ConsumerState<AppelPresenceScreen> {
         final updated = result['updated'] ?? 0;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('$updated absent(s) reinitialise(s) et notifie(s)'),
+            content: Text(
+              'presence.guide.reset_absent_success'.tr(
+                namedArgs: {'count': '$updated'},
+              ),
+            ),
             backgroundColor: Colors.green,
           ),
         );
@@ -295,7 +308,7 @@ class _AppelPresenceScreenState extends ConsumerState<AppelPresenceScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Erreur: $e'),
+            content: Text('presence.error.with_message'.tr(namedArgs: {'error': '$e'})),
             backgroundColor: Colors.red,
           ),
         );
@@ -310,7 +323,7 @@ class _AppelPresenceScreenState extends ConsumerState<AppelPresenceScreen> {
 
     if (data == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Donnees indisponibles, reessayez.')),
+        SnackBar(content: Text('presence.error.data_unavailable'.tr())),
       );
       return;
     }
@@ -323,7 +336,7 @@ class _AppelPresenceScreenState extends ConsumerState<AppelPresenceScreen> {
 
     if (modifications.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Aucune modification valide a enregistrer')),
+        SnackBar(content: Text('presence.guide.no_valid_changes'.tr())),
       );
       return;
     }
@@ -342,8 +355,8 @@ class _AppelPresenceScreenState extends ConsumerState<AppelPresenceScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Presences enregistrees avec succes'),
+          SnackBar(
+            content: Text('presence.guide.save_success'.tr()),
             backgroundColor: Colors.green,
           ),
         );
@@ -352,7 +365,7 @@ class _AppelPresenceScreenState extends ConsumerState<AppelPresenceScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Erreur: $e'),
+            content: Text('presence.error.with_message'.tr(namedArgs: {'error': '$e'})),
             backgroundColor: Colors.red,
           ),
         );
@@ -403,22 +416,21 @@ class _AppelPresenceScreenState extends ConsumerState<AppelPresenceScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Cloturer l\'appel'),
-        content: const Text(
-          'Etes-vous sur de vouloir cloturer cet appel de presence ?\n\n'
-          'Cette action est irreversible.',
+        title: Text('presence.close_call.title'.tr()),
+        content: Text(
+          'presence.close_call.message'.tr(),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Annuler'),
+            child: Text('actions.cancel'.tr()),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(context, true),
             style: FilledButton.styleFrom(
               backgroundColor: Theme.of(context).colorScheme.error,
             ),
-            child: const Text('Cloturer'),
+            child: Text('presence.close_call.action'.tr()),
           ),
         ],
       ),
@@ -433,8 +445,8 @@ class _AppelPresenceScreenState extends ConsumerState<AppelPresenceScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Appel cloture avec succes'),
+          SnackBar(
+            content: Text('presence.close_call.success'.tr()),
             backgroundColor: Colors.green,
           ),
         );
@@ -443,7 +455,7 @@ class _AppelPresenceScreenState extends ConsumerState<AppelPresenceScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Erreur: $e'),
+            content: Text('presence.error.with_message'.tr(namedArgs: {'error': '$e'})),
             backgroundColor: Colors.red,
           ),
         );
