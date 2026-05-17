@@ -44,13 +44,8 @@ export async function getActiveGuideSosAlerts(utilisateurId: string) {
       id: true,
       latitude: true,
       longitude: true,
-      incidents: {
-        orderBy: { createdAt: 'desc' },
-        take: 1,
-        select: {
-          type: true,
-        },
-      },
+      type: true,
+      description: true,
       message: true,
       createdAt: true,
       pelerin: {
@@ -98,8 +93,9 @@ export async function getActiveGuideSosAlerts(utilisateurId: string) {
     id: alert.id,
     latitude: alert.latitude,
     longitude: alert.longitude,
-    type: alert.incidents[0]?.type ?? 'AUTRE',
+    type: alert.type,
     message: alert.message,
+    description: alert.description,
     createdAt: alert.createdAt,
     pelerinName: [alert.pelerin.utilisateur?.prenom, alert.pelerin.utilisateur?.nom]
       .filter(Boolean)

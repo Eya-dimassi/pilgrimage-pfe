@@ -640,6 +640,7 @@ export const getFamilyAssociations = async (userId: string) => {
       codeUnique: association.pelerin.codeUnique,
       nom: association.pelerin.utilisateur.nom,
       prenom: association.pelerin.utilisateur.prenom,
+      linkedAt: association.createdAt,
       groupe: pickedGroup ? selectedGroupById.get(pickedGroup.id) ?? pickedGroup : null,
     };
   });

@@ -6,6 +6,7 @@ import {
   markMyNotificationAsRead,
   registerMyDeviceToken,
   unregisterMyDeviceToken,
+  deleteMyNotification,
 } from './notifications.service'
 
 const router = Router()
@@ -60,6 +61,14 @@ router.patch('/:notificationId/read', async (req: AuthRequest, res: Response) =>
 router.post('/read-all', async (req: AuthRequest, res: Response) => {
   try {
     const result = await markAllMyNotificationsAsRead(req.user!.id)
+    return res.status(200).json(result)
+  } catch (error: any) {
+    return res.status(400).json({ message: error.message })
+  }
+})
+router.delete('/:notificationId', async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await deleteMyNotification(req.user!.id, String(req.params.notificationId))
     return res.status(200).json(result)
   } catch (error: any) {
     return res.status(400).json({ message: error.message })

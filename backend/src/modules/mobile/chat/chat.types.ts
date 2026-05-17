@@ -1,6 +1,6 @@
 // chat.types.ts
 
-export type UserRole = 'pelerin' | 'famille';
+export type UserRole = 'pelerin' | 'famille' | 'guide';
 
 export type MessageRole = 'user' | 'assistant';
 
@@ -13,7 +13,7 @@ export interface ChatRequest {
   message: string;
   history: ChatMessage[];
   userRole: UserRole;
-  language: 'ar' | 'fr' | 'en';
+  language?: 'ar' | 'fr' | 'en';
 }
 
 export interface ChatResponse {

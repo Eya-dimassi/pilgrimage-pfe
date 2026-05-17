@@ -102,7 +102,7 @@ model RagChunk {
   language   String                     @default("fr")
   tags       String[]
   documentId String?
-  embedding  Unsupported("vector(768)")
+  embedding  Unsupported("vector(1024)")
   createdAt  DateTime                   @default(now())
 
   @@index([language])
@@ -152,7 +152,6 @@ model Guide {
   groupes           GroupeGuide[]
   evenementsValides EvenementPlanning[]
   appelsPresence    AppelPresence[]
-  incidents         Incident[]
   alertesResolues   AlerteSOS[]         @relation("GuideResolutionSOS")
 
   @@index([agenceId])
@@ -180,7 +179,7 @@ model Groupe {
 
   plannings      PlanningQuotidien[]
   appelsPresence AppelPresence[]
-  incidents      Incident[]
+  alertesSOS     AlerteSOS[]
 
   @@index([agenceId])
   @@index([annee])
@@ -380,43 +379,25 @@ model Position {
 model AlerteSOS {
   id                String       @id @default(uuid())
   pelerinId         String
+  groupeId          String
   latitude          Float
   longitude         Float
+  type              TypeIncident @default(AUTRE)
+  description       String?
   statut            StatutAlerte @default(EN_COURS)
   message           String?
   createdAt         DateTime     @default(now())
   resolueAt         DateTime?
   resolueParGuideId String?
 
-  pelerin         Pelerin    @relation(fields: [pelerinId], references: [id], onDelete: Cascade)
-  resolueParGuide Guide?     @relation("GuideResolutionSOS", fields: [resolueParGuideId], references: [id])
-  incidents       Incident[]
+  pelerin         Pelerin @relation(fields: [pelerinId], references: [id], onDelete: Cascade)
+  groupe          Groupe  @relation(fields: [groupeId], references: [id])
+  resolueParGuide Guide?  @relation("GuideResolutionSOS", fields: [resolueParGuideId], references: [id])
 
   @@index([pelerinId])
+  @@index([groupeId])
   @@index([statut])
   @@index([resolueParGuideId])
-}
-
-model Incident {
-  id          String       @id @default(uuid())
-  alerteSOSId String?
-  groupeId    String
-  guideId     String?
-  type        TypeIncident
-  description String
-  gravite     Gravite      @default(MOYENNE)
-  statut      StatutAlerte @default(EN_COURS)
-  createdAt   DateTime     @default(now())
-  resolueAt   DateTime?
-
-  alerteSOS AlerteSOS? @relation(fields: [alerteSOSId], references: [id])
-  groupe    Groupe     @relation(fields: [groupeId], references: [id])
-  guide     Guide?     @relation(fields: [guideId], references: [id])
-
-  @@index([alerteSOSId])
-  @@index([groupeId])
-  @@index([guideId])
-  @@index([statut])
 }
 
 // ======================================================
@@ -527,11 +508,4 @@ enum TypeIncident {
   PERTE
   LOGISTIQUE
   AUTRE
-}
-
-enum Gravite {
-  FAIBLE
-  MOYENNE
-  ELEVEE
-  CRITIQUE
 }

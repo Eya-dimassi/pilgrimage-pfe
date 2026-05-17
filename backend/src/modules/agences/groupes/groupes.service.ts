@@ -25,9 +25,7 @@ function mapGroupeForAgenceDashboard(groupe: any) {
   };
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// CREATE
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+
 export const createGroupe = async (
   agenceId: string,
   data: {
@@ -56,12 +54,12 @@ export const createGroupe = async (
     });
 
     if (guides.length !== guideIds.length) {
-      throw new Error("Guide introuvable ou n'appartient pas Ã  votre agence");
+      throw new Error("Guide introuvable ou n'appartient pas à votre agence");
     }
 
     const inactiveGuide = guides.find((g) => !g.utilisateur.actif);
     if (inactiveGuide) {
-      throw new Error("Ce guide n'a pas encore activÃ© son compte");
+      throw new Error("Ce guide n'a pas encore activé son compte");
     }
 
     const unavailableGuide = guides.find(
@@ -105,7 +103,6 @@ export const createGroupe = async (
     }
   }
 
-  // EmpÃªcher les doublons de nom (mÃªme agence + mÃªme annÃ©e)
   const existingByName = await prisma.groupe.findFirst({
     where: {
       agenceId,
@@ -119,7 +116,6 @@ export const createGroupe = async (
     throw new Error('Un groupe avec ce nom existe deja pour cette annee')
   }
 
-  // CrÃ©er le groupe
   const groupe = await prisma.groupe.create({
     data: {
       nom: data.nom,
@@ -135,7 +131,7 @@ export const createGroupe = async (
     include: {
       _count: { 
         select: { 
-          membres: { where: { actif: true } }  // â­ Compter seulement les actifs
+          membres: { where: { actif: true } }  
         } 
       },
     },
@@ -152,7 +148,6 @@ export const createGroupe = async (
     });
   }
 
-  // RÃ©cupÃ©rer le groupe complet avec le guide
   const full = await prisma.groupe.findUnique({
     where: { id: groupe.id },
     include: {
@@ -189,15 +184,13 @@ export const createGroupe = async (
   return full ? mapGroupeForAgenceDashboard(full) : full;
 };
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// GET ALL
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+
 export const getGroupes = async (agenceId: string) => {
   const list = await prisma.groupe.findMany({
     where: { agenceId },
     include: {
       guides: {
-        where: { actif: true },  // â­ Seulement le guide actif
+        where: { actif: true },  
         include: {
           guide: {
             include: {
@@ -207,7 +200,7 @@ export const getGroupes = async (agenceId: string) => {
         },
       },
       membres: {
-        where: { actif: true },  // â­ Seulement les membres actifs
+        where: { actif: true },  
         include: {
           pelerin: {
             include: {
@@ -241,9 +234,7 @@ export const getGroupes = async (agenceId: string) => {
   return normalizedList.map(mapGroupeForAgenceDashboard);
 };
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// GET ONE
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+
 export const getGroupeById = async (agenceId: string, groupeId: string) => {
   const groupe = await prisma.groupe.findFirst({
     where: { id: groupeId, agenceId },
@@ -287,9 +278,6 @@ export const getGroupeById = async (agenceId: string, groupeId: string) => {
   return mapGroupeForAgenceDashboard(withEffectiveGroupStatus(groupe));
 };
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// UPDATE
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 export const updateGroupe = async (
   agenceId: string,
   groupeId: string,
@@ -449,7 +437,6 @@ export const updateGroupe = async (
         ? { hajjStartDate: parsedHajjStartDate }
         : {};
 
-  // Mettre Ã  jour le groupe
   const updated = await prisma.groupe.update({
     where: { id: groupeId },
     data: {
@@ -496,24 +483,21 @@ export const updateGroupe = async (
   return mapGroupeForAgenceDashboard(updated);
 };
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// DELETE â­ CORRIGÃ‰
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 export const deleteGroupe = async (agenceId: string, groupeId: string) => {
-  // 1. VÃ©rifier que le groupe existe et appartient Ã  l'agence
+ 
   const groupe = await prisma.groupe.findFirst({ 
     where: { id: groupeId, agenceId },
     include: {
       _count: {
         select: {
-          membres: { where: { actif: true } }  // â­ Compter membres actifs
+          membres: { where: { actif: true } }  
         }
       }
     }
   });
   
   if (!groupe) {
-    // VÃ©rifier si le groupe existe mais appartient Ã  une autre agence
+    
     const groupeExists = await prisma.groupe.findUnique({
       where: { id: groupeId },
     });
@@ -525,7 +509,6 @@ export const deleteGroupe = async (agenceId: string, groupeId: string) => {
     }
   }
 
-  // 2. â­ VÃ‰RIFIER QUE LE GROUPE EST VIDE
   const nombreMembresActifs = groupe._count.membres;
 
   if (nombreMembresActifs > 0) {
@@ -583,15 +566,12 @@ export const deleteGroupe = async (agenceId: string, groupeId: string) => {
   };
 };
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// ASSIGN PELERIN â­ CORRIGÃ‰
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 export const assignerPelerin = async (
   agenceId: string,
   groupeId: string,
   pelerinId: string
 ) => {
-  // VÃ©rifier que le groupe existe et appartient Ã  l'agence
+  
   const groupe = await prisma.groupe.findFirst({ 
     where: { id: groupeId, agenceId } 
   });
@@ -608,7 +588,6 @@ export const assignerPelerin = async (
   const groupeEnd = groupe.dateRetour ?? groupe.dateDepart ?? null
   const groupeMax = Math.min((groupe.nbMax ?? 40), 40)
 
-  // VÃ©rifier que le pÃ¨lerin existe et appartient Ã  l'agence
   const pelerin = await prisma.pelerin.findFirst({
     where: { id: pelerinId, agenceId },
     include: { 
@@ -617,11 +596,11 @@ export const assignerPelerin = async (
   });
   
   if (!pelerin) {
-    throw new Error("PÃ¨lerin introuvable ou n'appartient pas Ã  votre agence");
+    throw new Error("Pélerin introuvable ou n'appartient pas à votre agence");
   }
   
   if (!pelerin.utilisateur.actif) {
-    throw new Error("Ce pÃ¨lerin n'a pas encore activÃ© son compte");
+    throw new Error("Ce pélerin n'a pas encore activé son compte");
   }
 
   // Verify whether the pilgrim is already an active member of this group.
@@ -637,8 +616,7 @@ export const assignerPelerin = async (
     throw new Error('Ce pèlerin est déjà membre actif de ce groupe');
   }
 
-  // Prevent overlapping active trip periods (PLANIFIE / EN_COURS).
-  // A pilgrim may belong to multiple groups over time, but not two overlapping trips.
+  
   if (groupeStart && groupeEnd && ['PLANIFIE', 'EN_COURS'].includes(groupe.status)) {
     const activeMemberships = await prisma.groupePelerin.findMany({
       where: {
@@ -686,7 +664,6 @@ export const assignerPelerin = async (
     }
   }
 
-  // â­ CrÃ©er la nouvelle relation GroupePelerin
   await prisma.groupePelerin.create({
     data: {
       groupeId,
@@ -696,30 +673,25 @@ export const assignerPelerin = async (
   });
 
   return { 
-    message: 'PÃ¨lerin ajoutÃ© au groupe avec succÃ¨s',
+    message: 'Pelerin ajouté au groupe avec succès',
     groupeId,
     pelerinId,
   };
 };
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// REMOVE PELERIN â­ CORRIGÃ‰
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 export const retirerPelerin = async (
   agenceId: string,
   groupeId: string,
   pelerinId: string
 ) => {
-  // VÃ©rifier que le pÃ¨lerin appartient Ã  l'agence
   const pelerin = await prisma.pelerin.findFirst({ 
     where: { id: pelerinId, agenceId } 
   });
   
   if (!pelerin) {
-    throw new Error('PÃ¨lerin introuvable');
+    throw new Error('Pelerin introuvable');
   }
 
-  // â­ VÃ©rifier que le pÃ¨lerin est membre actif de ce groupe
   const membre = await prisma.groupePelerin.findFirst({
     where: {
       groupeId,
@@ -729,10 +701,9 @@ export const retirerPelerin = async (
   });
 
   if (!membre) {
-    throw new Error("Ce pÃ¨lerin n'est pas membre actif de ce groupe");
+    throw new Error("Ce pelerin n'est pas membre actif de ce groupe");
   }
 
-  // â­ DÃ©sactiver la relation (soft delete)
   await prisma.groupePelerin.update({
     where: { id: membre.id },
     data: {
@@ -742,7 +713,7 @@ export const retirerPelerin = async (
   });
 
   return { 
-    message: 'PÃ¨lerin retirÃ© du groupe avec succÃ¨s',
+    message: 'Pelerin retiré du groupe avec succès',
     groupeId,
     pelerinId,
   };

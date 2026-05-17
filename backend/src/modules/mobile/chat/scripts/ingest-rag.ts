@@ -1,12 +1,15 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { randomUUID } from 'crypto';
-import { PDFParse } from 'pdf-parse';
+const { PDFParse } = require('pdf-parse') as {
+  PDFParse: new (options: { data: Uint8Array }) => { getText(): Promise<{ text: string; numpages: number }> }
+};
 import prisma from '../../../../config/prisma';
 import { embedText } from '../chat.provider';
+import { Prisma } from '../../../../../generated/prisma/client';
 
 type Language = 'ar' | 'fr' | 'en';
-type Audience = 'pelerin' | 'famille';
+type Audience = 'pelerin' | 'famille' | 'guide';
 
 interface ChunkRecord {
   text: string;
@@ -39,16 +42,18 @@ const rawDir = path.join(chatDir, 'data', 'raw');
 const processedDir = path.join(chatDir, 'data', 'processed');
 const processedChunksPath = path.join(processedDir, 'chunks.json');
 
-const MAX_CHARS = 1800;
-const OVERLAP_CHARS = 250;
-const EMBEDDING_DELAY_MS = 1200;
-
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
+// mxbai-embed-large hard limit is 512 tokens.
+// Arabic is dense (~2 chars/token), so 800 chars ≈ 400 tokens — safe margin.
+// French/English are lighter (~4 chars/token) so 800 chars ≈ 200 tokens — fine.
+const MAX_CHARS = 350;
+const OVERLAP_CHARS = 60;
 
 function normalizeWhitespace(value: string): string {
-  return value.replace(/\r\n/g, '\n').replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
+  return value
+    .replace(/\r\n/g, '\n')
+    .replace(/[ \t]+/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
 }
 
 function toLanguage(value: string | undefined, fallback: Language = 'fr'): Language {
@@ -61,9 +66,18 @@ function getLanguageFromFilename(filePath: string, fallback: Language = 'fr'): L
 }
 
 function toAudience(values: string[] | undefined): Audience[] {
-  const allowed = new Set<Audience>(['pelerin', 'famille']);
-  const cleaned = (values ?? []).filter((value): value is Audience => allowed.has(value as Audience));
+  const allowed = new Set<Audience>(['pelerin', 'famille', 'guide']); // ✅ includes guide
+  const cleaned = (values ?? []).filter((v): v is Audience => allowed.has(v as Audience));
   return cleaned.length > 0 ? cleaned : ['pelerin'];
+}
+
+// ✅ language-aware labels so Arabic FAQ entries don't get French headers
+function getFaqLabels(language: Language): { q: string; a: string } {
+  switch (language) {
+    case 'ar': return { q: 'سؤال', a: 'جواب' };
+    case 'en': return { q: 'Question', a: 'Answer' };
+    default:   return { q: 'Question', a: 'Réponse' };
+  }
 }
 
 function parseFrontmatter(content: string): { metadata: MarkdownMetadata; body: string } {
@@ -85,15 +99,12 @@ function parseFrontmatter(content: string): { metadata: MarkdownMetadata; body: 
   const rawFrontmatter = content.slice(4, endIndex);
   const body = content.slice(endIndex + 5);
   const lines = rawFrontmatter.split('\n');
-
   const metadata: MarkdownMetadata = { ...defaultMetadata };
   let currentListKey: 'audience' | 'tags' | null = null;
 
   for (const rawLine of lines) {
     const line = rawLine.trimEnd();
-    if (!line.trim()) {
-      continue;
-    }
+    if (!line.trim()) continue;
 
     const listMatch = line.match(/^\s*-\s+"?([^"]+)"?\s*$/);
     if (listMatch && currentListKey) {
@@ -107,9 +118,7 @@ function parseFrontmatter(content: string): { metadata: MarkdownMetadata; body: 
 
     currentListKey = null;
     const keyValueMatch = line.match(/^([A-Za-z_]+):\s*(.*)$/);
-    if (!keyValueMatch) {
-      continue;
-    }
+    if (!keyValueMatch) continue;
 
     const [, key, rawValue] = keyValueMatch;
     const value = rawValue.trim().replace(/^"|"$/g, '');
@@ -130,10 +139,7 @@ function parseFrontmatter(content: string): { metadata: MarkdownMetadata; body: 
   metadata.audience = toAudience(metadata.audience);
   metadata.tags = metadata.tags.filter(Boolean);
 
-  return {
-    metadata,
-    body: normalizeWhitespace(body),
-  };
+  return { metadata, body: normalizeWhitespace(body) };
 }
 
 function splitMarkdownIntoSections(content: string): Array<{ section?: string; text: string }> {
@@ -144,9 +150,7 @@ function splitMarkdownIntoSections(content: string): Array<{ section?: string; t
 
   const pushBuffer = () => {
     const text = normalizeWhitespace(buffer.join('\n'));
-    if (text) {
-      sections.push({ section: currentSection, text });
-    }
+    if (text) sections.push({ section: currentSection, text });
     buffer = [];
   };
 
@@ -164,35 +168,35 @@ function splitMarkdownIntoSections(content: string): Array<{ section?: string; t
 }
 
 function splitLongText(text: string): string[] {
-  if (text.length <= MAX_CHARS) {
-    return [text];
-  }
+  if (text.length <= MAX_CHARS) return [text];
 
   const chunks: string[] = [];
   let start = 0;
 
   while (start < text.length) {
     let end = Math.min(start + MAX_CHARS, text.length);
+
     if (end < text.length) {
+      // ✅ Arabic sentence boundaries added alongside ASCII ones
       const lastBreak = Math.max(
         text.lastIndexOf('\n\n', end),
+        text.lastIndexOf('؟ ', end),  // Arabic question mark
+        text.lastIndexOf('۔ ', end),  // Arabic full stop
+        text.lastIndexOf('، ', end),  // Arabic comma (softer break)
         text.lastIndexOf('. ', end),
         text.lastIndexOf('! ', end),
-        text.lastIndexOf('? ', end)
+        text.lastIndexOf('? ', end),
       );
+
       if (lastBreak > start + Math.floor(MAX_CHARS / 2)) {
         end = lastBreak + 1;
       }
     }
 
     const chunk = normalizeWhitespace(text.slice(start, end));
-    if (chunk) {
-      chunks.push(chunk);
-    }
+    if (chunk) chunks.push(chunk);
 
-    if (end >= text.length) {
-      break;
-    }
+    if (end >= text.length) break;
 
     start = Math.max(end - OVERLAP_CHARS, start + 1);
   }
@@ -205,13 +209,10 @@ async function collectRawFiles(dir: string): Promise<string[]> {
   const files = await Promise.all(
     entries.map(async (entry) => {
       const fullPath = path.join(dir, entry.name);
-      if (entry.isDirectory()) {
-        return collectRawFiles(fullPath);
-      }
+      if (entry.isDirectory()) return collectRawFiles(fullPath);
       return [fullPath];
     })
   );
-
   return files.flat();
 }
 
@@ -243,15 +244,44 @@ async function buildFaqChunks(filePath: string): Promise<ChunkRecord[]> {
 
   return entries
     .filter((entry) => entry.question && entry.answer)
-    .map((entry, index) => ({
-      text: normalizeWhitespace(`Question: ${entry.question}\n\nReponse: ${entry.answer}`),
-      source: relativeSource,
-      section: entry.question,
-      audience: toAudience(entry.audience),
-      language: toLanguage(entry.language, fallbackLanguage),
-      tags: (entry.tags ?? []).filter(Boolean),
-      documentId: entry.id ?? `${relativeSource.replace(/\.[^.]+$/, '')}-${index + 1}`,
-    }));
+    .map((entry, index) => {
+      const language = toLanguage(entry.language, fallbackLanguage);
+      const { q, a } = getFaqLabels(language); // ✅ language-aware labels
+      return {
+        text: normalizeWhitespace(`${q}: ${entry.question}\n\n${a}: ${entry.answer}`),
+        source: relativeSource,
+        section: entry.question,
+        audience: toAudience(entry.audience),
+        language,
+        tags: (entry.tags ?? []).filter(Boolean),
+        documentId: entry.id ?? `${relativeSource.replace(/\.[^.]+$/, '')}-${index + 1}`,
+      };
+    });
+}
+function cleanPdfText(text: string): string {
+  return text
+    // Normalize Unicode — converts ligatures to proper sequences
+    .normalize('NFKC')
+
+    // Remove null bytes and other control characters (common in PDFs)
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
+
+    // Remove repeated dashes/underscores used as visual separators
+    .replace(/[-_=]{3,}/g, '')
+
+    // Remove standalone numbers on their own line (page numbers)
+    .replace(/^\s*\d+\s*$/gm, '')
+
+    // Remove lines that are pure punctuation/symbols with no real content
+    .replace(/^[^\u0600-\u06FF\u0750-\u077F\u08A0-\u08FFa-zA-Z0-9]+$/gm, '')
+    .replace(/(أركان الحج|شروط الحج|واجبات الحج|محظورات الإحرام|الركن الأول|الركن الثاني|الركن الثالث|الركن الرابع|تعريف|حكم الحج|أنواع الإحرام)/g, '\n\n$1')
+
+    // Collapse excessive whitespace
+    .replace(/[ \t]{2,}/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
+    .replace(/\u0000/g, '')
+    .replace(/[^\S\r\n]+/g, ' ')
+    .trim();
 }
 
 async function buildPdfChunks(filePath: string): Promise<ChunkRecord[]> {
@@ -260,13 +290,17 @@ async function buildPdfChunks(filePath: string): Promise<ChunkRecord[]> {
   const parsed = await parser.getText();
   const relativeSource = path.relative(rawDir, filePath).replace(/\\/g, '/');
   const documentId = relativeSource.replace(/\.[^.]+$/, '');
-  const body = normalizeWhitespace(parsed.text);
+  const body = cleanPdfText(normalizeWhitespace(parsed.text));
   const language = getLanguageFromFilename(filePath);
 
   const paragraphs = body
     .split(/\n{2,}/)
-    .map((paragraph) => paragraph.trim())
-    .filter((paragraph) => paragraph.length > 80);
+    .map((p) => p.trim())
+    .filter((p) => p.length > 80)
+    .filter((p) => {
+      const arabicAndLatin = (p.match(/[\u0600-\u06FFa-zA-Z]/g) ?? []).length;
+      return arabicAndLatin / p.length > 0.3;
+    });
 
   return paragraphs.flatMap((paragraph, index) =>
     splitLongText(paragraph).map((text, chunkIndex) => ({
@@ -280,54 +314,41 @@ async function buildPdfChunks(filePath: string): Promise<ChunkRecord[]> {
     }))
   );
 }
-
-function escapeSqlLiteral(value: string): string {
-  return value.replace(/'/g, "''");
-}
-
-function toSqlTextArray(values: string[]): string {
-  const escaped = values.map((value) => `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`);
-  return `{${escaped.join(',')}}`;
-}
-
 async function replaceChunks(chunks: ChunkRecord[]): Promise<void> {
-  const uniqueSources = [...new Set(chunks.map((chunk) => chunk.source))];
+  const uniqueSources = [...new Set(chunks.map((c) => c.source))];
 
+  // Delete existing chunks for these sources in one safe query
   if (uniqueSources.length > 0) {
-    const sourceList = uniqueSources.map((source) => `'${escapeSqlLiteral(source)}'`).join(', ');
-    await prisma.$executeRawUnsafe(`DELETE FROM "RagChunk" WHERE source IN (${sourceList})`);
+    await prisma.ragChunk.deleteMany({
+      where: { source: { in: uniqueSources } },
+    });
   }
 
+  // Insert new chunks one by one — embeddings are float arrays, not user input,
+  // but we still avoid raw SQL entirely for safety and maintainability
   for (const chunk of chunks) {
     const embedding = await embedText(chunk.text);
-    const embeddingLiteral = `[${embedding.join(',')}]`;
-    const id = randomUUID();
 
-    await prisma.$executeRawUnsafe(`
-      INSERT INTO "RagChunk" (
-        "id",
-        "text",
-        "source",
-        "section",
-        "audience",
-        "language",
-        "tags",
-        "documentId",
-        "embedding"
-      ) VALUES (
-        '${id}',
-        '${escapeSqlLiteral(chunk.text)}',
-        '${escapeSqlLiteral(chunk.source)}',
-        ${chunk.section ? `'${escapeSqlLiteral(chunk.section)}'` : 'NULL'},
-        '${escapeSqlLiteral(toSqlTextArray(chunk.audience))}'::text[],
-        '${escapeSqlLiteral(chunk.language)}',
-        '${escapeSqlLiteral(toSqlTextArray(chunk.tags))}'::text[],
-        ${chunk.documentId ? `'${escapeSqlLiteral(chunk.documentId)}'` : 'NULL'},
-        '${embeddingLiteral}'::vector
-      )
-    `);
-
-    await delay(EMBEDDING_DELAY_MS);
+    // pgvector requires a raw vector literal — this is the one place we need
+    // executeRaw, but the only interpolated value is our own float array
+    await prisma.$executeRaw(
+      Prisma.sql`
+        INSERT INTO "RagChunk" (
+          "id", "text", "source", "section",
+          "audience", "language", "tags", "documentId", "embedding"
+        ) VALUES (
+          ${randomUUID()},
+          ${chunk.text},
+          ${chunk.source},
+          ${chunk.section ?? null},
+          ${chunk.audience}::text[],
+          ${chunk.language},
+          ${chunk.tags}::text[],
+          ${chunk.documentId ?? null},
+          ${Prisma.raw(`'[${embedding.join(',')}]'::vector`)}
+        )
+      `
+    );
   }
 }
 
@@ -338,7 +359,7 @@ async function writeProcessedPreview(chunks: ChunkRecord[]): Promise<void> {
 
 async function main(): Promise<void> {
   const rawFiles = await collectRawFiles(rawDir);
-  const supportedFiles = rawFiles.filter((filePath) => /\.(md|json|pdf)$/i.test(filePath));
+  const supportedFiles = rawFiles.filter((f) => /\.(md|json|pdf)$/i.test(f));
 
   if (supportedFiles.length === 0) {
     console.log('No supported files found in chat/data/raw. Add .md, .json, or .pdf files first.');
@@ -362,10 +383,13 @@ async function main(): Promise<void> {
     return;
   }
 
+  console.log(`Generated ${allChunks.length} chunks. Saving preview...`);
   await writeProcessedPreview(allChunks);
+
+  console.log('Embedding and inserting chunks...');
   await replaceChunks(allChunks);
 
-  console.log(`Ingestion complete. ${allChunks.length} chunks written to RagChunk.`);
+  console.log(`✅ Ingestion complete. ${allChunks.length} chunks written to RagChunk.`);
   console.log(`Chunk preview saved to: ${processedChunksPath}`);
 }
 

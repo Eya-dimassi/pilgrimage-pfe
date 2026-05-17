@@ -140,3 +140,14 @@ export async function markAllMyNotificationsAsRead(userId: string) {
     updated: result.count,
   }
 }
+export async function deleteMyNotification(userId: string, notificationId: string) {
+  const notification = await prisma.notification.findFirst({
+    where: { id: notificationId, utilisateurId: userId },
+    select: { id: true },
+  })
+
+  if (!notification) throw new Error('Notification introuvable')
+
+  await prisma.notification.delete({ where: { id: notification.id } })
+  return { deleted: 1 }
+}

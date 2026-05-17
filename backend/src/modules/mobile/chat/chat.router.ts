@@ -10,10 +10,17 @@ import { ChatRequest, type UserRole } from './chat.types';
 const router = Router();
 
 router.use(authenticate);
-router.use(requireRole('PELERIN', 'FAMILLE'));
+router.use(requireRole('PELERIN', 'FAMILLE','GUIDE'));
 
 function mapUserRole(role: string): UserRole {
-  return role === 'FAMILLE' ? 'famille' : 'pelerin';
+  switch (role) {
+    case 'FAMILLE':
+      return 'famille';
+    case 'GUIDE':
+      return 'guide';
+    default:
+      return 'pelerin';
+  }
 }
 
 router.post('/message', async (req: AuthRequest, res: Response) => {
@@ -25,9 +32,9 @@ router.post('/message', async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ error: 'Message is required' });
     }
 
-    if (!language || !['ar', 'fr', 'en'].includes(language)) {
-      return res.status(400).json({ error: 'Invalid language' });
-    }
+   if (language && !['ar', 'fr', 'en'].includes(language)) {
+  return res.status(400).json({ error: 'Invalid language' });
+}
 
     if (history !== undefined && !Array.isArray(history)) {
       return res.status(400).json({ error: 'Invalid history' });
