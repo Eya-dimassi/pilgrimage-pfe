@@ -6,6 +6,7 @@ class FamilyLink {
     required this.nom,
     required this.prenom,
     this.groupe,
+    this.linkedAt,
   });
 
   final String id;
@@ -14,6 +15,7 @@ class FamilyLink {
   final String nom;
   final String prenom;
   final FamilyLinkedGroup? groupe;
+  final DateTime? linkedAt;
 
   String get fullName => [prenom.trim(), nom.trim()]
       .where((part) => part.isNotEmpty)
@@ -27,6 +29,9 @@ class FamilyLink {
       codeUnique: json['codeUnique'] as String? ?? '',
       nom: json['nom'] as String? ?? '',
       prenom: json['prenom'] as String? ?? '',
+      linkedAt: json['linkedAt'] is String
+          ? DateTime.tryParse(json['linkedAt'] as String)
+          : null,
       groupe: json['groupe'] is Map<String, dynamic>
           ? FamilyLinkedGroup.fromJson(json['groupe'] as Map<String, dynamic>)
           : null,

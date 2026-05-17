@@ -330,45 +330,31 @@ MobilePlanningEvent? pickCurrentOrNextPlanningEvent(
   if (events.isEmpty) return null;
 
   final currentTime = now ?? SaudiTime.now();
-  final sortedEvents = sortPlanningEventsByTime(events);
+  final sorted = sortPlanningEventsByTime(events);
 
-  for (var index = 0; index < sortedEvents.length; index += 1) {
-    final event = sortedEvents[index];
+  // A backend-marked in-progress event always wins.
+  for (final event in sorted) {
+    if (event.status == 'EN_COURS') return event;
+  }
+
+  // Otherwise, the first unresolved event is the real current/next step.
+  for (final event in sorted) {
+    if (!event.isResolved) return event;
+  }
+
+  // If everything is resolved for today, keep showing the latest started event
+  // instead of falling back to an empty state.
+  MobilePlanningEvent? active;
+  for (final event in sorted) {
     final start = event.heureDebutPrevue;
-    final nextStart = index + 1 < sortedEvents.length
-        ? sortedEvents[index + 1].heureDebutPrevue
-        : null;
-
-    if (start == null) {
-      return event;
-    }
-
-    final isCurrent =
-        !start.isAfter(currentTime) &&
-        (nextStart == null || nextStart.isAfter(currentTime));
-    if (isCurrent || start.isAfter(currentTime)) {
-      return event;
+    if (start == null || !start.isAfter(currentTime)) {
+      active = event;
+    } else {
+      break;
     }
   }
 
-  return null;
-}
-
-MobilePlanningEvent? pickNextPlanningEventAfter(
-  List<MobilePlanningEvent> events,
-  MobilePlanningEvent? currentEvent,
-) {
-  if (events.isEmpty || currentEvent == null) return null;
-
-  final sortedEvents = sortPlanningEventsByTime(events);
-  final currentIndex = sortedEvents.indexWhere(
-    (event) => event.id == currentEvent.id,
-  );
-  if (currentIndex < 0 || currentIndex >= sortedEvents.length - 1) {
-    return null;
-  }
-
-  return sortedEvents[currentIndex + 1];
+  return active ?? sorted.last;
 }
 
 MobilePlanningEvent? pickNextPlanningEventPreview(
@@ -379,37 +365,38 @@ MobilePlanningEvent? pickNextPlanningEventPreview(
   if (plannings.isEmpty) return null;
 
   final normalizedAnchorDay = SaudiTime.dayOf(anchorDay ?? SaudiTime.now());
-  final sortedPlannings = sortPlanningDaysByDate(plannings);
-  final planningForAnchorDay = findPlanningDayForDate(
-    sortedPlannings,
-    normalizedAnchorDay,
-  );
+  final sorted = sortPlanningDaysByDate(plannings);
+  DateTime currentEventDay = normalizedAnchorDay;
 
-  if (planningForAnchorDay != null && currentEvent != null) {
-    final nextTodayEvent = pickNextPlanningEventAfter(
-      planningForAnchorDay.evenements,
-      currentEvent,
-    );
-    if (nextTodayEvent != null) {
-      return nextTodayEvent;
+  // Look for the next unresolved event after the current one in its own day.
+  if (currentEvent != null) {
+    for (final planning in sorted) {
+      final sortedEvents = sortPlanningEventsByTime(planning.evenements);
+      final currentIndex = sortedEvents.indexWhere(
+        (event) => event.id == currentEvent.id,
+      );
+      if (currentIndex < 0) continue;
+
+      currentEventDay = SaudiTime.dayOf(planning.date);
+      for (var index = currentIndex + 1; index < sortedEvents.length; index++) {
+        final event = sortedEvents[index];
+        if (!event.isResolved) return event;
+      }
+      break;
     }
   }
 
-  for (final planning in sortedPlannings) {
-    final planningDay = SaudiTime.dayOf(planning.date);
-    if (!planningDay.isAfter(normalizedAnchorDay)) {
-      continue;
-    }
-
+  // No next event today — find the first event in any future day
+  for (final planning in sorted) {
+    if (!SaudiTime.dayOf(planning.date).isAfter(currentEventDay)) continue;
     final sortedEvents = sortPlanningEventsByTime(planning.evenements);
-    if (sortedEvents.isNotEmpty) {
-      return sortedEvents.first;
+    for (final event in sortedEvents) {
+      if (!event.isResolved) return event;
     }
   }
 
   return null;
 }
-
 List<MobilePlanningDay> expandPlanningDaysInRange(
   List<MobilePlanningDay> plannings, {
   required DateTime rangeStart,

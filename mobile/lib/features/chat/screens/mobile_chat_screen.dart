@@ -25,7 +25,6 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
   ];
 
   bool _sending = false;
-  _ChatLanguage _language = _ChatLanguage.fr;
   String? _activeUserId;
 
   @override
@@ -59,8 +58,6 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
       _messageController.clear();
     }
 
-    final supportsChat = user.role == 'PELERIN' || user.role == 'FAMILLE';
-
     return Stack(
       children: [
         Container(color: const Color(0xFFF7F7F3)),
@@ -78,21 +75,10 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
         ),
         Column(
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(18, 8, 18, 10),
-              child: _ChatHeader(
-                language: _language,
-                onLanguageChanged: (value) {
-                  setState(() => _language = value);
-                },
-              ),
-            ),
             Expanded(
-              child: supportsChat
-                  ? _buildChatBody()
-                  : const _GuideChatUnavailableCard(),
+              child: _buildChatBody(),
             ),
-            if (supportsChat) _buildComposer(),
+            _buildComposer(),
           ],
         ),
       ],
@@ -103,14 +89,10 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
     return ListView.separated(
       controller: _scrollController,
       padding: const EdgeInsets.fromLTRB(18, 8, 18, 18),
-      itemCount: _messages.length + 1,
+      itemCount: _messages.length,
       separatorBuilder: (_, __) => const SizedBox(height: 10),
       itemBuilder: (context, index) {
-        if (index == 0) {
-          return const _ChatIntroCard();
-        }
-
-        final message = _messages[index - 1];
+        final message = _messages[index];
         final isUser = message.role == 'user';
         return Align(
           alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
@@ -224,7 +206,6 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
       final answer = await ref.read(mobileChatRepositoryProvider).sendMessage(
             message: text,
             history: history,
-            language: _language.code,
           );
 
       if (!mounted) return;
@@ -266,201 +247,6 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
   }
 }
 
-class _ChatHeader extends StatelessWidget {
-  const _ChatHeader({
-    required this.language,
-    required this.onLanguageChanged,
-  });
-
-  final _ChatLanguage language;
-  final ValueChanged<_ChatLanguage> onLanguageChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return AppCard(
-      padding: const EdgeInsets.all(16),
-      radius: 24,
-      gradient: const LinearGradient(
-        colors: [
-          Color(0xFFF6FBF8),
-          Color(0xFFFFFFFF),
-        ],
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Row(
-            children: [
-              AppIconBadge(
-                icon: Icons.auto_awesome_rounded,
-                size: 42,
-                backgroundColor: AppColors.goldSoft,
-                foregroundColor: AppColors.gold,
-              ),
-              SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Chatbot spirituel',
-                      style: TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    SizedBox(height: 2),
-                    Text(
-                      'Questions pratiques sur la Omra, le Hajj, et le parcours.',
-                      style: TextStyle(
-                        fontSize: 12.5,
-                        color: AppColors.textMuted,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: _ChatLanguage.values
-                .map(
-                  (item) => InkWell(
-                    onTap: () => onLanguageChanged(item),
-                    borderRadius: BorderRadius.circular(999),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 180),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: item == language
-                            ? AppColors.primaryDark
-                            : AppColors.section,
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                      child: Text(
-                        item.label,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: item == language
-                              ? Colors.white
-                              : AppColors.textPrimary,
-                        ),
-                      ),
-                    ),
-                  ),
-                )
-                .toList(growable: false),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ChatIntroCard extends StatelessWidget {
-  const _ChatIntroCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return const AppCard(
-      padding: EdgeInsets.all(16),
-      radius: 22,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Vous pouvez demander par exemple :',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          SizedBox(height: 10),
-          Text(
-            'Comment faire la Omra etape par etape ?',
-            style: TextStyle(
-              fontSize: 12.5,
-              color: AppColors.textMuted,
-            ),
-          ),
-          SizedBox(height: 6),
-          Text(
-            'Que faire si je me sens fatigue pendant les rites ?',
-            style: TextStyle(
-              fontSize: 12.5,
-              color: AppColors.textMuted,
-            ),
-          ),
-          SizedBox(height: 6),
-          Text(
-            'Quels reperes officiels dois-je suivre sur place ?',
-            style: TextStyle(
-              fontSize: 12.5,
-              color: AppColors.textMuted,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _GuideChatUnavailableCard extends StatelessWidget {
-  const _GuideChatUnavailableCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 18),
-        child: AppCard(
-          padding: const EdgeInsets.all(22),
-          radius: 24,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: const [
-              AppIconBadge(
-                icon: Icons.forum_outlined,
-                size: 56,
-                backgroundColor: AppColors.blueSoft,
-                foregroundColor: AppColors.blue,
-              ),
-              SizedBox(height: 16),
-              Text(
-                'Chatbot bientot disponible pour les guides',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              SizedBox(height: 8),
-              Text(
-                'Le backend actuel ouvre le chatbot aux pelerins et aux familles. On peut etendre le support guide juste apres cette passe UI.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 13.5,
-                  height: 1.5,
-                  color: AppColors.textMuted,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _ChatBubbleMessage {
   const _ChatBubbleMessage({
     required this.role,
@@ -469,15 +255,4 @@ class _ChatBubbleMessage {
 
   final String role;
   final String text;
-}
-
-enum _ChatLanguage {
-  fr('Francais', 'fr'),
-  ar('Arabe', 'ar'),
-  en('English', 'en');
-
-  const _ChatLanguage(this.label, this.code);
-
-  final String label;
-  final String code;
 }

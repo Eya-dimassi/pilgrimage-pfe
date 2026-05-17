@@ -68,12 +68,6 @@ class SosAlert {
   bool get isActive => status == 'EN_COURS';
 
   factory SosAlert.fromJson(Map<String, dynamic> json) {
-    final incidents = json['incidents'];
-    final incidentType =
-        incidents is List && incidents.isNotEmpty && incidents.first is Map
-            ? (incidents.first as Map)['type'] as String?
-            : null;
-
     return SosAlert(
       id: json['id'] as String? ?? '',
       latitude: (json['latitude'] as num?)?.toDouble() ?? 0,
@@ -82,7 +76,7 @@ class SosAlert {
       createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ??
           DateTime.now(),
       type: SosIncidentType.fromApi(
-        (json['type'] ?? json['incidentType'] ?? incidentType) as String?,
+        json['type'] as String?,
       ),
       message: json['message'] as String?,
       resolvedAt: json['resolueAt'] is String

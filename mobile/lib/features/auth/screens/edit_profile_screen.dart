@@ -310,6 +310,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                     _guideDisponible = value;
                   });
                 },
+                // ignore: deprecated_member_use
                 activeColor: AppColors.green,
                 title: const Text(
                   'Disponible',

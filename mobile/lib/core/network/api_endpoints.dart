@@ -3,7 +3,7 @@ class ApiEndpoints {
 
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://192.168.1.18:3000',
+    defaultValue: 'http://10.0.2.2:3000',
   );
 
   static const String login = '/auth/login';
@@ -76,4 +76,6 @@ class ApiEndpoints {
 
   static String mobilePelerinPresenceConfirmation(String confirmationId) =>
       '/mobile/presence/confirmations/$confirmationId';
+  static String mobileNotificationDelete(String id) =>
+    '/mobile/notifications/$id';
 }
