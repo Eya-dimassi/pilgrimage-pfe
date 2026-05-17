@@ -128,3 +128,83 @@ export const getAgences = async () => {
     },
   });
 };
+
+export const getAgenceSosHistory = async (agenceId: string) => {
+  const alerts = await prisma.alerteSOS.findMany({
+    where: {
+      pelerin: {
+        agenceId,
+      },
+    },
+    orderBy: { createdAt: 'desc' },
+    select: {
+      id: true,
+      latitude: true,
+      longitude: true,
+      type: true,
+      description: true,
+      statut: true,
+      message: true,
+      createdAt: true,
+      resolueAt: true,
+      groupe: {
+        select: {
+          id: true,
+          nom: true,
+          typeVoyage: true,
+        },
+      },
+      pelerin: {
+        select: {
+          id: true,
+          utilisateur: {
+            select: {
+              prenom: true,
+              nom: true,
+            },
+          },
+          groupes: {
+            where: { actif: true },
+            orderBy: { dateDebut: 'desc' },
+            take: 1,
+            select: {
+              groupe: {
+                select: {
+                  id: true,
+                  nom: true,
+                  typeVoyage: true,
+                },
+              },
+            },
+          },
+        },
+      },
+      resolueParGuide: {
+        select: {
+          id: true,
+          utilisateur: {
+            select: {
+              prenom: true,
+              nom: true,
+            },
+          },
+        },
+      },
+    },
+  })
+
+  return alerts.map((alert) => ({
+    id: alert.id,
+    latitude: alert.latitude,
+    longitude: alert.longitude,
+    statut: alert.statut,
+    message: alert.message,
+    createdAt: alert.createdAt,
+    resolueAt: alert.resolueAt,
+    pelerin: alert.pelerin,
+    resolueParGuide: alert.resolueParGuide,
+    type: alert.type,
+    description: alert.description ?? '',
+    groupe: alert.groupe ?? alert.pelerin.groupes[0]?.groupe ?? null,
+  }))
+}

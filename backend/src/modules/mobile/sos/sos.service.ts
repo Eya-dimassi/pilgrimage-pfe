@@ -100,14 +100,9 @@ export async function getMyActiveSos(utilisateurId: string) {
       id: true,
       latitude: true,
       longitude: true,
+      type: true,
+      description: true,
       statut: true,
-      incidents: {
-        orderBy: { createdAt: 'desc' },
-        take: 1,
-        select: {
-          type: true,
-        },
-      },
       message: true,
       createdAt: true,
       resolueAt: true,
@@ -115,12 +110,7 @@ export async function getMyActiveSos(utilisateurId: string) {
   })
 
   return {
-    activeAlert: activeAlert
-      ? {
-          ...activeAlert,
-          type: activeAlert.incidents[0]?.type ?? 'AUTRE',
-        }
-      : null,
+    activeAlert: activeAlert ?? null,
   }
 }
 
@@ -203,14 +193,9 @@ export async function createSosAlert(utilisateurId: string, payload: CreateSosPa
       id: true,
       latitude: true,
       longitude: true,
+      type: true,
+      description: true,
       statut: true,
-      incidents: {
-        orderBy: { createdAt: 'desc' },
-        take: 1,
-        select: {
-          type: true,
-        },
-      },
       message: true,
       createdAt: true,
       resolueAt: true,
@@ -220,10 +205,7 @@ export async function createSosAlert(utilisateurId: string, payload: CreateSosPa
   if (existingActiveAlert) {
     return {
       created: false,
-      alert: {
-        ...existingActiveAlert,
-        type: existingActiveAlert.incidents[0]?.type ?? 'AUTRE',
-      },
+      alert: existingActiveAlert,
     }
   }
 
@@ -248,8 +230,11 @@ export async function createSosAlert(utilisateurId: string, payload: CreateSosPa
     const createdAlert = await tx.alerteSOS.create({
       data: {
         pelerinId: pelerin.id,
+        groupeId: activeGroupRelation.groupe.id,
         latitude,
         longitude,
+        type,
+        description: incidentDescription,
         message,
         statut: 'EN_COURS',
       },
@@ -257,27 +242,12 @@ export async function createSosAlert(utilisateurId: string, payload: CreateSosPa
         id: true,
         latitude: true,
         longitude: true,
+        type: true,
+        description: true,
         statut: true,
-        incidents: {
-          orderBy: { createdAt: 'desc' },
-          take: 1,
-          select: {
-            type: true,
-          },
-        },
         message: true,
         createdAt: true,
         resolueAt: true,
-      },
-    })
-
-    await tx.incident.create({
-      data: {
-        alerteSOSId: createdAlert.id,
-        groupeId: activeGroupRelation.groupe.id,
-        type,
-        description: incidentDescription,
-        gravite: type === 'MALADIE' ? 'ELEVEE' : type === 'PERTE' ? 'MOYENNE' : 'FAIBLE',
       },
     })
 
@@ -287,14 +257,9 @@ export async function createSosAlert(utilisateurId: string, payload: CreateSosPa
         id: true,
         latitude: true,
         longitude: true,
+        type: true,
+        description: true,
         statut: true,
-        incidents: {
-          orderBy: { createdAt: 'desc' },
-          take: 1,
-          select: {
-            type: true,
-          },
-        },
         message: true,
         createdAt: true,
         resolueAt: true,
@@ -357,9 +322,6 @@ export async function createSosAlert(utilisateurId: string, payload: CreateSosPa
 
   return {
     created: true,
-    alert: {
-      ...alert,
-      type: alert.incidents[0]?.type ?? type,
-    },
+    alert,
   }
 }

@@ -73,4 +73,14 @@ router.patch('/profile', authenticate, requireRole('AGENCE'), async (req: AuthRe
   }
 })
 
+router.get('/sos', authenticate, requireRole('AGENCE'), async (req: AuthRequest, res: Response) => {
+  try {
+    const agenceId = req.user!.agenceId!
+    const history = await agencesService.getAgenceSosHistory(agenceId)
+    return res.json(history)
+  } catch (error: any) {
+    return res.status(400).json({ message: error.message })
+  }
+})
+
 export default router;

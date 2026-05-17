@@ -8,11 +8,11 @@ interface ProviderConfig {
 }
 
 const config: ProviderConfig = {
-  primary: 'gemini',
-  fallback: 'ollama',
+  primary: 'ollama',
+  fallback: 'gemini',
 };
 
-const ollamaModel = process.env.OLLAMA_MODEL || 'gemma3:1b';
+const ollamaModel = process.env.OLLAMA_MODEL || 'qwen3:8b';
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -46,6 +46,9 @@ async function callGemini(
             parts: [{ text: userMessage }],
           },
         ],
+        generationConfig: {
+          temperature: 0.1, // ✅ same idea for Gemini
+        },
       }),
     });
 
@@ -96,6 +99,10 @@ async function callOllama(
       model: ollamaModel,
       messages,
       stream: false,
+      think: false,
+      options: {
+        temperature: 0.1,
+      },
     }),
   });
 
@@ -104,51 +111,45 @@ async function callOllama(
   }
 
   const data = await response.json();
-  const answer = data.message?.content ?? '';
+  const raw = data.message?.content ?? '';
 
-  if (!answer.trim()) {
+  if (!raw.trim()) {
     throw new Error('Ollama returned empty response');
   }
+  const answer = raw.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
 
+  if (!answer) {
+    throw new Error('Ollama returned only a thinking block with no answer');
+  }
   return answer;
 }
 
 export async function embedText(text: string): Promise<number[]> {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent?key=${process.env.GEMINI_API_KEY}`;
-  const maxAttempts = 5;
 
-  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        content: { parts: [{ text }] },
-        taskType: 'RETRIEVAL_DOCUMENT',
-        outputDimensionality: 768,
-      }),
-    });
+  const response = await fetch('http://localhost:11434/api/embed', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'mxbai-embed-large:latest',
+      input: text,
+    }),
+  });
 
-    if (response.ok) {
-      const raw = await response.json();
-      return raw.embedding?.values ?? [];
-    }
-
-    if (response.status === 429 && attempt < maxAttempts) {
-      const retryAfterHeader = response.headers.get('retry-after');
-      const retryAfterSeconds = retryAfterHeader ? Number(retryAfterHeader) : NaN;
-      const waitMs = Number.isFinite(retryAfterSeconds)
-        ? retryAfterSeconds * 1000
-        : attempt * 3000;
-
-      console.warn(`Embedding rate-limited (attempt ${attempt}/${maxAttempts}). Waiting ${waitMs}ms...`);
-      await delay(waitMs);
-      continue;
-    }
-
+  if (!response.ok) {
     throw new Error(`Embedding error: ${response.status}`);
   }
 
-  throw new Error('Embedding error: exhausted retry attempts');
+  const data = await response.json();
+
+  if (!Array.isArray(data.embeddings) || !Array.isArray(data.embeddings[0])) {
+    throw new Error(`Invalid embedding response: ${JSON.stringify(data)}`);
+  }
+
+  return data.embeddings[0];
+
+
 }
 
 

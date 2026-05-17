@@ -42,4 +42,11 @@ class MobileNotificationsRepository {
       throw AuthException.fromDio(error);
     }
   }
+  Future<void> deleteOne(String notificationId) async {
+  try {
+    await _dio.delete<void>(ApiEndpoints.mobileNotificationDelete(notificationId));
+  } on DioException catch (error) {
+    throw AuthException.fromDio(error);
+  }
+}
 }

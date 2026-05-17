@@ -116,6 +116,7 @@
           <DashPresence
             v-if="currentView === 'presence-history'"
           />
+          <SosHistoryView v-if="currentView === 'sos'" />
         </template>
       </div>
     </div>
@@ -291,6 +292,11 @@ import DashPresence from '@/features/agence/views/Dashpresence.vue'
 import '@/assets/styles/dashboard.css'
 
 const VALID_VIEWS = ['dashboard', 'pelerins', 'guides', 'groupes', 'planning', 'presence-history']
+import SosHistoryView from '@/features/agence/views/SosHistoryView.vue'
+
+import '@/assets/styles/dashboard.css'
+
+const VALID_VIEWS = ['dashboard', 'pelerins', 'guides', 'groupes', 'planning', 'sos']
 
 const route = useRoute()
 const router = useRouter()
@@ -414,6 +420,7 @@ const viewTitle = computed(() => ({
   groupes: 'Groupes',
   planning: 'Planning',
   'presence-history': 'Historique appels',
+  sos: 'Journal SOS',
 }[currentView.value]))
 
 const isGroupeCancelDelete = computed(() => {
@@ -490,6 +497,7 @@ const navItems = [
   { view: 'groupes', label: 'Groupes', badge: 'groupes', iconName: 'layers' },
   { view: 'planning', label: 'Planning', badge: null, iconName: 'calendar' },
   { view: 'presence-history', label: 'Historique appels', badge: null, iconName: 'list' },
+  { view: 'sos', label: 'Historique SOS', badge: null, iconName: 'alert' },
 ]
 
 function getGroupSymbol(typeVoyage) {

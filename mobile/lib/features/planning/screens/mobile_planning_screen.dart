@@ -13,11 +13,7 @@ import '../domain/mobile_planning_models.dart';
 import '../providers/mobile_planning_provider.dart';
 import '../../../services/planning_feed_refresh_service.dart';
 
-enum PlanningRoleView {
-  guide,
-  pelerin,
-  famille,
-}
+enum PlanningRoleView { guide, pelerin, famille }
 
 class MobilePlanningScreen extends ConsumerStatefulWidget {
   const MobilePlanningScreen({
@@ -61,7 +57,9 @@ class _MobilePlanningScreenState extends ConsumerState<MobilePlanningScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final activeUserId = ref.watch(authProvider.select((state) => state.valueOrNull?.user.id));
+    final activeUserId = ref.watch(
+      authProvider.select((state) => state.valueOrNull?.user.id),
+    );
     if (_activeUserId != activeUserId) {
       _activeUserId = activeUserId;
       _selectedGroupId = null;
@@ -130,23 +128,22 @@ class _MobilePlanningScreenState extends ConsumerState<MobilePlanningScreen> {
             );
             final selectedIndex = isDayOnly
                 ? exactTodayPlanning == null
-                    ? -1
-                    : visiblePlannings.indexWhere(
-                        (planning) => planning.id == exactTodayPlanning.id,
-                      )
+                      ? -1
+                      : visiblePlannings.indexWhere(
+                          (planning) => planning.id == exactTodayPlanning.id,
+                        )
                 : visiblePlannings.indexWhere(
                     (planning) => planning.id == _selectedPlanningId,
                   );
             final selectedDay = isDayOnly
-                ? (selectedIndex >= 0
-                      ? visiblePlannings[selectedIndex]
-                      : null)
-                : (selectedIndex >= 0
-                      ? visiblePlannings[selectedIndex]
-                      : null);
+                ? (selectedIndex >= 0 ? visiblePlannings[selectedIndex] : null)
+                : (selectedIndex >= 0 ? visiblePlannings[selectedIndex] : null);
             final selectedTripDayNumber = selectedDay == null
                 ? 0
-                : _tripDayNumber(planningData.groupe.dateDepart, selectedDay.date);
+                : _tripDayNumber(
+                    planningData.groupe.dateDepart,
+                    selectedDay.date,
+                  );
             final selectedDayNumber = selectedDay == null
                 ? 0
                 : _planningDisplayDayNumber(
@@ -217,7 +214,8 @@ class _MobilePlanningScreenState extends ConsumerState<MobilePlanningScreen> {
                                 });
                               }
                             : null,
-                        onNext: selectedIndex >= 0 &&
+                        onNext:
+                            selectedIndex >= 0 &&
                                 selectedIndex < visiblePlannings.length - 1
                             ? () {
                                 setState(() {
@@ -271,12 +269,13 @@ class _MobilePlanningScreenState extends ConsumerState<MobilePlanningScreen> {
                         dayNumber: selectedDayNumber,
                         isGuide: widget.view == PlanningRoleView.guide,
                         updatingEventIds: _updatingEventIds,
-                        onUpdateEventStatus: widget.view == PlanningRoleView.guide
+                        onUpdateEventStatus:
+                            widget.view == PlanningRoleView.guide
                             ? (event, status) => _updateEventStatus(
-                                  groupeId: selectedGroup.id,
-                                  event: event,
-                                  status: status,
-                                )
+                                groupeId: selectedGroup.id,
+                                event: event,
+                                status: status,
+                              )
                             : null,
                       ),
                   ],
@@ -305,7 +304,8 @@ class _MobilePlanningScreenState extends ConsumerState<MobilePlanningScreen> {
   void _ensureSelectedGroup(List<MobilePlanningGroup> groups) {
     if (groups.isEmpty) return;
 
-    final preferredExists = widget.preferredGroupId != null &&
+    final preferredExists =
+        widget.preferredGroupId != null &&
         groups.any((group) => group.id == widget.preferredGroupId);
     if (preferredExists && _selectedGroupId != widget.preferredGroupId) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -364,7 +364,9 @@ class _MobilePlanningScreenState extends ConsumerState<MobilePlanningScreen> {
     setState(() => _updatingEventIds.add(event.id));
 
     try {
-      await ref.read(mobilePlanningRepositoryProvider).updateEventStatus(
+      await ref
+          .read(mobilePlanningRepositoryProvider)
+          .updateEventStatus(
             groupeId: groupeId,
             eventId: event.id,
             status: status,
@@ -475,10 +477,7 @@ class _GroupTabs extends StatelessWidget {
             borderRadius: BorderRadius.circular(AppRadii.pill),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 180),
-              padding: const EdgeInsets.symmetric(
-                horizontal: 14,
-                vertical: 8,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               decoration: BoxDecoration(
                 color: selected ? AppColors.primary : AppColors.card,
                 borderRadius: BorderRadius.circular(AppRadii.pill),
@@ -513,7 +512,7 @@ class _TripSummaryCard extends StatelessWidget {
     this.currentTripDay,
     this.compact = false,
   });
- 
+
   final MobilePlanningGroup groupe;
   final Color accentColor;
   final String illustrationAssetPath;
@@ -521,11 +520,13 @@ class _TripSummaryCard extends StatelessWidget {
   final DateTime? currentDayDate;
   final int? currentTripDay;
   final bool compact;
- 
+
   @override
   Widget build(BuildContext context) {
-    final totalTripDays =
-        _tripLengthInDays(groupe.dateDepart, groupe.dateRetour);
+    final totalTripDays = _tripLengthInDays(
+      groupe.dateDepart,
+      groupe.dateRetour,
+    );
     final boundedCurrentTripDay = currentTripDay?.clamp(
       0,
       totalTripDays == 0 ? 0 : totalTripDays,
@@ -556,11 +557,7 @@ class _TripSummaryCard extends StatelessWidget {
       gradient: compact
           ? AppGradients.heroSoft
           : const LinearGradient(
-              colors: [
-                Color(0xFFF4FBF8),
-                Color(0xFFE8F5EF),
-                Color(0xFFF9FCFA),
-              ],
+              colors: [Color(0xFFF4FBF8), Color(0xFFE8F5EF), Color(0xFFF9FCFA)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -603,36 +600,37 @@ class _TripSummaryCard extends StatelessWidget {
               child: IgnorePointer(
                 child: Opacity(
                   opacity: 0.96,
-                  child: AppHeroAsset(
-                    assetPath: illustrationAssetPath,
-                    width: 144,
-                    height: 156,
-                    scale: 1.0,
-                    alignment: Alignment.bottomCenter,
-                    fit: BoxFit.contain,
-                  )
-                      .animate(
-                        onPlay: (controller) =>
-                            controller.repeat(reverse: true),
-                      )
-                      .fadeIn(duration: 420.ms, curve: Curves.easeOutCubic)
-                      .slideX(
-                        begin: 0.08,
-                        end: 0,
-                        duration: 420.ms,
-                        curve: Curves.easeOutCubic,
-                      )
-                      .moveY(
-                        begin: 0,
-                        end: -5,
-                        duration: 2200.ms,
-                        curve: Curves.easeInOut,
-                      ),
+                  child:
+                      AppHeroAsset(
+                            assetPath: illustrationAssetPath,
+                            width: 144,
+                            height: 156,
+                            scale: 1.0,
+                            alignment: Alignment.bottomCenter,
+                            fit: BoxFit.contain,
+                          )
+                          .animate(
+                            onPlay: (controller) =>
+                                controller.repeat(reverse: true),
+                          )
+                          .fadeIn(duration: 420.ms, curve: Curves.easeOutCubic)
+                          .slideX(
+                            begin: 0.08,
+                            end: 0,
+                            duration: 420.ms,
+                            curve: Curves.easeOutCubic,
+                          )
+                          .moveY(
+                            begin: 0,
+                            end: -5,
+                            duration: 2200.ms,
+                            curve: Curves.easeInOut,
+                          ),
                 ),
               ),
             ),
           ],
- 
+
           // ── pèlerin compact: bigger image, better anchored ──
           if (compact)
             Positioned(
@@ -640,39 +638,41 @@ class _TripSummaryCard extends StatelessWidget {
               right: -4,
               bottom: -14,
               child: IgnorePointer(
-                child: AppHeroAsset(
-                  assetPath: illustrationAssetPath,
-                  // FIX: was 66×68 — now 148×160, large enough to feel
-                  // intentional and grounded at the bottom-right
-                  width: 148,
-                  height: 160,
-                  scale: 1.0,
-                  alignment: Alignment.bottomRight,
-                  fit: BoxFit.contain,
-                )
-                // FIX: entrance — fades + slides in from right on build
-                .animate()
-                .fadeIn(duration: 500.ms, curve: Curves.easeOut)
-                .slideX(
-                  begin: 0.12,
-                  end: 0,
-                  duration: 500.ms,
-                  curve: Curves.easeOutCubic,
-                )
-                // FIX: idle — gentle floating loop (same as guide card)
-                .then()
-                .animate(
-                  onPlay: (controller) => controller.repeat(reverse: true),
-                )
-                .moveY(
-                  begin: 0,
-                  end: -6,
-                  duration: 2400.ms,
-                  curve: Curves.easeInOut,
-                ),
+                child:
+                    AppHeroAsset(
+                          assetPath: illustrationAssetPath,
+                          // FIX: was 66×68 — now 148×160, large enough to feel
+                          // intentional and grounded at the bottom-right
+                          width: 148,
+                          height: 160,
+                          scale: 1.0,
+                          alignment: Alignment.bottomRight,
+                          fit: BoxFit.contain,
+                        )
+                        // FIX: entrance — fades + slides in from right on build
+                        .animate()
+                        .fadeIn(duration: 500.ms, curve: Curves.easeOut)
+                        .slideX(
+                          begin: 0.12,
+                          end: 0,
+                          duration: 500.ms,
+                          curve: Curves.easeOutCubic,
+                        )
+                        // FIX: idle — gentle floating loop (same as guide card)
+                        .then()
+                        .animate(
+                          onPlay: (controller) =>
+                              controller.repeat(reverse: true),
+                        )
+                        .moveY(
+                          begin: 0,
+                          end: -6,
+                          duration: 2400.ms,
+                          curve: Curves.easeInOut,
+                        ),
               ),
             ),
- 
+
           // ── text content — right padding guards against image ──
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -814,13 +814,20 @@ class _FamilyCurrentMomentCard extends StatelessWidget {
     final currentEvent = pickCurrentOrNextPlanningEvent(
       planning?.evenements ?? const [],
     );
-    final nextEvent = pickNextPlanningEventAfter(
-      planning?.evenements ?? const [],
-      currentEvent,
+    final events = sortPlanningEventsByTime(planning?.evenements ?? const []);
+    final currentIndex = currentEvent == null
+        ? -1
+        : events.indexWhere((e) => e.id == currentEvent.id);
+    final nextEvent = (currentIndex >= 0 && currentIndex < events.length - 1)
+        ? events[currentIndex + 1]
+        : null;
+    final currentLocation = currentEvent == null
+        ? null
+        : _primaryLocation([currentEvent]);
+    final totalTripDays = _tripLengthInDays(
+      groupe.dateDepart,
+      groupe.dateRetour,
     );
-    final currentLocation =
-        currentEvent == null ? null : _primaryLocation([currentEvent]);
-    final totalTripDays = _tripLengthInDays(groupe.dateDepart, groupe.dateRetour);
     final progress = computeTripProgress(
       groupe.dateDepart,
       groupe.dateRetour,
@@ -923,10 +930,7 @@ class _FamilyCurrentMomentCard extends StatelessWidget {
 }
 
 class _FamilyInfoRow extends StatelessWidget {
-  const _FamilyInfoRow({
-    required this.label,
-    required this.value,
-  });
+  const _FamilyInfoRow({required this.label, required this.value});
 
   final String label;
   final String value;
@@ -950,10 +954,7 @@ class _FamilyInfoRow extends StatelessWidget {
         Expanded(
           child: Text(
             value,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-            ),
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
           ),
         ),
       ],
@@ -1007,17 +1008,13 @@ class _DayRailHeader extends StatelessWidget {
 }
 
 class _DayOnlyHeader extends StatelessWidget {
-  const _DayOnlyHeader({
-    required this.title,
-  });
+  const _DayOnlyHeader({required this.title});
 
   final String title;
 
   @override
   Widget build(BuildContext context) {
-    return SectionTitle(
-      title,
-    );
+    return SectionTitle(title);
   }
 }
 
@@ -1151,7 +1148,7 @@ class _SelectedDaySection extends StatelessWidget {
   final bool isGuide;
   final Set<String> updatingEventIds;
   final void Function(MobilePlanningEvent event, String status)?
-      onUpdateEventStatus;
+  onUpdateEventStatus;
 
   @override
   Widget build(BuildContext context) {
@@ -1174,38 +1171,36 @@ class _SelectedDaySection extends StatelessWidget {
             compact: true,
           )
         else
-          ...planning.evenements.asMap().entries.map(
-            (entry) {
-              final event = entry.value;
-              return _TimelineEventTile(
-                event: event,
-                isLast: entry.key == planning.evenements.length - 1,
-                canComplete: isGuide && event.canBeCompleted,
-                canCancel: isGuide && event.canBeCancelled,
-                isUpdating: updatingEventIds.contains(event.id),
-                onComplete: onUpdateEventStatus == null
-                    ? null
-                    : () {
-                        _confirmAndUpdateEventStatus(
-                          context,
-                          event,
-                          'TERMINE',
-                          onUpdateEventStatus!,
-                        );
-                      },
-                onCancel: onUpdateEventStatus == null
-                    ? null
-                    : () {
-                        _confirmAndUpdateEventStatus(
-                          context,
-                          event,
-                          'ANNULE',
-                          onUpdateEventStatus!,
-                        );
-                      },
-              );
-            },
-          ),
+          ...planning.evenements.asMap().entries.map((entry) {
+            final event = entry.value;
+            return _TimelineEventTile(
+              event: event,
+              isLast: entry.key == planning.evenements.length - 1,
+              canComplete: isGuide && event.canBeCompleted,
+              canCancel: isGuide && event.canBeCancelled,
+              isUpdating: updatingEventIds.contains(event.id),
+              onComplete: onUpdateEventStatus == null
+                  ? null
+                  : () {
+                      _confirmAndUpdateEventStatus(
+                        context,
+                        event,
+                        'TERMINE',
+                        onUpdateEventStatus!,
+                      );
+                    },
+              onCancel: onUpdateEventStatus == null
+                  ? null
+                  : () {
+                      _confirmAndUpdateEventStatus(
+                        context,
+                        event,
+                        'ANNULE',
+                        onUpdateEventStatus!,
+                      );
+                    },
+            );
+          }),
       ],
     );
   }
@@ -1218,7 +1213,8 @@ Future<void> _confirmAndUpdateEventStatus(
   void Function(MobilePlanningEvent event, String status) onUpdateEventStatus,
 ) async {
   final isCancellation = status == 'ANNULE';
-  final confirmed = await showDialog<bool>(
+  final confirmed =
+      await showDialog<bool>(
         context: context,
         builder: (dialogContext) => AlertDialog(
           title: Text(
@@ -1325,11 +1321,7 @@ class _TimelineEventTile extends StatelessWidget {
                   ),
                   alignment: Alignment.center,
                   child: isResolved
-                      ? Icon(
-                          statusIcon,
-                          size: 13,
-                          color: statusAccent,
-                        )
+                      ? Icon(statusIcon, size: 13, color: statusAccent)
                       : Container(
                           width: 6,
                           height: 6,
@@ -1392,17 +1384,15 @@ class _TimelineEventTile extends StatelessWidget {
                           foregroundColor: _eventTypeStrongColor(event.type),
                           compact: true,
                         ),
-                        ...event.lieux
-                            .map(
-                              (lieu) => AppStatusChip(
-                                label: lieu,
-                                icon: _locationIcon(lieu),
-                                backgroundColor: _locationSoftColor(lieu),
-                                foregroundColor: _locationStrongColor(lieu),
-                                compact: true,
-                              ),
-                            )
-                            ,
+                        ...event.lieux.map(
+                          (lieu) => AppStatusChip(
+                            label: lieu,
+                            icon: _locationIcon(lieu),
+                            backgroundColor: _locationSoftColor(lieu),
+                            foregroundColor: _locationStrongColor(lieu),
+                            compact: true,
+                          ),
+                        ),
                       ],
                     ),
                     if (isResolved) ...[
@@ -1456,9 +1446,7 @@ class _TimelineEventTile extends StatelessWidget {
                           ),
                           if (hasLongDescription) ...[
                             const SizedBox(width: 8),
-                            _DescriptionInfoButton(
-                              description: description,
-                            ),
+                            _DescriptionInfoButton(description: description),
                           ],
                         ],
                       ),
@@ -1476,9 +1464,7 @@ class _TimelineEventTile extends StatelessWidget {
                     ],
                     if (showActionRow) ...[
                       const SizedBox(height: 10),
-                      _buildEventActionArea(
-                        isUpdating: isUpdating,
-                      ),
+                      _buildEventActionArea(isUpdating: isUpdating),
                     ],
                   ],
                 ),
@@ -1578,9 +1564,7 @@ class _MetaPill extends StatelessWidget {
 }
 
 class _DescriptionInfoButton extends StatelessWidget {
-  const _DescriptionInfoButton({
-    required this.description,
-  });
+  const _DescriptionInfoButton({required this.description});
 
   final String description;
 
@@ -1633,10 +1617,7 @@ class _PlanningEmptyState extends StatelessWidget {
           Text(
             title,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-            ),
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
           ),
           if (message.trim().isNotEmpty) ...[
             const SizedBox(height: 8),
@@ -1657,10 +1638,7 @@ class _PlanningEmptyState extends StatelessWidget {
 }
 
 class _PlanningErrorState extends StatelessWidget {
-  const _PlanningErrorState({
-    required this.message,
-    required this.onRetry,
-  });
+  const _PlanningErrorState({required this.message, required this.onRetry});
 
   final String message;
   final VoidCallback onRetry;
@@ -2075,5 +2053,3 @@ String? _primaryLocation(List<MobilePlanningEvent> events) {
   }
   return null;
 }
-
-

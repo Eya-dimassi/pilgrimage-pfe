@@ -13,18 +13,21 @@ class MobileChatRepository {
   MobileChatRepository(this._dio);
 
   final Dio _dio;
+  static const Duration _chatTimeout = Duration(minutes: 3);
 
   Future<String> sendMessage({
     required String message,
     required List<MobileChatMessagePayload> history,
-    required String language,
   }) async {
     final response = await _dio.post<Map<String, dynamic>>(
       ApiEndpoints.mobileChatMessage,
+      options: Options(
+        sendTimeout: _chatTimeout,
+        receiveTimeout: _chatTimeout,
+      ),
       data: {
         'message': message,
         'history': history.map((item) => item.toJson()).toList(),
-        'language': language,
       },
     );
 

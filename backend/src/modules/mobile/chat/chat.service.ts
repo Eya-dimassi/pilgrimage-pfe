@@ -3,43 +3,55 @@ import { retrieveRelevantChunks, formatChunksAsContext } from './chat.retrieval'
 import { buildSystemPrompt } from './chat.prompts';
 import { generateAnswer } from './chat.provider';
 
-function trimHistory(history: ChatRequest['history'], maxMessages = 6) {
-  return history.slice(-maxMessages);
+function detectLanguage(text: string): 'ar' | 'fr' | 'en' {
+  const arabicChars = (text.match(/[\u0600-\u06FF]/g) ?? []).length;
+  const frenchChars = (text.match(/[àâäéèêëîïôùûüçœæ]/gi) ?? []).length;
+  const totalChars = text.replace(/\s/g, '').length;
+
+  if (totalChars === 0) return 'fr';
+  if (arabicChars / totalChars > 0.2) return 'ar';
+  if (frenchChars > 0) return 'fr';
+
+  const frenchWords = /\b(je|tu|il|nous|vous|ils|le|la|les|de|du|des|est|et|en|un|une|pour|avec|dans|sur|que|qui|quoi|comment|quand|où|quel|quelle)\b/i;
+  if (frenchWords.test(text)) return 'fr';
+
+  return 'en';
 }
 
 export async function handleChatMessage(
   request: ChatRequest
 ): Promise<ChatResponse> {
-  const { message, history, userRole, language } = request;
+  const { message, userRole } = request;
+  const language = request.language ?? detectLanguage(message);
+
+  let stage = 'retrieval';
 
   try {
     const retrieval = await retrieveRelevantChunks(message, {
       language,
       audience: userRole,
-      topK: 5,
+      topK: 8,
     });
+
+    console.debug(
+      `[chat] retrieval: ${retrieval.totalFound} chunks for role=${userRole} lang=${language}`
+    );
+
+    stage = 'generation';
 
     const retrievedContext = formatChunksAsContext(retrieval.chunks);
-
-    const systemPrompt = buildSystemPrompt(userRole, {
-      retrievedContext,
-      language,
-    });
-
-    const trimmedHistory = trimHistory(history);
+    const systemPrompt = buildSystemPrompt(userRole, { retrievedContext, language });
 
     const { answer, usedFallback } = await generateAnswer(
       systemPrompt,
-      trimmedHistory,
+      [],   // no history — intentional for speed
       message
     );
 
-    return {
-      answer,
-      usedFallback,
-    };
+    return { answer, usedFallback };
+
   } catch (err) {
-    console.error('Chat service error:', err);
+    console.error(`[chat] error at stage=${stage} role=${userRole} lang=${language}:`, err);
 
     const fallbackAnswer =
       language === 'ar'
@@ -48,9 +60,6 @@ export async function handleChatMessage(
         ? "Désolé, une erreur s'est produite. Veuillez réessayer."
         : 'Sorry, an error occurred. Please try again.';
 
-    return {
-      answer: fallbackAnswer,
-      usedFallback: true,
-    };
+    return { answer: fallbackAnswer, usedFallback: true };
   }
 }

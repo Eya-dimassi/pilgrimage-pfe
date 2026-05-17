@@ -109,18 +109,53 @@ class _MobileAlertsScreenState extends ConsumerState<MobileAlertsScreen> {
               }
 
               return Column(
-                children: [
-                  for (var i = 0; i < items.length; i++) ...[
-                    _NotificationRow(item: items[i]),
-                    if (i != items.length - 1)
-                      const Divider(
-                        height: 1,
-                        thickness: 1,
-                        color: AppColors.borderSoft,
-                      ),
-                  ],
-                ],
+  children: [
+    for (var i = 0; i < items.length; i++) ...[
+      Dismissible(
+        key: ValueKey(items[i].id),
+        direction: DismissDirection.endToStart,
+        background: Container(
+          alignment: Alignment.centerRight,
+          padding: const EdgeInsets.only(right: 20),
+          decoration: BoxDecoration(
+            color: AppColors.red.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(AppRadii.md),
+          ),
+          child: const Icon(
+            Icons.delete_outline_rounded,
+            color: AppColors.red,
+            size: 22,
+          ),
+        ),
+        confirmDismiss: (_) async {
+          try {
+            await ref
+                .read(mobileNotificationsRepositoryProvider)
+                .deleteOne(items[i].id);
+            ref.invalidate(mobileNotificationsProvider);
+            return true;
+          } catch (_) {
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Impossible de supprimer la notification'),
+                ),
               );
+            }
+            return false;
+          }
+        },
+        child: _NotificationRow(item: items[i]),
+      ),
+      if (i != items.length - 1)
+        const Divider(
+          height: 1,
+          thickness: 1,
+          color: AppColors.borderSoft,
+        ),
+    ],
+  ],
+);
             },
           ),
         ],

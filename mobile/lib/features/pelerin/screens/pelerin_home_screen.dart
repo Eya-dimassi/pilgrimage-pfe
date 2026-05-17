@@ -11,6 +11,7 @@ import '../../../core/widgets/app_surfaces.dart';
 import '../../../core/widgets/role_profile_template.dart';
 import '../../../core/widgets/role_shell.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../../chat/screens/mobile_chat_screen.dart';
 import '../../notifications/providers/mobile_notifications_provider.dart';
 import '../../notifications/screens/mobile_alerts_screen.dart';
 import '../../planning/domain/mobile_planning_models.dart';
@@ -78,6 +79,7 @@ class PelerinHomeScreen extends ConsumerWidget {
       ),
       planningChild: const PelerinPlanningPage(),
       alertsChild: const MobileAlertsScreen(),
+      chatbotChild: const MobileChatScreen(),
       profileChild: RoleProfileTemplate(
         user: user,
         roleLabel: 'roles.pelerin'.tr(),

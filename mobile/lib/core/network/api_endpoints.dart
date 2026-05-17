@@ -78,5 +78,7 @@ class ApiEndpoints {
 
   static String mobilePelerinPresenceConfirmation(String confirmationId) =>
       '/mobile/presence/confirmations/$confirmationId';
+  static String mobileNotificationDelete(String id) =>
+    '/mobile/notifications/$id';
 }
  
