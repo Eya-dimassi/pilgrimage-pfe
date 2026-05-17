@@ -171,3 +171,8 @@ export async function updateAgenceProfile(form) {
   return data
 }
 
+export async function fetchAgencePresenceHistory(params = {}) {
+  const { data } = await api.get('/agence/presence/appels', { params })
+  return data
+}
+

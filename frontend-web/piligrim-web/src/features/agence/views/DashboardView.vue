@@ -112,6 +112,10 @@
             :groupes="groupes"
             :preselected-group-id="planningGroupId"
           />
+
+          <DashPresence
+            v-if="currentView === 'presence-history'"
+          />
         </template>
       </div>
     </div>
@@ -282,10 +286,11 @@ import DashGroupes from '@/features/agence/views/Dashgroupes.vue'
 import DashGuides from '@/features/agence/views/Dashguides.vue'
 import DashPlanning from '@/features/agence/views/Dashplanning.vue'
 import DashPelerins from '@/features/agence/views/Dashpelerins.vue'
+import DashPresence from '@/features/agence/views/Dashpresence.vue'
 
 import '@/assets/styles/dashboard.css'
 
-const VALID_VIEWS = ['dashboard', 'pelerins', 'guides', 'groupes', 'planning']
+const VALID_VIEWS = ['dashboard', 'pelerins', 'guides', 'groupes', 'planning', 'presence-history']
 
 const route = useRoute()
 const router = useRouter()
@@ -408,6 +413,7 @@ const viewTitle = computed(() => ({
   guides: 'Guides',
   groupes: 'Groupes',
   planning: 'Planning',
+  'presence-history': 'Historique appels',
 }[currentView.value]))
 
 const isGroupeCancelDelete = computed(() => {
@@ -483,6 +489,7 @@ const navItems = [
   { view: 'guides', label: 'Guides', badge: 'guides', iconName: 'user-check' },
   { view: 'groupes', label: 'Groupes', badge: 'groupes', iconName: 'layers' },
   { view: 'planning', label: 'Planning', badge: null, iconName: 'calendar' },
+  { view: 'presence-history', label: 'Historique appels', badge: null, iconName: 'list' },
 ]
 
 function getGroupSymbol(typeVoyage) {

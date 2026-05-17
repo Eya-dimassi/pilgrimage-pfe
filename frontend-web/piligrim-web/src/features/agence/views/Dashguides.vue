@@ -306,7 +306,7 @@ async function handleAssign(guide, groupeId) {
     assignLoadingId.value = null
   }
 }
-</script>
+</script>  
 
 <style scoped>
 .guides-view {

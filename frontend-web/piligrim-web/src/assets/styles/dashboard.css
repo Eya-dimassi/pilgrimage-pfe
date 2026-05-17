@@ -111,6 +111,7 @@
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
 }
 
 .logo-sub {
@@ -997,6 +998,60 @@
   gap: 16px;
 }
 
+.presence-filters-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.presence-filter-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.presence-pelerins-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 220px;
+  overflow-y: auto;
+  padding-right: 4px;
+  margin-top: 10px;
+}
+
+.presence-toggle-btn {
+  background: var(--gold-glow);
+  border: 1px solid var(--gold-mid);
+  color: var(--gold);
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.presence-toggle-btn:hover {
+  background: var(--gold-mid);
+}
+
+.presence-pelerin-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: var(--bg3);
+  border-radius: 10px;
+  padding: 7px 10px;
+}
+
+.presence-pelerin-name {
+  font-size: 12.5px;
+  color: var(--text);
+}
+
 .dashboard-hero {
   display: flex;
   flex-direction: column;
@@ -1797,6 +1852,10 @@
     grid-template-columns: repeat(2, 1fr);
   }
 
+  .presence-filters-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
   .recent-grid {
     grid-template-columns: 1fr;
   }
@@ -1816,6 +1875,10 @@
 
   .stats-grid {
     grid-template-columns: 1fr 1fr;
+  }
+
+  .presence-filters-grid {
+    grid-template-columns: 1fr;
   }
 
   .groups-grid {

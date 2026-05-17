@@ -19,11 +19,13 @@
     <div v-else-if="!hasTripDates" class="empty-state planning-empty-card">
       <AppIcon name="alert" :size="42" :stroke-width="1.5" style="opacity: 0.24; margin-bottom: 12px" />
       <p class="planning-empty-title">Dates du voyage manquantes</p>
-      <p class="planning-empty-copy">Définissez la date de départ et de retour du groupe pour activer le planning du voyage.</p>
+      <p class="planning-empty-copy">Définissez la date de départ et de retour du groupe pour activer le planning du
+        voyage.</p>
     </div>
 
     <div v-else class="planning-page">
       <section class="planning-card planning-hero-card">
+        <p class="planning-hero-kicker" style="margin-bottom: 0">Planning du voyage</p>
         <div class="planning-hero-top">
           <div class="planning-select-summary">
             <span class="group-type-badge" :class="selectedGroup.typeVoyage === 'HAJJ' ? 'hajj' : 'umrah'">
@@ -31,7 +33,6 @@
             </span>
             <span class="planning-select-text">{{ groupStatusLabel }}</span>
           </div>
-
           <div class="planning-group-picker planning-group-picker--inline">
             <label for="planning-group">Groupe</label>
             <select id="planning-group" v-model="selectedGroupId">
@@ -43,7 +44,6 @@
         </div>
 
         <div class="planning-hero-copy">
-          <p class="planning-hero-kicker">Planning du voyage</p>
           <div class="planning-hero-heading-row">
             <h2 class="planning-hero-title">{{ selectedGroup.nom }}</h2>
             <div class="planning-hero-subtitle planning-inline-meta">
@@ -55,38 +55,36 @@
         </div>
 
         <div class="planning-hero-actions">
-          <button
-            class="planning-action-button"
-            :disabled="saving || hajjGenerationBlocked"
+          <button class="planning-action-button" :disabled="saving || hajjGenerationBlocked"
             :title="hajjGenerationBlocked ? 'Renseignez d’abord la date du 8 Dhul Hijja' : ''"
-            @click="generateTemplate"
-          >
+            @click="generateTemplate">
             <AppIcon name="sparkles" :size="16" />
             <span>Générer modèle {{ selectedGroup.typeVoyage === 'HAJJ' ? 'Hajj' : 'Omra' }}</span>
           </button>
-          <button
-            class="planning-action-button"
-            :disabled="saving || !selectedDateKey"
-            @click="openDayModal()"
-          >
+          <button class="planning-action-button" :disabled="saving || !selectedDateKey" @click="openDayModal()">
             <AppIcon name="calendar-plus" :size="16" />
             <span>Créer une journée</span>
           </button>
-          <button
-            class="planning-action-button planning-action-button--primary"
+          <button v-if="selectedGroup.status === 'PLANIFIE'"
+            class="planning-action-button planning-action-button--danger" :disabled="saving" @click="deletePlanning">
+            <AppIcon name="trash" :size="16" />
+            <span>Supprimer le planning</span>
+          </button>
+         <!--<button class="planning-action-button planning-action-button--primary"
             :disabled="saving || !selectedDateKey || !canAddEventOnSelectedDay"
             :title="canAddEventOnSelectedDay ? '' : addEventBlockedReason"
-            @click="selectedPlanning ? openEventModal() : createSelectedDayQuick()"
-          >
+            @click="selectedPlanning ? openEventModal() : createSelectedDayQuick()">
             <AppIcon name="plus" :size="16" />
             <span>Ajouter un événement</span>
-          </button>
+          </button>-->
         </div>
       </section>
 
       <section class="planning-card planning-days-card">
         <div class="planning-section-head">
-          <h3><AppIcon name="calendar" :size="16" /> Jours du voyage</h3>
+          <h3>
+            <AppIcon name="calendar" :size="16" /> Jours du voyage
+          </h3>
           <span>{{ tripRangeLabel }}</span>
         </div>
 
@@ -95,16 +93,11 @@
         </div>
 
         <div v-else class="planning-day-rail">
-          <button
-            v-for="day in filteredTripDays"
-            :key="day.dateKey"
-            :class="[
-              'planning-day-card',
-              { active: selectedDateKey === day.dateKey },
-              { empty: !(planningByDate[day.dateKey]?.evenements?.length) }
-            ]"
-            @click="selectedDateKey = day.dateKey"
-          >
+          <button v-for="day in filteredTripDays" :key="day.dateKey" :class="[
+            'planning-day-card',
+            { active: selectedDateKey === day.dateKey },
+            { empty: !(planningByDate[day.dateKey]?.evenements?.length) }
+          ]" @click="selectedDateKey = day.dateKey">
             <span class="planning-day-card-kicker">{{ day.primaryDayLabel }}</span>
             <div class="planning-day-card-date">
               <strong class="planning-day-card-number">{{ day.calendarDay }}</strong>
@@ -125,9 +118,15 @@
             <p class="planning-detail-kicker">Jour sélectionné</p>
             <h3 class="planning-detail-title">{{ selectedPlanning?.titre || suggestedDayTitle }}</h3>
             <div class="planning-detail-subtitle planning-inline-meta">
-              <span><AppIcon name="calendar" :size="14" /> {{ selectedDayDateLabel }}</span>
-              <span><AppIcon name="map-pin" :size="14" /> {{ selectedDayPrimaryLieu }}</span>
-              <span><AppIcon name="list" :size="14" /> {{ formatEventCount(selectedPlanning?.evenements?.length || 0) }}</span>
+              <span>
+                <AppIcon name="calendar" :size="14" /> {{ selectedDayDateLabel }}
+              </span>
+              <span>
+                <AppIcon name="map-pin" :size="14" /> {{ selectedDayPrimaryLieu }}
+              </span>
+              <span>
+                <AppIcon name="list" :size="14" /> {{ formatEventCount(selectedPlanning?.evenements?.length || 0) }}
+              </span>
             </div>
           </div>
 
@@ -136,12 +135,8 @@
               <AppIcon name="edit" :size="15" />
               <span>Modifier la journée</span>
             </button>
-            <button
-              class="planning-secondary-button"
-              :disabled="saving || !canClearSelectedPlanning"
-              :title="canClearSelectedPlanning ? '' : clearDayBlockedReason"
-              @click="clearDay(selectedPlanning)"
-            >
+            <button class="planning-secondary-button" :disabled="saving || !canClearSelectedPlanning"
+              :title="canClearSelectedPlanning ? '' : clearDayBlockedReason" @click="clearDay(selectedPlanning)">
               <AppIcon name="trash" :size="15" />
               <span>Vider la journée</span>
             </button>
@@ -152,7 +147,8 @@
           <div class="planning-hajj-setup-copy">
             <p class="planning-hajj-setup-title">Date du 8 Dhul Hijja requise</p>
             <p class="planning-hajj-setup-text">
-              Pour générer le planning Hajj, indiquez ici la date grégorienne correspondant au début des jours fixes du Hajj.
+              Pour générer le planning Hajj, indiquez ici la date grégorienne correspondant au début des jours fixes du
+              Hajj.
             </p>
           </div>
 
@@ -169,12 +165,8 @@
 
         <template v-if="selectedPlanning">
           <div v-if="selectedPlanning.evenements?.length" class="planning-event-list">
-            <article
-              v-for="event in selectedPlanning.evenements"
-              :key="event.id"
-              class="planning-event-row"
-              :class="`is-${event.type.toLowerCase()}`"
-            >
+            <article v-for="event in selectedPlanning.evenements" :key="event.id" class="planning-event-row"
+              :class="`is-${event.type.toLowerCase()}`">
               <div class="planning-event-time">
                 <span class="planning-event-time-main">{{ formatEventTime(event.heureDebutPrevue) || '--:--' }}</span>
                 <span class="planning-event-time-label">Rendez-vous</span>
@@ -219,15 +211,12 @@
           <div v-else class="planning-main-empty">
             <AppIcon name="calendar" :size="40" :stroke-width="1.5" style="opacity: 0.22; margin-bottom: 12px" />
             <p class="planning-empty-title">Aucun événement pour cette journée</p>
-            <p class="planning-empty-copy">Ajoutez les lieux, activités et l’heure de rendez-vous prévue pour ce jour.</p>
+            <p class="planning-empty-copy">Ajoutez les lieux, activités et l’heure de rendez-vous prévue pour ce jour.
+            </p>
           </div>
 
-          <button
-            class="planning-primary-wide"
-            :disabled="saving || !canAddEventOnSelectedDay"
-            :title="canAddEventOnSelectedDay ? '' : addEventBlockedReason"
-            @click="openEventModal()"
-          >
+          <button class="planning-primary-wide" :disabled="saving || !canAddEventOnSelectedDay"
+            :title="canAddEventOnSelectedDay ? '' : addEventBlockedReason" @click="openEventModal()">
             <AppIcon name="plus" :size="16" />
             Ajouter un événement
           </button>
@@ -237,15 +226,12 @@
           <div class="planning-main-empty">
             <AppIcon name="calendar" :size="40" :stroke-width="1.5" style="opacity: 0.22; margin-bottom: 12px" />
             <p class="planning-empty-title">Aucun planning pour cette journée</p>
-            <p class="planning-empty-copy">Ajoutez directement un événement et la journée sera créée automatiquement pour cette date.</p>
+            <p class="planning-empty-copy">Ajoutez directement un événement et la journée sera créée automatiquement
+              pour cette date.</p>
           </div>
 
-          <button
-            class="planning-primary-wide"
-            :disabled="saving || !canAddEventOnSelectedDay"
-            :title="canAddEventOnSelectedDay ? '' : addEventBlockedReason"
-            @click="createSelectedDayQuick()"
-          >
+          <button class="planning-primary-wide" :disabled="saving || !canAddEventOnSelectedDay"
+            :title="canAddEventOnSelectedDay ? '' : addEventBlockedReason" @click="createSelectedDayQuick()">
             <AppIcon name="plus" :size="16" />
             Ajouter un événement
           </button>
@@ -253,12 +239,9 @@
       </section>
     </div>
 
-    <DashboardModalShell
-      v-if="showDayModal"
-      :title="editingDayId ? 'Modifier la journée' : 'Créer une journée de planning'"
-      :error="modalError"
-      @close="closeDayModal"
-    >
+    <DashboardModalShell v-if="showDayModal"
+      :title="editingDayId ? 'Modifier la journée' : 'Créer une journée de planning'" :error="modalError"
+      @close="closeDayModal">
       <div class="form-grid">
         <div class="form-field">
           <label>Date</label>
@@ -277,12 +260,8 @@
       </template>
     </DashboardModalShell>
 
-    <DashboardModalShell
-      v-if="showEventModal"
-      :title="editingEventId ? 'Modifier l’événement' : 'Ajouter un événement'"
-      :error="modalError"
-      @close="closeEventModal"
-    >
+    <DashboardModalShell v-if="showEventModal" :title="editingEventId ? 'Modifier l’événement' : 'Ajouter un événement'"
+      :error="modalError" @close="closeEventModal">
       <div class="form-grid">
         <div class="form-field">
           <label>Type</label>
@@ -344,6 +323,7 @@ import {
   updateAgenceGroupe,
   updateAgencePlanningDay,
   updateAgencePlanningEvent,
+  deleteAgencePlanning
 } from '@/features/agence/services/agence.service'
 
 const EVENT_TYPE_LABELS = {
@@ -908,7 +888,20 @@ async function generateTemplate() {
     saving.value = false
   }
 }
+async function deletePlanning() {
+  if (!window.confirm('Supprimer tout le planning de ce groupe ?')) return
 
+  saving.value = true
+  try {
+    await deleteAgencePlanning(selectedGroupId.value)
+    showToast('Planning supprimé')
+    await loadPlanning()
+  } catch (err) {
+    showToast(err.response?.data?.message || err.message, 'error')
+  } finally {
+    saving.value = false
+  }
+}
 watch(
   () => props.groupes,
   (groupes) => {
@@ -1595,8 +1588,18 @@ watch(selectedGroupId, () => {
   color: var(--blue);
   border: 1px solid rgba(74, 158, 255, 0.22);
 }
+.planning-action-button--danger {
+  background: #fff0f0;
+  border-color: #f5c0c0;
+  color: #c0392b;
+}
 
+.planning-action-button--danger:hover:not(:disabled) {
+  background: #ffe4e4;
+  border-color: #e07070;
+}
 @media (max-width: 960px) {
+
   .planning-hero-card,
   .planning-days-card,
   .planning-detail-card {
@@ -1628,4 +1631,3 @@ watch(selectedGroupId, () => {
   }
 }
 </style>
-
