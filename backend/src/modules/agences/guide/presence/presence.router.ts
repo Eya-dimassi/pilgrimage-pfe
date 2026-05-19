@@ -49,9 +49,13 @@ router.post('/appels', async (req: AuthRequest, res: Response) => {
     })
   } catch (error: any) {
     console.error('Error in creerAppelPresence route:', error)
-    return res.status(400).json({
+    const errorCode = error?.code
+    const statusCode = errorCode === 'GROUP_NOT_IN_PROGRESS' ? 409 : 400
+
+    return res.status(statusCode).json({
       success: false,
       message: error.message || 'Erreur lors de la creation de l\'appel',
+      ...(errorCode ? { code: errorCode } : {}),
     })
   }
 })

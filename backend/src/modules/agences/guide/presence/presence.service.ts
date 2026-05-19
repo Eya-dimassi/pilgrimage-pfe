@@ -4,6 +4,10 @@ import { sendPushToUsers } from '../../../../utils/push-notifications.utils'
 export class PresenceService {
   private static readonly AUTO_CLOSE_DELAY_MS = 60 * 60 * 1000
 
+  private static businessError(message: string, code: string) {
+    return Object.assign(new Error(message), { code })
+  }
+
   private static isAutoCloseDue(appelDate: Date) {
     return Date.now() - appelDate.getTime() >= PresenceService.AUTO_CLOSE_DELAY_MS
   }
@@ -48,6 +52,22 @@ export class PresenceService {
 
     if (!assignment) {
       throw new Error('Vous n\'etes pas assigne a ce groupe')
+    }
+
+    const groupe = await prisma.groupe.findFirst({
+      where: { id: groupeId },
+      select: { id: true, status: true, nom: true },
+    })
+
+    if (!groupe) {
+      throw new Error('Groupe introuvable')
+    }
+
+    if (groupe.status !== 'EN_COURS') {
+      throw PresenceService.businessError(
+        `Impossible de lancer un appel : le groupe "${groupe.nom}" est en statut ${groupe.status}. Seuls les groupes EN_COURS sont autorises.`,
+        'GROUP_NOT_IN_PROGRESS',
+      )
     }
 
     let appelEnCours = await prisma.appelPresence.findFirst({
