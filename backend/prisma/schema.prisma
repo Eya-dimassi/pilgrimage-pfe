@@ -8,38 +8,36 @@ datasource db {
 }
 
 model Utilisateur {
-  id          String   @id @default(uuid())
-  email       String   @unique
-  motDePasse  String?
-  nom         String
-  prenom      String
-  telephone   String?
-  role        Role
-  actif       Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  createdById String?
-
+  id             String          @id @default(uuid())
+  email          String          @unique
+  motDePasse     String?
+  nom            String
+  prenom         String
+  telephone      String?
+  role           Role
+  actif          Boolean         @default(false)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  createdById    String?
   agence         AgenceVoyage?
-  guide          Guide?
-  pelerin        Pelerin?
-  famille        Famille?
   deviceTokens   DeviceToken[]
+  famille        Famille?
+  guide          Guide?
   notifications  Notification[]
-  refreshTokens  RefreshToken[]
   passwordTokens PasswordToken[]
+  pelerin        Pelerin?
+  refreshTokens  RefreshToken[]
 
   @@index([role])
 }
 
 model RefreshToken {
-  id            String   @id @default(uuid())
-  token         String   @unique
+  id            String      @id @default(uuid())
+  token         String      @unique
   utilisateurId String
   expiresAt     DateTime
-  createdAt     DateTime @default(now())
-
-  utilisateur Utilisateur @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
+  createdAt     DateTime    @default(now())
+  utilisateur   Utilisateur @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
 
   @@index([utilisateurId])
 }
@@ -52,29 +50,27 @@ model PasswordToken {
   expiresAt     DateTime
   usedAt        DateTime?
   createdAt     DateTime          @default(now())
-
-  utilisateur Utilisateur @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
+  utilisateur   Utilisateur       @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
 
   @@index([utilisateurId])
 }
 
 model DeviceToken {
-  id            String   @id @default(uuid())
+  id            String      @id @default(uuid())
   utilisateurId String
-  token         String   @unique
+  token         String      @unique
   platform      String
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  lastSeenAt    DateTime @default(now())
-
-  utilisateur Utilisateur @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  lastSeenAt    DateTime    @default(now())
+  utilisateur   Utilisateur @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
 
   @@index([utilisateurId])
   @@index([platform])
 }
 
 model Notification {
-  id            String    @id @default(uuid())
+  id            String      @id @default(uuid())
   utilisateurId String
   title         String
   body          String
@@ -83,34 +79,29 @@ model Notification {
   groupeId      String?
   eventId       String?
   etape         String?
-  isRead        Boolean   @default(false)
+  isRead        Boolean     @default(false)
   readAt        DateTime?
-  createdAt     DateTime  @default(now())
-
-  utilisateur Utilisateur @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
+  createdAt     DateTime    @default(now())
+  utilisateur   Utilisateur @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
 
   @@index([utilisateurId, createdAt(sort: Desc)])
   @@index([utilisateurId, isRead])
 }
 
 model RagChunk {
-  id         String                     @id @default(uuid())
+  id         String                @id @default(uuid())
   text       String
   source     String
   section    String?
   audience   String[]
-  language   String                     @default("fr")
+  language   String                @default("fr")
   tags       String[]
   documentId String?
-  embedding  Unsupported("vector(1024)")
-  createdAt  DateTime                   @default(now())
+  createdAt  DateTime              @default(now())
+  embedding  Unsupported("vector")
 
   @@index([language])
 }
-
-// ======================================================
-// SPRINT 1 — GESTION AGENCE
-// ======================================================
 
 model AgenceVoyage {
   id              String       @id @default(uuid())
@@ -119,67 +110,62 @@ model AgenceVoyage {
   adresse         String?
   siteWeb         String?
   logo            String?
-  status          StatutAgence @default(PENDING)
-  approvedAt      DateTime?
-  approvedById    String?
-  rejectedAt      DateTime?
-  rejectedById    String?
-  rejectionReason String?
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
-
-  utilisateur Utilisateur @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
-  groupes     Groupe[]
-  guides      Guide[]
-  pelerins    Pelerin[]
-  familles    Famille[]
+  approvedAt      DateTime?
+  rejectedAt      DateTime?
+  rejectionReason String?
+  status          StatutAgence @default(PENDING)
+  approvedById    String?
+  rejectedById    String?
+  utilisateur     Utilisateur  @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
+  familles        Famille[]
+  groupes         Groupe[]
+  guides          Guide[]
+  pelerins        Pelerin[]
 
   @@index([status])
 }
 
 model Guide {
-  id                 String             @id @default(uuid())
-  utilisateurId      String             @unique
+  id                 String              @id @default(uuid())
+  utilisateurId      String              @unique
   agenceId           String
   specialite         String?
-  createdAt          DateTime           @default(now())
-  updatedAt          DateTime           @updatedAt
-  disponibilite      DisponibiliteGuide @default(DISPONIBLE)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  disponibilite      DisponibiliteGuide  @default(DISPONIBLE)
   disponibiliteMajAt DateTime?
-  utilisateur        Utilisateur        @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
-  agence             AgenceVoyage       @relation(fields: [agenceId], references: [id])
-
-  groupes           GroupeGuide[]
-  evenementsValides EvenementPlanning[]
-  appelsPresence    AppelPresence[]
-  alertesResolues   AlerteSOS[]         @relation("GuideResolutionSOS")
+  alertesResolues    AlerteSOS[]         @relation("GuideResolutionSOS")
+  appelsPresence     AppelPresence[]
+  evenementsValides  EvenementPlanning[]
+  groupes            GroupeGuide[]
+  agence             AgenceVoyage        @relation(fields: [agenceId], references: [id])
+  utilisateur        Utilisateur         @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
 
   @@index([agenceId])
 }
 
 model Groupe {
-  id            String       @id @default(uuid())
-  nom           String
-  description   String?
-  annee         Int
-  typeVoyage    TypeVoyage   @default(HAJJ)
-  agenceId      String
-  nbMax         Int?
-  dateDepart    DateTime?
-  dateRetour    DateTime?
-  hajjStartDate DateTime?
-  status        StatutGroupe @default(PLANIFIE)
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
-
-  agence AgenceVoyage @relation(fields: [agenceId], references: [id])
-
-  membres GroupePelerin[]
-  guides  GroupeGuide[]
-
-  plannings      PlanningQuotidien[]
-  appelsPresence AppelPresence[]
+  id             String              @id @default(uuid())
+  nom            String
+  description    String?
+  annee          Int
+  typeVoyage     TypeVoyage          @default(HAJJ)
+  agenceId       String
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  dateDepart     DateTime?
+  dateRetour     DateTime?
+  nbMax          Int?
+  status         StatutGroupe        @default(PLANIFIE)
+  hajjStartDate  DateTime?
   alertesSOS     AlerteSOS[]
+  appelsPresence AppelPresence[]
+  agence         AgenceVoyage        @relation(fields: [agenceId], references: [id])
+  guides         GroupeGuide[]
+  membres        GroupePelerin[]
+  plannings      PlanningQuotidien[]
 
   @@index([agenceId])
   @@index([annee])
@@ -193,9 +179,8 @@ model GroupeGuide {
   dateDebut DateTime  @default(now())
   dateFin   DateTime?
   actif     Boolean   @default(true)
-
-  groupe Groupe @relation(fields: [groupeId], references: [id], onDelete: Cascade)
-  guide  Guide  @relation(fields: [guideId], references: [id], onDelete: Cascade)
+  groupe    Groupe    @relation(fields: [groupeId], references: [id], onDelete: Cascade)
+  guide     Guide     @relation(fields: [guideId], references: [id], onDelete: Cascade)
 
   @@index([groupeId, actif])
   @@index([guideId, actif])
@@ -208,55 +193,47 @@ model GroupePelerin {
   dateDebut DateTime  @default(now())
   dateFin   DateTime?
   actif     Boolean   @default(true)
-
-  groupe  Groupe  @relation(fields: [groupeId], references: [id], onDelete: Cascade)
-  pelerin Pelerin @relation(fields: [pelerinId], references: [id], onDelete: Cascade)
+  groupe    Groupe    @relation(fields: [groupeId], references: [id], onDelete: Cascade)
+  pelerin   Pelerin   @relation(fields: [pelerinId], references: [id], onDelete: Cascade)
 
   @@index([groupeId, actif])
   @@index([pelerinId, actif])
 }
 
 model Pelerin {
-  id              String        @id @default(uuid())
-  utilisateurId   String        @unique
-  codeUnique      String        @unique
+  id              String                 @id @default(uuid())
+  utilisateurId   String                 @unique
+  codeUnique      String                 @unique
   agenceId        String
   dateNaissance   DateTime?
   nationalite     String?
   numeroPasseport String?
   photoUrl        String?
-  statut          StatutPelerin @default(PRESENT)
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-
-  utilisateur Utilisateur  @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
-  agence      AgenceVoyage @relation(fields: [agenceId], references: [id])
-
-  groupes       GroupePelerin[]
-  familles      FamillePelerin[]
-  confirmations ConfirmationPresence[]
-  positions     Position[]
-  alertesSOS    AlerteSOS[]
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+  statut          StatutPelerin          @default(PRESENT)
+  alertesSOS      AlerteSOS[]
+  confirmations   ConfirmationPresence[]
+  familles        FamillePelerin[]
+  groupes         GroupePelerin[]
+  agence          AgenceVoyage           @relation(fields: [agenceId], references: [id])
+  utilisateur     Utilisateur            @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
+  positions       Position[]
 
   @@index([agenceId])
   @@index([statut])
 }
 
-// ======================================================
-// SPRINT 2 — FAMILLE
-// ======================================================
-
 model Famille {
-  id            String   @id @default(uuid())
-  utilisateurId String   @unique
-  agenceId      String
+  id            String           @id @default(uuid())
+  utilisateurId String           @unique
   lienParente   String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  utilisateur  Utilisateur      @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
-  agence       AgenceVoyage     @relation(fields: [agenceId], references: [id])
-  associations FamillePelerin[]
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  agenceId      String
+  agence        AgenceVoyage     @relation(fields: [agenceId], references: [id])
+  utilisateur   Utilisateur      @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
+  associations  FamillePelerin[]
 
   @@index([agenceId])
 }
@@ -268,71 +245,59 @@ model FamillePelerin {
   actif     Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  famille Famille @relation(fields: [familleId], references: [id], onDelete: Cascade)
-  pelerin Pelerin @relation(fields: [pelerinId], references: [id], onDelete: Cascade)
+  famille   Famille  @relation(fields: [familleId], references: [id], onDelete: Cascade)
+  pelerin   Pelerin  @relation(fields: [pelerinId], references: [id], onDelete: Cascade)
 
   @@unique([familleId, pelerinId])
   @@index([familleId])
   @@index([pelerinId])
 }
 
-// ======================================================
-// SPRINT 2 — PLANNING QUOTIDIEN
-// ======================================================
-
 model PlanningQuotidien {
-  id        String   @id @default(uuid())
-  groupeId  String
-  date      DateTime
-  titre     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  groupe     Groupe              @relation(fields: [groupeId], references: [id], onDelete: Cascade)
+  id         String              @id @default(uuid())
+  groupeId   String
+  date       DateTime
+  titre      String?
+  createdAt  DateTime            @default(now())
+  updatedAt  DateTime            @updatedAt
   evenements EvenementPlanning[]
+  groupe     Groupe              @relation(fields: [groupeId], references: [id], onDelete: Cascade)
 
   @@unique([groupeId, date])
   @@index([groupeId, date])
 }
 
 model EvenementPlanning {
-  id                  String          @id @default(uuid())
+  id                  String            @id @default(uuid())
   planningQuotidienId String
   type                TypeEvenement
   titre               String
-  etape               EtapeVoyage?
   description         String?
   lieu                String?
+  createdAt           DateTime          @default(now())
   heureDebutPrevue    DateTime?
-  status              StatutEvenement @default(PLANIFIE)
-  estValide           Boolean         @default(false)
+  updatedAt           DateTime          @updatedAt
+  estValide           Boolean           @default(false)
+  etape               EtapeVoyage?
   valideParGuideId    String?
   valideeAt           DateTime?
-  createdAt           DateTime        @default(now())
-  updatedAt           DateTime        @updatedAt
-
-  planningQuotidien PlanningQuotidien @relation(fields: [planningQuotidienId], references: [id], onDelete: Cascade)
-  validePar         Guide?            @relation(fields: [valideParGuideId], references: [id])
+  status              StatutEvenement   @default(PLANIFIE)
+  planningQuotidien   PlanningQuotidien @relation(fields: [planningQuotidienId], references: [id], onDelete: Cascade)
+  validePar           Guide?            @relation(fields: [valideParGuideId], references: [id])
 
   @@index([planningQuotidienId])
   @@index([valideParGuideId])
   @@index([etape])
 }
 
-// ======================================================
-// SPRINT 3 — PRÉSENCE
-// ======================================================
-
 model AppelPresence {
-  id        String      @id @default(uuid())
-  groupeId  String
-  guideId   String
-  date      DateTime    @default(now())
-  statut    StatutAppel @default(EN_COURS)
-  createdAt DateTime    @default(now())
-  clotureAt DateTime?
-
+  id            String                 @id @default(uuid())
+  groupeId      String
+  guideId       String
+  date          DateTime               @default(now())
+  statut        StatutAppel            @default(EN_COURS)
+  createdAt     DateTime               @default(now())
+  clotureAt     DateTime?
   groupe        Groupe                 @relation(fields: [groupeId], references: [id])
   guide         Guide                  @relation(fields: [guideId], references: [id])
   confirmations ConfirmationPresence[]
@@ -351,18 +316,13 @@ model ConfirmationPresence {
   confirmeMode    ModeConfirmation?
   note            String?
   createdAt       DateTime          @default(now())
-
-  appelPresence AppelPresence @relation(fields: [appelPresenceId], references: [id], onDelete: Cascade)
-  pelerin       Pelerin       @relation(fields: [pelerinId], references: [id])
+  appelPresence   AppelPresence     @relation(fields: [appelPresenceId], references: [id], onDelete: Cascade)
+  pelerin         Pelerin           @relation(fields: [pelerinId], references: [id])
 
   @@unique([appelPresenceId, pelerinId])
   @@index([appelPresenceId])
   @@index([pelerinId])
 }
-
-// ======================================================
-// SPRINT 3 — GÉOLOCALISATION & SOS
-// ======================================================
 
 model Position {
   id        String   @id @default(uuid())
@@ -370,8 +330,7 @@ model Position {
   latitude  Float
   longitude Float
   createdAt DateTime @default(now())
-
-  pelerin Pelerin @relation(fields: [pelerinId], references: [id], onDelete: Cascade)
+  pelerin   Pelerin  @relation(fields: [pelerinId], references: [id], onDelete: Cascade)
 
   @@index([pelerinId, createdAt(sort: Desc)])
 }
@@ -379,30 +338,25 @@ model Position {
 model AlerteSOS {
   id                String       @id @default(uuid())
   pelerinId         String
-  groupeId          String
   latitude          Float
   longitude         Float
-  type              TypeIncident @default(AUTRE)
-  description       String?
   statut            StatutAlerte @default(EN_COURS)
   message           String?
   createdAt         DateTime     @default(now())
   resolueAt         DateTime?
   resolueParGuideId String?
-
-  pelerin         Pelerin @relation(fields: [pelerinId], references: [id], onDelete: Cascade)
-  groupe          Groupe  @relation(fields: [groupeId], references: [id])
-  resolueParGuide Guide?  @relation("GuideResolutionSOS", fields: [resolueParGuideId], references: [id])
+  groupeId          String
+  type              TypeIncident @default(AUTRE)
+  description       String?
+  groupe            Groupe       @relation(fields: [groupeId], references: [id])
+  pelerin           Pelerin      @relation(fields: [pelerinId], references: [id], onDelete: Cascade)
+  resolueParGuide   Guide?       @relation("GuideResolutionSOS", fields: [resolueParGuideId], references: [id])
 
   @@index([pelerinId])
   @@index([groupeId])
   @@index([statut])
   @@index([resolueParGuideId])
 }
-
-// ======================================================
-// ENUMS
-// ======================================================
 
 enum Role {
   PELERIN
@@ -439,7 +393,6 @@ enum DisponibiliteGuide {
 enum EtapeVoyage {
   IHRAM
   TAWAF_AL_QUDUM
-  TAWAF_UMRAH
   SAI
   ARAFAT
   MUZDALIFAH
@@ -448,16 +401,17 @@ enum EtapeVoyage {
   TAWAF_AL_IFADA
   TAWAF_AL_WADA
   TAHALLUL
+  TAWAF_UMRAH
 }
 
 enum TypeEvenement {
   PRIERE
   TRANSPORT
-  VISITE
   REPAS
   RITE
   REPOS
   AUTRE
+  VISITE
 }
 
 enum StatutAgence {
@@ -494,6 +448,7 @@ enum StatutPresence {
 enum ModeConfirmation {
   AUTOMATIQUE
   MANUEL
+  QR
 }
 
 enum StatutAlerte {
