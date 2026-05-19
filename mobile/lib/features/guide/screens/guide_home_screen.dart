@@ -135,6 +135,7 @@ class _GuideHomeScreenState extends ConsumerState<GuideHomeScreen> {
         builder: (context) => GuideGroupePelerinsSheet(
           groupeId: targetGroup.id,
           groupeNom: targetGroup.nom,
+          groupeStatus: targetGroup.status,
         ),
       );
     }

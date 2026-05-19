@@ -12,10 +12,12 @@ class GuideGroupePelerinsSheet extends ConsumerStatefulWidget {
     super.key,
     required this.groupeId,
     required this.groupeNom,
+    this.groupeStatus,
   });
 
   final String groupeId;
   final String groupeNom;
+  final String? groupeStatus;
 
   @override
   ConsumerState<GuideGroupePelerinsSheet> createState() =>
@@ -25,6 +27,7 @@ class GuideGroupePelerinsSheet extends ConsumerStatefulWidget {
 class _GuideGroupePelerinsSheetState
     extends ConsumerState<GuideGroupePelerinsSheet> {
   final _searchController = TextEditingController();
+  bool get _canLaunchPresenceCall => widget.groupeStatus == 'EN_COURS';
 
   @override
   void dispose() {
@@ -124,18 +127,34 @@ class _GuideGroupePelerinsSheetState
                             const SizedBox(width: 6),
                             IconButton(
                               onPressed: () {
+                                if (!_canLaunchPresenceCall) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'Impossible de lancer un appel: le groupe doit etre EN_COURS.',
+                                      ),
+                                    ),
+                                  );
+                                  return;
+                                }
                                 Navigator.of(context).push(
                                   MaterialPageRoute(
                                     builder: (_) => CreerAppelScreen(
                                       groupeId: widget.groupeId,
                                       groupeNom: widget.groupeNom,
+                                      groupeStatus: widget.groupeStatus,
                                     ),
                                   ),
                                 );
                               },
                               tooltip: 'guide.group_pilgrims_sheet.attendance_call_tooltip'
                                   .tr(),
-                              icon: const Icon(Icons.how_to_reg_rounded),
+                              icon: Icon(
+                                Icons.how_to_reg_rounded,
+                                color: _canLaunchPresenceCall
+                                    ? null
+                                    : AppColors.textMuted,
+                              ),
                             ),
                             IconButton(
                               onPressed: () => ref.invalidate(

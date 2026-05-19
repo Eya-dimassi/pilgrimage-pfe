@@ -70,6 +70,19 @@ class _GuidePresenceGroupsSectionState
 
       String? appelId = snapshot.activeAppelId;
       if (appelId == null || appelId.trim().isEmpty) {
+        if (group.status != 'EN_COURS') {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Impossible de lancer un appel: le groupe doit etre EN_COURS.',
+                ),
+              ),
+            );
+          }
+          return;
+        }
+
         final repository = ref.read(presenceRepositoryProvider);
         final result = await repository.creerAppel(group.id);
         final rawAppel = result['appel'];
@@ -120,10 +133,15 @@ class _GroupPresenceTile extends ConsumerWidget {
     final snapshotAsync = ref.watch(guideGroupPresenceSnapshotProvider(group.id));
 
     final bool hasActiveCall = snapshotAsync.valueOrNull?.hasActiveCall ?? false;
+    final bool canStartNewCall = group.status == 'EN_COURS';
+    final bool canOpenOrLaunch = hasActiveCall || canStartNewCall;
     final bool isLoading = pending || snapshotAsync.isLoading;
 
     final subtitle = snapshotAsync.when(
       data: (snapshot) {
+        if (!snapshot.hasActiveCall && !canStartNewCall) {
+          return 'Le groupe doit etre EN_COURS pour lancer un appel.';
+        }
         if (!snapshot.hasActiveCall) {
           return 'guide.presence.groups.no_active_call'.tr();
         }
@@ -144,7 +162,7 @@ class _GroupPresenceTile extends ConsumerWidget {
       color: AppColors.card,
       borderRadius: BorderRadius.circular(18),
       child: InkWell(
-        onTap: isLoading ? null : onTap,
+        onTap: (isLoading || !canOpenOrLaunch) ? null : onTap,
         borderRadius: BorderRadius.circular(18),
         child: Ink(
           padding: const EdgeInsets.fromLTRB(12, 11, 12, 11),
@@ -199,17 +217,27 @@ class _GroupPresenceTile extends ConsumerWidget {
                     vertical: 7,
                   ),
                   decoration: BoxDecoration(
-                    color: hasActiveCall ? AppColors.greenSoft : AppColors.goldSoft,
+                    color: hasActiveCall
+                        ? AppColors.greenSoft
+                        : canOpenOrLaunch
+                            ? AppColors.goldSoft
+                            : AppColors.borderSoft,
                     borderRadius: BorderRadius.circular(999),
                   ),
                   child: Text(
                     hasActiveCall
                         ? 'guide.presence.groups.action_open'.tr()
-                        : 'guide.presence.groups.action_launch'.tr(),
+                        : canOpenOrLaunch
+                            ? 'guide.presence.groups.action_launch'.tr()
+                            : 'Indisponible',
                     style: TextStyle(
                       fontSize: 11.5,
                       fontWeight: FontWeight.w800,
-                      color: hasActiveCall ? AppColors.green : AppColors.gold,
+                      color: hasActiveCall
+                          ? AppColors.green
+                          : canOpenOrLaunch
+                              ? AppColors.gold
+                              : AppColors.textMuted,
                     ),
                   ),
                 ),

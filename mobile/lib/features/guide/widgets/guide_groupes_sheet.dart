@@ -33,6 +33,7 @@ class _GuideGroupesSheetState extends ConsumerState<GuideGroupesSheet> {
       builder: (context) => GuideGroupePelerinsSheet(
         groupeId: group.id,
         groupeNom: group.nom,
+        groupeStatus: group.status,
       ),
     );
   }

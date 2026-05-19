@@ -52,7 +52,7 @@ class NotificationNavigationService {
             return '/guide-presence/$appelId';
           }
           if (role == 'PELERIN') {
-            return '/pelerin-presence/$appelId';
+            return '/home?tab=alerts'; 
           }
         }
         return '${_basePathForRole(role)}?tab=alerts';

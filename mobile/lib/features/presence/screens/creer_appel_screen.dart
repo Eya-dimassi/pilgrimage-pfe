@@ -7,11 +7,13 @@ import 'appel_presence_screen.dart';
 class CreerAppelScreen extends ConsumerStatefulWidget {
   final String groupeId;
   final String groupeNom;
+  final String? groupeStatus;
 
   const CreerAppelScreen({
     super.key,
     required this.groupeId,
     required this.groupeNom,
+    this.groupeStatus,
   });
 
   @override
@@ -97,6 +99,17 @@ class _CreerAppelScreenState extends ConsumerState<CreerAppelScreen> {
   }
 
   Future<void> _creerAppel() async {
+    if (widget.groupeStatus != 'EN_COURS') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Impossible de lancer un appel: le groupe doit etre EN_COURS.',
+          ),
+        ),
+      );
+      return;
+    }
+
     setState(() => _isCreating = true);
 
     try {

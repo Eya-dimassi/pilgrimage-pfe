@@ -3,7 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:easy_localization/easy_localization.dart';
-
+import 'package:qr_flutter/qr_flutter.dart';
 import '../../features/auth/domain/auth_user.dart';
 import '../theme/app_theme.dart';
 import 'app_surfaces.dart';
@@ -128,6 +128,23 @@ class RoleProfileTemplate extends StatelessWidget {
                         onCopy: () => _copyCode(context, user.codeUnique!),
                       ),
                     ],
+                    if (user.role == 'PELERIN' &&
+                        user.codeUnique?.isNotEmpty == true) ...[
+                      const SizedBox(height: 8),
+                      OutlinedButton.icon(
+                        onPressed: () => _showQrModal(context, user.codeUnique!),
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: Colors.white70),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                        ),
+                        icon: const Icon(Icons.qr_code_2_rounded, size: 18),
+                        label: const Text('Mon code QR'),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -246,6 +263,109 @@ class RoleProfileTemplate extends StatelessWidget {
     messenger.hideCurrentSnackBar();
     messenger.showSnackBar(
       SnackBar(content: Text('profile.code_copied'.tr())),
+    );
+  }
+
+  void _showQrModal(BuildContext context, String codeUnique) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: DraggableScrollableSheet(
+            expand: false,
+            initialChildSize: 0.92,
+            minChildSize: 0.7,
+            maxChildSize: 0.98,
+            builder: (_, controller) {
+              return SingleChildScrollView(
+                controller: controller,
+                padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 42,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: AppColors.borderSoft,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    const Text(
+                      'Mon code QR',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Code unique : $codeUnique',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: AppColors.borderSoft),
+                      ),
+                      child: QrImageView(
+                        data: codeUnique,
+                        version: QrVersions.auto,
+                        size: 260,
+                        backgroundColor: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    const Text(
+                      'Ce code permet au guide de confirmer rapidement votre présence.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: AppColors.textMuted,
+                        fontWeight: FontWeight.w600,
+                        height: 1.35,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton.icon(
+                        onPressed: () async {
+                          await Clipboard.setData(
+                            ClipboardData(text: codeUnique),
+                          );
+                          if (!sheetContext.mounted) {
+                            return;
+                          }
+                          final messenger = ScaffoldMessenger.of(sheetContext);
+                          messenger.hideCurrentSnackBar();
+                          messenger.showSnackBar(
+                            const SnackBar(content: Text('Code copié')),
+                          );
+                        },
+                        icon: const Icon(Icons.copy_rounded),
+                        label: const Text('Copier le code'),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        );
+      },
     );
   }
 }
