@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:dio/dio.dart';
+import 'package:easy_localization/easy_localization.dart';
 
 String apiErrorMessage(DioException error) {
   // Network / transport errors (no HTTP status)
@@ -8,13 +9,13 @@ String apiErrorMessage(DioException error) {
     case DioExceptionType.connectionTimeout:
     case DioExceptionType.sendTimeout:
     case DioExceptionType.receiveTimeout:
-      return 'La connexion est trop lente. Réessayez.';
+      return 'api_error_message.timeout'.tr();
     case DioExceptionType.connectionError:
-      return 'Impossible de se connecter. Vérifiez votre connexion internet puis réessayez.';
+      return 'api_error_message.connection_error'.tr();
     case DioExceptionType.badCertificate:
-      return 'Connexion sécurisée impossible. Réessayez.';
+      return 'api_error_message.bad_certificate'.tr();
     case DioExceptionType.cancel:
-      return 'Requête annulée. Réessayez.';
+      return 'api_error_message.cancel'.tr();
     case DioExceptionType.badResponse:
     case DioExceptionType.unknown:
       break;
@@ -27,28 +28,28 @@ String apiErrorMessage(DioException error) {
   if (serverMessage != null && serverMessage.isNotEmpty) {
     // Still override a few common cases to keep UX consistent.
     if (status == 401) {
-      return 'Session expirée. Veuillez vous reconnecter.';
+      return 'api_error_message.unauthorized'.tr();
     }
     if (status == 403) {
-      return "Accès refusé. Vous n'avez pas l'autorisation.";
+      return 'api_error_message.forbidden'.tr();
     }
     return serverMessage;
   }
 
   if (status == null) {
-    return 'Une erreur est survenue. Réessayez.';
+    return 'api_error_message.unknown'.tr();
   }
 
-  if (status == 400) return 'Demande invalide. Vérifiez vos informations.';
-  if (status == 401) return 'Session expirée. Veuillez vous reconnecter.';
-  if (status == 403) return "Accès refusé. Vous n'avez pas l'autorisation.";
-  if (status == 404) return "Contenu introuvable. Réessayez plus tard.";
-  if (status == 409) return 'Conflit détecté. Réessayez.';
-  if (status == 422) return 'Données invalides. Vérifiez vos informations.';
-  if (status == 429) return 'Trop de tentatives. Réessayez dans quelques instants.';
-  if (status >= 500) return 'Le serveur rencontre un problème. Réessayez plus tard.';
+  if (status == 400) return 'api_error_message.bad_request'.tr();
+  if (status == 401) return 'api_error_message.unauthorized'.tr();
+  if (status == 403) return 'api_error_message.forbidden'.tr();
+  if (status == 404) return 'api_error_message.not_found'.tr();
+  if (status == 409) return 'api_error_message.conflict'.tr();
+  if (status == 422) return 'api_error_message.unprocessable_entity'.tr();
+  if (status == 429) return 'api_error_message.too_many_requests'.tr();
+  if (status >= 500) return 'api_error_message.server_error'.tr();
 
-  return 'Une erreur est survenue. Réessayez.';
+  return 'api_error_message.unknown'.tr();
 }
 
 String? _extractServerMessage(dynamic data) {

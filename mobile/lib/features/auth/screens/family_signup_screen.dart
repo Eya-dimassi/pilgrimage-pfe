@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -82,7 +83,7 @@ class _FamilySignupScreenState extends ConsumerState<FamilySignupScreen> {
     } on AuthException catch (error) {
       _showMessage(error.message);
     } catch (_) {
-      _showMessage('Une erreur est survenue');
+      _showMessage('family_signup.generic_error'.tr());
     } finally {
       if (mounted) {
         setState(() {
@@ -112,7 +113,7 @@ class _FamilySignupScreenState extends ConsumerState<FamilySignupScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
           Text(
-            'Creez votre compte\nfamille',
+            'family_signup.title'.tr(),
             textAlign: TextAlign.center,
             style: GoogleFonts.syne(
               fontSize: 24,
@@ -123,8 +124,9 @@ class _FamilySignupScreenState extends ConsumerState<FamilySignupScreen> {
             ),
           ),
           const SizedBox(height: 12),
-          const Text(
-            'Inscrivez-vous avec le code unique du pelerin pour acceder ensuite au portail mobile avec le meme ecran de connexion.',
+          
+          Text(
+            'family_signup.subtitle'.tr(),
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 12.5,
@@ -138,10 +140,10 @@ class _FamilySignupScreenState extends ConsumerState<FamilySignupScreen> {
             textInputAction: TextInputAction.next,
             validator: (value) => AuthValidators.required(
               value,
-              message: 'Veuillez entrer votre prenom',
+              message: 'family_signup.validation.first_name_required'.tr(),
             ),
-            decoration: const InputDecoration(
-              labelText: 'Prenom',
+            decoration: InputDecoration(
+              labelText: 'family_signup.first_name'.tr(),
               prefixIcon: Icon(Icons.person_outline_rounded),
             ),
           ),
@@ -151,10 +153,10 @@ class _FamilySignupScreenState extends ConsumerState<FamilySignupScreen> {
             textInputAction: TextInputAction.next,
             validator: (value) => AuthValidators.required(
               value,
-              message: 'Veuillez entrer votre nom',
+              message: 'family_signup.validation.last_name_required'.tr(),
             ),
-            decoration: const InputDecoration(
-              labelText: 'Nom',
+            decoration: InputDecoration(
+              labelText: 'family_signup.last_name'.tr(),
               prefixIcon: Icon(Icons.badge_outlined),
             ),
           ),
@@ -164,9 +166,9 @@ class _FamilySignupScreenState extends ConsumerState<FamilySignupScreen> {
             keyboardType: TextInputType.emailAddress,
             textInputAction: TextInputAction.next,
             validator: AuthValidators.email,
-            decoration: const InputDecoration(
-              labelText: 'Email',
-              hintText: 'nom@email.com',
+            decoration: InputDecoration(
+              labelText: 'family_signup.email'.tr(),
+              hintText: 'family_signup.email_hint'.tr(),
               prefixIcon: Icon(Icons.alternate_email_rounded),
             ),
           ),
@@ -176,9 +178,9 @@ class _FamilySignupScreenState extends ConsumerState<FamilySignupScreen> {
             keyboardType: TextInputType.phone,
             textInputAction: TextInputAction.next,
             validator: AuthValidators.internationalPhone,
-            decoration: const InputDecoration(
-              labelText: 'Telephone',
-              hintText: '+33 6 12 34 56 78',
+            decoration: InputDecoration(
+              labelText: 'family_signup.phone'.tr(),
+              hintText: 'family_signup.phone_hint'.tr(),
               prefixIcon: Icon(Icons.phone_outlined),
             ),
           ),
@@ -189,7 +191,7 @@ class _FamilySignupScreenState extends ConsumerState<FamilySignupScreen> {
                 .map(
                   (option) => DropdownMenuItem<String>(
                     value: option,
-                    child: Text(option),
+                    child: Text(_relationshipLabel(option).tr()),
                   ),
                 )
                 .toList(),
@@ -201,8 +203,8 @@ class _FamilySignupScreenState extends ConsumerState<FamilySignupScreen> {
                 _selectedLienParente = value;
               });
             },
-            decoration: const InputDecoration(
-              labelText: 'Lien de parente',
+            decoration: InputDecoration(
+              labelText: 'family_signup.relationship'.tr(),
               prefixIcon: Icon(Icons.family_restroom_outlined),
             ),
           ),
@@ -212,11 +214,11 @@ class _FamilySignupScreenState extends ConsumerState<FamilySignupScreen> {
             textInputAction: TextInputAction.next,
             validator: (value) => AuthValidators.required(
               value,
-              message: 'Veuillez entrer le code unique du pelerin',
+              message: 'family_signup.validation.pilgrim_code_required'.tr(),
             ),
-            decoration: const InputDecoration(
-              labelText: 'Code unique du pelerin',
-              hintText: 'XXXXXXXX',
+            decoration: InputDecoration(
+              labelText: 'family_signup.pilgrim_code'.tr(),
+              hintText: 'family_signup.pilgrim_code_hint'.tr(),
               prefixIcon: Icon(Icons.qr_code_rounded),
             ),
           ),
@@ -231,7 +233,7 @@ class _FamilySignupScreenState extends ConsumerState<FamilySignupScreen> {
               }
             },
             decoration: InputDecoration(
-              labelText: 'Mot de passe',
+              labelText: 'family_signup.password'.tr(),
               prefixIcon: const Icon(Icons.lock_outline_rounded),
               suffixIcon: IconButton(
                 icon: Icon(
@@ -267,12 +269,33 @@ class _FamilySignupScreenState extends ConsumerState<FamilySignupScreen> {
                         color: AppColors.text,
                       ),
                     )
-                  : const Text('Creer mon compte famille'),
+                  :Text('family_signup.submit'.tr()),
             ),
           ),
         ],
         ),
       ),
     );
+  }
+
+  String _relationshipLabel(String value) {
+    switch (value) {
+      case 'Pere':
+        return 'family_signup.relationship_options.father';
+      case 'Mere':
+        return 'family_signup.relationship_options.mother';
+      case 'Frere':
+        return 'family_signup.relationship_options.brother';
+      case 'Soeur':
+        return 'family_signup.relationship_options.sister';
+      case 'Epoux':
+        return 'family_signup.relationship_options.husband';
+      case 'Epouse':
+        return 'family_signup.relationship_options.wife';
+      case 'Enfant':
+        return 'family_signup.relationship_options.child';
+      default:
+        return 'family_signup.relationship_options.other';
+    }
   }
 }

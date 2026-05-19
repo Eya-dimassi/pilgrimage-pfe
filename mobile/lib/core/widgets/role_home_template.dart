@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
@@ -103,10 +104,10 @@ class RoleHomeTemplate extends StatelessWidget {
         ),
         if (cards.isNotEmpty) ...[
           const SizedBox(height: AppSpacing.l),
-          const SectionTitle(
-            'Highlights',
+          SectionTitle(
+            'role_home.shortcuts.title'.tr(),
             subtitle:
-                'Useful shortcuts and clearer mobile cards built around your live trip data.',
+                'role_home.shortcuts.subtitle'.tr(),
           ),
           ...cards.map(
             (card) => Padding(

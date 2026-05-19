@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_theme.dart';
@@ -16,25 +17,25 @@ class _IntroScreenState extends State<IntroScreen> {
   static const List<_IntroSlideData> _slides = [
     _IntroSlideData(
       imagePath: 'assets/intro/img1.png',
-      title: 'Un voyage plus serein',
-      description:
-          'Retrouvez facilement vos informations utiles, vos reperes de groupe et un acces mobile plus simple tout au long du voyage.',
+      titleKey: 'intro.slides.one.title',
+      descriptionKey:
+          'intro.slides.one.description',
       accentColor: AppColors.gold,
       backgroundColor: Color.fromARGB(255, 188, 179, 155),
     ),
     _IntroSlideData(
       imagePath: 'assets/intro/img2.png',
-      title: 'Un espace pour les guides',
-      description:
-          'Gardez vos groupes bien encadres, avancez avec une vue claire du terrain et consultez rapidement les details utiles.',
+      titleKey: 'intro.slides.two.title',
+      descriptionKey:
+          'intro.slides.two.description',
       accentColor: AppColors.green,
       backgroundColor: Color.fromARGB(255, 158, 191, 168),
     ),
     _IntroSlideData(
       imagePath: 'assets/intro/img3.png',
-      title: 'Un lien pour les familles',
-      description:
-          'Offrez un suivi plus rassurant de l experience, avec une interface lisible et adaptee au voyage sacre.',
+      titleKey: 'intro.slides.three.title',
+      descriptionKey:
+          'intro.slides.three.description',
       accentColor: AppColors.blue,
       backgroundColor: Color.fromARGB(255, 152, 160, 195),
     ),
@@ -89,9 +90,9 @@ class _IntroScreenState extends State<IntroScreen> {
                 padding: const EdgeInsets.fromLTRB(20, 10, 20, 0),
                 child: Row(
                   children: [
-                    const Expanded(
+                     Expanded(
                       child: Text(
-                        'Sacred Journey Hub',
+                        'intro.app_name'.tr(),
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: AppColors.text,
@@ -102,7 +103,7 @@ class _IntroScreenState extends State<IntroScreen> {
                     ),
                     TextButton(
                       onPressed: () => context.go('/login'),
-                      child: const Text('Passer'),
+                      child: Text('intro.skip'.tr()),
                     ),
                   ],
                 ),
@@ -155,7 +156,7 @@ class _IntroScreenState extends State<IntroScreen> {
                           ),
                         ),
                       ),
-                      child: const Text('Retour'),
+                      child: Text('intro.back'.tr()),
                     ),
                     ElevatedButton(
                       onPressed: _goNext,
@@ -174,7 +175,7 @@ class _IntroScreenState extends State<IntroScreen> {
                           ),
                         ),
                       ),
-                      child: const Text('Suivant'),
+                      child: Text('intro.next'.tr()),
                     ),
                   ],
                 )
@@ -194,7 +195,7 @@ class _IntroScreenState extends State<IntroScreen> {
                         borderRadius: BorderRadius.circular(22),
                       ),
                     ),
-                    child: const Text('Commencer'),
+                    child: Text('intro.start'.tr()),
                   ),
                 ),
               const SizedBox(height: 22),
@@ -237,7 +238,7 @@ class _PageBuilderWidget extends StatelessWidget {
           _IllustrationStage(slide: slide),
           const SizedBox(height: 14),
           Text(
-            slide.title,
+            slide.titleKey.tr(),
             textAlign: TextAlign.center,
             style: TextStyle(
               color: AppColors.text,
@@ -249,7 +250,7 @@ class _PageBuilderWidget extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 10),
             child: Text(
-              slide.description,
+              slide.descriptionKey.tr(),
               textAlign: TextAlign.center,
               style: const TextStyle(
                 color: AppColors.textMuted,
@@ -376,8 +377,8 @@ class _IllustrationPlaceholder extends StatelessWidget {
           children: [
             Icon(Icons.image_outlined, color: accentColor, size: 42),
             const SizedBox(height: 12),
-            const Text(
-              'Ajoutez votre image dans assets/intro.',
+             Text(
+              'intro.image_placeholder'.tr(),
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: AppColors.textMuted,
@@ -404,15 +405,15 @@ class _IllustrationPlaceholder extends StatelessWidget {
 class _IntroSlideData {
   const _IntroSlideData({
     required this.imagePath,
-    required this.title,
-    required this.description,
+    required this.titleKey,
+    required this.descriptionKey,
     required this.accentColor,
     required this.backgroundColor,
   });
 
   final String imagePath;
-  final String title;
-  final String description;
+  final String titleKey;
+  final String descriptionKey;
   final Color accentColor;
   final Color backgroundColor;
 }

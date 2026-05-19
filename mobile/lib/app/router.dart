@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -210,24 +211,24 @@ class _SplashScreen extends StatelessWidget {
               },
               child: Column(
                 mainAxisSize: MainAxisSize.min,
-                children: const [
+                children: [
                   BrandWordmark(
-                    caption: 'Votre centre pour le voyage sacre',
+                    caption: 'branding.tagline'.tr(),
                     markSize: 64,
                     titleSize: 28,
                   ),
-                  SizedBox(height: 18),
+                  const SizedBox(height: 18),
                   Text(
-                    'Pelerin, guide et famille dans un meme repere mobile',
+                    'branding.splash_subtitle'.tr(),
                     textAlign: TextAlign.center,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 14,
                       height: 1.45,
                       color: AppColors.textMuted,
                     ),
                   ),
-                  SizedBox(height: 28),
-                  SizedBox(
+                  const SizedBox(height: 28),
+                  const SizedBox(
                     width: 28,
                     height: 28,
                     child: CircularProgressIndicator(

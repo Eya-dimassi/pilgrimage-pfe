@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -80,7 +81,7 @@ class _FamilleHomeScreenState extends ConsumerState<FamilleHomeScreen> {
       },
       accountActions: [
         RoleShellAccountAction(
-          label: 'Mes proches',
+          label: 'family_home.account.relatives'.tr(),
           icon: Icons.history_rounded,
           toneColor: const Color(0xFFE58E73),
           onTap: (_) async => _openRelativesSheet(
@@ -89,7 +90,13 @@ class _FamilleHomeScreenState extends ConsumerState<FamilleHomeScreen> {
           ),
         ),
         RoleShellAccountAction(
-          label: 'Deconnexion',
+          label: 'family_home.account.language'.tr(),
+          icon: Icons.language_rounded,
+          toneColor: AppColors.blue,
+          onTap: (context) async => _showLanguagePicker(context),
+        ),
+        RoleShellAccountAction(
+          label: 'family_home.account.logout'.tr(),
           icon: Icons.logout_rounded,
           toneColor: AppColors.red,
           onTap: (context) async {
@@ -115,7 +122,7 @@ class _FamilleHomeScreenState extends ConsumerState<FamilleHomeScreen> {
       chatbotChild: const MobileChatScreen(),
       profileChild: RoleProfileTemplate(
         user: user,
-        roleLabel: 'Famille',
+        roleLabel: 'roles.family'.tr(),
         accentColor: const Color(0xFFE58E73),
         onEdit: () => context.push('/profile-edit'),
       ),
@@ -130,7 +137,7 @@ class _FamilleHomeScreenState extends ConsumerState<FamilleHomeScreen> {
   void _handleLinkSelection(BuildContext context, FamilyLink link) {
     final groupId = link.groupe?.id;
     if (groupId == null || groupId.isEmpty) {
-      showAuthSnackBar(context, 'Ce proche n a pas encore de groupe actif a afficher.');
+      showAuthSnackBar(context, 'family_home.messages.no_active_group'.tr());
       return;
     }
     setState(() {
@@ -216,8 +223,8 @@ class _FamilleHomeScreenState extends ConsumerState<FamilleHomeScreen> {
                 children: [
                   Row(
                     children: [
-                      const Expanded(
-                        child: Text('Mes proches',
+                       Expanded(
+                        child: Text('family_home.account.relatives'.tr(),
                             style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
                       ),
                       IconButton(
@@ -251,6 +258,137 @@ class _FamilleHomeScreenState extends ConsumerState<FamilleHomeScreen> {
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+Future<void> _showLanguagePicker(BuildContext context) async {
+  final selectedLocale = await showModalBottomSheet<Locale>(
+    context: context,
+    backgroundColor: Colors.transparent,
+    builder: (sheetContext) =>
+        _LanguagePickerSheet(currentLocale: context.locale),
+  );
+
+  if (selectedLocale == null) {
+    return;
+  }
+
+  if (!context.mounted) {
+    return;
+  }
+
+  await context.setLocale(selectedLocale);
+}
+
+class _LanguagePickerSheet extends StatelessWidget {
+  const _LanguagePickerSheet({required this.currentLocale});
+
+  final Locale currentLocale;
+
+  @override
+  Widget build(BuildContext context) {
+    final options = <({Locale locale, String key})>[
+      (locale: const Locale('fr'), key: 'family_home.language.french'),
+      (locale: const Locale('en'), key: 'family_home.language.english'),
+      (locale: const Locale('ar'), key: 'family_home.language.arabic'),
+    ];
+
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 14),
+        child: Material(
+          color: AppColors.card,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+            side: const BorderSide(color: AppColors.borderSoft),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'family_home.language.choose'.tr(),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                ...options.map(
+                  (option) => _LanguageOptionTile(
+                    label: option.key.tr(),
+                    isSelected:
+                        option.locale.languageCode ==
+                        currentLocale.languageCode,
+                    onTap: () => Navigator.of(context).pop(option.locale),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _LanguageOptionTile extends StatelessWidget {
+  const _LanguageOptionTile({
+    required this.label,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        width: double.infinity,
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? const Color(0xFFFFF3EE)
+              : AppColors.section.withValues(alpha: 0.55),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: isSelected
+                ? const Color(0xFFE58E73)
+                : AppColors.borderSoft,
+          ),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: isSelected
+                      ? const Color(0xFFE58E73)
+                      : AppColors.textPrimary,
+                ),
+              ),
+            ),
+            if (isSelected)
+              const Icon(
+                Icons.check_circle_rounded,
+                size: 18,
+                color: Color(0xFFE58E73),
+              ),
+          ],
         ),
       ),
     );
@@ -351,7 +489,7 @@ class _FamilyHeader extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Bonjour',
+        Text('family_home.header.greeting'.tr(),
             style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.textPrimary)),
         const SizedBox(height: 2),
         Text(
@@ -392,8 +530,8 @@ class _FamilyTodaySection extends StatelessWidget {
       children: [
         Row(
           children: [
-            const Expanded(
-              child: Text('Aujourd hui',
+             Expanded(
+              child: Text('family_home.today.title'.tr(),
                   style: TextStyle(
                     fontSize: 19, fontWeight: FontWeight.w800,
                     letterSpacing: -0.5, color: AppColors.primaryDark,
@@ -401,7 +539,7 @@ class _FamilyTodaySection extends StatelessWidget {
             ),
             TextButton(
               onPressed: onOpenRelatives,
-              child: const Text('Voir tout',
+              child: Text('family_home.today.see_all'.tr(),
                   style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.primaryDark)),
             ),
           ],
@@ -431,7 +569,10 @@ class _FamilyTodaySection extends StatelessWidget {
         if (remainingCount > 0) ...[
           const SizedBox(height: 10),
           Text(
-            '$remainingCount autre${remainingCount > 1 ? 's' : ''} proche${remainingCount > 1 ? 's' : ''} dans Voir tout',
+            (remainingCount > 1
+                    ? 'family_home.today.remaining_relatives_plural'
+                    : 'family_home.today.remaining_relatives')
+                .tr(namedArgs: {'count': remainingCount.toString()}),
             style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: AppColors.textMuted),
           ),
         ],
@@ -571,7 +712,7 @@ class _FamilyTodayCard extends ConsumerWidget {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Text('Voir les details',
+                              Text('family_home.today.details'.tr(),
                                   style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: tone.accentColor)),
                               const SizedBox(width: 6),
                               Icon(Icons.chevron_right_rounded, size: 18, color: tone.accentColor),
@@ -622,8 +763,8 @@ class _FamilyAlertsPreview extends StatelessWidget {
       children: [
         Row(
           children: [
-            const Expanded(
-              child: Text('Alertes importantes',
+            Expanded(
+              child: Text('family_home.alerts.title'.tr(),
                   style: TextStyle(
                     fontSize: 19, fontWeight: FontWeight.w800,
                     letterSpacing: -0.5, color: AppColors.primaryDark,
@@ -631,7 +772,7 @@ class _FamilyAlertsPreview extends StatelessWidget {
             ),
             TextButton(
               onPressed: onOpenAlerts,
-              child: const Text('Voir tout',
+              child: Text('family_home.alerts.see_all'.tr(),
                   style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.primaryDark)),
             ),
           ],
@@ -679,8 +820,8 @@ class _FamilyFeaturedAlertCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final title = item?.title ?? 'Aucune alerte critique';
-    final body = item?.body ?? 'Tout est sous controle. Continuez a suivre leurs etapes.';
+    final title = item?.title ?? 'family_home.alerts.none_critical'.tr();
+    final body = item?.body ?? 'family_home.alerts.all_under_control'.tr();
     final footer = item == null ? null : _formatFamilyNotificationTime(item!.createdAt);
 
     return Material(
@@ -754,11 +895,11 @@ class _FamilyEmptyTodayCard extends StatelessWidget {
       padding: const EdgeInsets.all(18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: const [
-          Text('Aucun proche lie pour le moment.',
+        children: [
+          Text('family_home.links.none'.tr(),
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.primaryDark)),
           SizedBox(height: 6),
-          Text('Ajoutez un pelerin avec son code unique pour suivre ses etapes ici.',
+          Text('family_home.links.subtitle'.tr(),
               style: TextStyle(fontSize: 13, height: 1.45, color: AppColors.textMuted)),
         ],
       ),
@@ -795,11 +936,11 @@ class _FamilyLinksSection extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (!compact) ...[
-          const Text('Mes proches',
+          Text('family_home.account.relatives'.tr(),
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, letterSpacing: -0.4)),
           const SizedBox(height: 8),
-          const Text(
-            'Ajoutez un pelerin avec son code unique ou touchez une carte pour voir sa journee en direct.',
+          Text(
+            'family_home.empty.no_relatives_subtitle'.tr(),
             style: TextStyle(fontSize: 13, height: 1.5, color: AppColors.textMuted),
           ),
           const SizedBox(height: 14),
@@ -814,7 +955,7 @@ class _FamilyLinksSection extends ConsumerWidget {
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
           ),
           icon: const Icon(Icons.person_add_alt_1_rounded),
-          label: const Text('Ajouter un proche'),
+          label: Text('family_home.links.add_relative'.tr()),
         ),
         const SizedBox(height: 14),
         linksAsync.when(
@@ -824,7 +965,7 @@ class _FamilyLinksSection extends ConsumerWidget {
           ),
           error: (error, _) => _errorBox(error.toString()),
           data: (links) {
-            if (links.isEmpty) return _errorBox('Aucun proche lie pour le moment.');
+            if (links.isEmpty) return _errorBox('family_home.links.none'.tr());
 
             final visibleLinks = links.where((l) => !hiddenIds.contains(l.id)).toList();
             final hiddenLinks = links.where((l) => hiddenIds.contains(l.id)).toList();
@@ -852,7 +993,7 @@ class _FamilyLinksSection extends ConsumerWidget {
                 // Hidden
                 if (hiddenLinks.isNotEmpty) ...[
                   const SizedBox(height: 14),
-                  const Text('Proches masques',
+                  Text('family_home.links.hidden_relatives'.tr(),
                       style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textMuted)),
                   const SizedBox(height: 8),
                   ...hiddenLinks.map((link) => Padding(
@@ -945,7 +1086,7 @@ class _FamilyLinkCard extends StatelessWidget {
                         style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
                       ),
                       const SizedBox(height: 4),
-                      Text('Code ${link.codeUnique}',
+                      Text('family_home.links.code'.tr(namedArgs: {'code': link.codeUnique}),
                           style: const TextStyle(fontSize: 12, color: AppColors.textFaint, fontWeight: FontWeight.w600)),
                       const SizedBox(height: 6),
                       Text(groupLabel,
@@ -992,11 +1133,15 @@ class _FamilyLinkCard extends StatelessWidget {
                   ),
                 ),
               ),
-              const Text('Masquer ce proche',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+              Text('family_home.archive.title'.tr(),
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
               const SizedBox(height: 8),
               Text(
-                'Masquer ${link.fullName} de votre accueil ? Vous pourrez le retrouver dans "Mes proches".',
+                'family_home.archive.message'.tr(
+                  namedArgs: {
+                    'name': link.fullName.isNotEmpty ? link.fullName : link.codeUnique,
+                  },
+                ),
                 style: const TextStyle(fontSize: 14, height: 1.55, color: AppColors.textSecondary),
               ),
               const SizedBox(height: 22),
@@ -1005,14 +1150,14 @@ class _FamilyLinkCard extends StatelessWidget {
                   Expanded(
                     child: OutlinedButton(
                       onPressed: () => Navigator.pop(ctx, false),
-                      child: const Text('Annuler'),
+                      child: Text('family_home.archive.cancel'.tr()),
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: ElevatedButton(
                       onPressed: () => Navigator.pop(ctx, true),
-                      child: const Text('Masquer'),
+                      child: Text('family_home.archive.confirm'.tr()),
                     ),
                   ),
                 ],
@@ -1052,7 +1197,7 @@ class _HiddenLinkRow extends StatelessWidget {
               style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textMuted),
             ),
           ),
-          TextButton(onPressed: onRestore, child: const Text('Restaurer')),
+          TextButton(onPressed: onRestore, child: Text('family_home.links.restore'.tr())),
         ],
       ),
     );
@@ -1101,7 +1246,7 @@ class _AddFamilyRelativeSheetState extends State<_AddFamilyRelativeSheet> {
       setState(() { _submitting = false; _errorText = error.message; });
     } catch (_) {
       if (!mounted) return;
-      setState(() { _submitting = false; _errorText = 'Une erreur est survenue'; });
+      setState(() { _submitting = false; _errorText = 'family_home.add_relative_sheet.generic_error'.tr(); });
     }
   }
 
@@ -1135,8 +1280,8 @@ class _AddFamilyRelativeSheetState extends State<_AddFamilyRelativeSheet> {
                       child: Icon(Icons.person_add_alt_1_rounded, color: widget.accentColor),
                     ),
                     const SizedBox(width: 12),
-                    const Expanded(
-                      child: Text('Ajouter un proche',
+                     Expanded(
+                      child: Text('family_home.add_relative_sheet.title'.tr(),
                           style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: AppColors.primaryDark)),
                     ),
                     IconButton(
@@ -1150,8 +1295,8 @@ class _AddFamilyRelativeSheetState extends State<_AddFamilyRelativeSheet> {
                   ],
                 ),
                 const SizedBox(height: 4),
-                const Text(
-                  'Entrez le code unique du pelerin pour lier un nouveau proche a votre compte famille.',
+                Text(
+                  'family_home.add_relative_sheet.subtitle'.tr(),
                   style: TextStyle(fontSize: 13, height: 1.45, color: AppColors.textMuted),
                 ),
                 const SizedBox(height: 16),
@@ -1161,8 +1306,8 @@ class _AddFamilyRelativeSheetState extends State<_AddFamilyRelativeSheet> {
                   onChanged: (_) { if (_errorText != null) setState(() => _errorText = null); },
                   onSubmitted: (_) { if (!_submitting) _submit(); },
                   decoration: InputDecoration(
-                    labelText: 'Code unique',
-                    hintText: 'XXXXXXXX',
+                    labelText: 'family_home.add_relative_sheet.code_label'.tr(),
+                    hintText: 'family_home.add_relative_sheet.code_hint'.tr(),
                     prefixIcon: Icon(Icons.qr_code_rounded, color: widget.accentColor),
                     filled: true,
                     fillColor: Colors.white,
@@ -1180,9 +1325,9 @@ class _AddFamilyRelativeSheetState extends State<_AddFamilyRelativeSheet> {
                 ),
                 if (_errorText == null) ...[
                   const SizedBox(height: 10),
-                  const Text(
-                    'Le code doit correspondre au code unique partage par votre proche.',
-                    style: TextStyle(fontSize: 11.5, height: 1.4, color: Color(0xFFB67C6A)),
+                  Text(
+                    'family_home.add_relative_sheet.code_help'.tr(),
+                    style: const TextStyle(fontSize: 11.5, height: 1.4, color: Color(0xFFB67C6A)),
                   ),
                 ],
                 const SizedBox(height: 18),
@@ -1194,8 +1339,13 @@ class _AddFamilyRelativeSheetState extends State<_AddFamilyRelativeSheet> {
                         FocusScope.of(context).unfocus();
                         Navigator.of(context).pop();
                       },
-                      child: const Text('Annuler',
-                          style: TextStyle(color: AppColors.textMuted, fontWeight: FontWeight.w700)),
+                      child: Text(
+                        'family_home.add_relative_sheet.cancel'.tr(),
+                        style: const TextStyle(
+                          color: AppColors.textMuted,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
                     ),
                     const SizedBox(width: 10),
                     FilledButton(
@@ -1208,7 +1358,7 @@ class _AddFamilyRelativeSheetState extends State<_AddFamilyRelativeSheet> {
                       onPressed: _submitting ? null : _submit,
                       child: _submitting
                           ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                          : const Text('Ajouter'),
+                          : Text('family_home.add_relative_sheet.confirm'.tr()),
                     ),
                   ],
                 ),
@@ -1285,7 +1435,7 @@ IconData _familyTodayIcon(MobilePlanningEvent? event) {
 }
 
 String _familyTodayTitle(MobilePlanningEvent? event, MobilePlanningDay? day) =>
-    event?.titre.trim().isNotEmpty == true ? event!.titre.trim() : 'Aucune etape partagee aujourd hui';
+    event?.titre.trim().isNotEmpty == true ? event!.titre.trim() : 'family_home.today.no_shared_step_today'.tr();
 
 String _familyTodayMetaSummary(MobilePlanningEvent? event) {
   final parts = <String>[
@@ -1293,34 +1443,52 @@ String _familyTodayMetaSummary(MobilePlanningEvent? event) {
     if (event?.lieux.isNotEmpty == true) event!.lieux.first.toUpperCase(),
     if (event?.etape?.trim().isNotEmpty == true) _familyTodayEtapeText(event!.etape!),
   ];
-  return parts.isEmpty ? 'Journee en attente de partage' : parts.join(' · ');
+  return parts.isEmpty ? 'family_home.today.waiting_for_update'.tr() : parts.join(' · ');
 }
 
 String _familyTodayEtapeText(String rawValue) {
   final n = rawValue.trim();
   if (n.isEmpty) return '';
   switch (n.toLowerCase()) {
-    case 'arrivee':      return 'Etape arrivee';
-    case 'tawaf_arrivee': return 'Etape tawaf arrivee';
-    case 'saee':         return 'Etape saee';
-    case 'mina':         return 'Etape Mina';
-    case 'arafat':       return 'Etape Arafat';
-    case 'mouzdalifa':   return 'Etape Mouzdalifa';
-    case 'lapidation':   return 'Etape lapidation';
-    case 'tawaf_ifada':  return 'Etape tawaf ifada';
-    case 'depart':       return 'Etape depart';
-    default:             return 'Etape ${n.replaceAll('_', ' ')}';
+    case 'arrivee':      return 'family_home.stages.arrival'.tr();
+    case 'tawaf_arrivee': return 'family_home.stages.arrival_tawaf'.tr();
+    case 'saee':         return 'family_home.stages.saee'.tr();
+    case 'mina':         return 'family_home.stages.mina'.tr();
+    case 'arafat':       return 'family_home.stages.arafat'.tr();
+    case 'mouzdalifa':   return 'family_home.stages.mouzdalifa'.tr();
+    case 'lapidation':   return 'family_home.stages.stoning'.tr();
+    case 'tawaf_ifada':  return 'family_home.stages.ifada_tawaf'.tr();
+    case 'depart':       return 'family_home.stages.departure'.tr();
+    default:             return 'family_home.stages.generic'.tr(namedArgs: {'name': n.replaceAll('_', ' ')});
   }
 }
 
 String _familyTripDateLabel(FamilyLinkedGroup? group) {
-  if (group == null) return 'Sans groupe actif';
+  if (group == null) return 'family_home.trip.no_active_group'.tr();
   final d = group.dateDepart;
   final r = group.dateRetour;
-  if (d != null && r != null) return 'Du ${_formatFamilyShortDate(d)} au ${_formatFamilyShortDate(r)}';
-  if (d != null) return 'Depart le ${_formatFamilyShortDate(d)}';
-  if (r != null) return 'Retour le ${_formatFamilyShortDate(r)}';
-  return '${group.typeVoyage == 'HAJJ' ? 'Hajj' : 'Omra'} ${group.annee}';
+  if (d != null && r != null) {
+    return 'family_home.trip.from_to'.tr(
+      namedArgs: {
+        'start': _formatFamilyShortDate(d),
+        'end': _formatFamilyShortDate(r),
+      },
+    );
+  }
+  if (d != null) {
+    return 'family_home.trip.departure_only'.tr(
+      namedArgs: {'date': _formatFamilyShortDate(d)},
+    );
+  }
+  if (r != null) {
+    return 'family_home.trip.return_only'.tr(
+      namedArgs: {'date': _formatFamilyShortDate(r)},
+    );
+  }
+  return (group.typeVoyage == 'HAJJ'
+          ? 'family_home.trip.hajj_year'
+          : 'family_home.trip.umrah_year')
+      .tr(namedArgs: {'year': '${group.annee}'});
 }
 
 FamilyLink? _resolveSelectedLink(List<FamilyLink> links, String? selectedGroupId) {
@@ -1350,9 +1518,17 @@ List<FamilyLink> _sortFamilyLinksForToday(List<FamilyLink> links, String? select
 
 String _formatFamilyNotificationTime(DateTime value) {
   final diff = DateTime.now().difference(value);
-  if (diff.inMinutes < 1) return 'A l instant';
-  if (diff.inMinutes < 60) return 'Il y a ${diff.inMinutes} min';
-  if (diff.inHours < 24) return 'Il y a ${diff.inHours} h';
+  if (diff.inMinutes < 1) return 'family_home.timeline.instant'.tr();
+  if (diff.inMinutes < 60) {
+    return 'family_home.timeline.minutes_ago'.tr(
+      namedArgs: {'count': diff.inMinutes.toString()},
+    );
+  }
+  if (diff.inHours < 24) {
+    return 'family_home.timeline.hours_ago'.tr(
+      namedArgs: {'count': diff.inHours.toString()},
+    );
+  }
   return '${value.day.toString().padLeft(2, '0')}/${value.month.toString().padLeft(2, '0')}';
 }
 

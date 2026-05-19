@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/foundation.dart';
 
 class AuthException implements Exception {
@@ -24,15 +25,17 @@ class AuthException implements Exception {
         final reason = error.error?.toString();
         if (reason != null && reason.trim().isNotEmpty) {
           return AuthException(
-            'Impossible de joindre le serveur\n$uri\n$reason',
+            '${'auth_exception.unreachable_server'.tr()}\n$uri\n$reason',
           );
         }
-        return AuthException('Impossible de joindre le serveur\n$uri');
+        return AuthException(
+          '${'auth_exception.unreachable_server'.tr()}\n$uri',
+        );
       }
-      return const AuthException('Impossible de joindre le serveur');
+      return AuthException('auth_exception.unreachable_server'.tr());
     }
 
-    return const AuthException('Une erreur est survenue');
+    return AuthException('auth_exception.generic_error'.tr());
   }
 
   @override
