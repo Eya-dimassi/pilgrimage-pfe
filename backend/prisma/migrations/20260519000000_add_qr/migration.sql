@@ -1,0 +1,1 @@
+ALTER TYPE "ModeConfirmation" ADD VALUE 'QR';
