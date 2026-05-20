@@ -258,8 +258,6 @@
       :error="pelerinDetailError"
       @close="closePelerinDetail"
     />
-
-    <div v-if="toast.show" :class="['toast', toast.type]">{{ toast.message }}</div>
   </div>
 </template>
 
@@ -327,7 +325,6 @@ const {
   editType,
   deleteTarget,
   selectedGroupe,
-  toast,
   closeModal,
   openModal,
   openEdit,

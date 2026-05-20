@@ -65,5 +65,5 @@
 
 <script setup>
 import { brand } from '@/content/brand'
-import BrandIdentity from './BrandIdentity.vue'
+import BrandIdentity from '@/components/BrandIdentity.vue'
 </script>

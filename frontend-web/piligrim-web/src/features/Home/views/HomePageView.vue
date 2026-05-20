@@ -21,25 +21,22 @@
       @close="closeLogin"
       @switch-to-signup="closeLogin(); openSignup()"
     />
-    <Toast :show="showToast" />
   </div>
 </template>
 
 <script setup>
-import Navbar     from '../components/Navbar.vue'
-import Hero       from '../components/Hero.vue'
-import Features   from '../components/Features.vue'
-import CTA        from '../components/CTA.vue'
-import Footer     from '../components/Footer.vue'
-import Modal      from '../components/Modal.vue'
-import LoginModal from '../components/LoginModal.vue'
-import Toast      from '../components/Toast.vue'
-import { useHomePageState } from '../composables/useHomePageState'
+import CTA from '@/features/Home/views/CTA.vue'
+import Features from '@/features/Home/views/Features.vue'
+import Footer from '@/features/Home/views/Footer.vue'
+import Hero from '@/features/Home/views/Hero.vue'
+import Navbar from '@/features/Home/views/Navbar.vue'
+import LoginModal from '@/features/auth/views/LoginModal.vue'
+import Modal from '@/features/auth/views/Modal.vue'
+import { useHomePageState } from '@/features/Home/views/composables/useHomePageState'
 
 const {
   showSignup,
   showLogin,
-  showToast,
   isDark,
   openSignup,
   closeSignup,

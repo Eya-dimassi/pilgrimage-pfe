@@ -48,7 +48,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { brand } from '@/content/brand'
-import { forgotPassword } from '@/services/auth.service'
+import { forgotPassword } from '@/features/auth/auth.service'
 
 const router = useRouter()
 

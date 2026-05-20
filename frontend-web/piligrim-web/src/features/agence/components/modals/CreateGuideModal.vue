@@ -30,7 +30,7 @@
 </template>
 
 <script setup>
-import PhoneNumberField from '@/components/forms/PhoneNumberField.vue'
+import PhoneNumberField from '@/features/auth/views/PhoneNumberField.vue'
 import DashboardModalShell from '@/features/agence/components/dashboard/DashboardModalShell.vue'
 
 defineProps({

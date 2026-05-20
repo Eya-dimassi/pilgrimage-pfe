@@ -100,8 +100,8 @@
 <script setup>
 import { computed, ref } from 'vue'
 import AppIcon from '@/components/AppIcon.vue'
-import CountryAutocomplete from '@/components/forms/CountryAutocomplete.vue'
-import PhoneNumberField from '@/components/forms/PhoneNumberField.vue'
+import CountryAutocomplete from '@/features/auth/views/CountryAutocomplete.vue'
+import PhoneNumberField from '@/features/auth/views/PhoneNumberField.vue'
 import DashboardModalShell from '@/features/agence/components/dashboard/DashboardModalShell.vue'
 
 const props = defineProps({

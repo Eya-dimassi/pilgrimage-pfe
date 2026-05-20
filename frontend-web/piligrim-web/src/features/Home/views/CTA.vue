@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <section class="cta-section">
     <div class="cta-left">
       <h2 class="cta-left-h">Reservez votre acces<br /><em>avant tout le monde</em></h2>
@@ -36,7 +36,7 @@
 <script setup>
 import { ref } from 'vue'
 
-import { brand } from '@/content/brand'
+import { homepageFaqs } from '@/features/Home/views/composables/homepage'
 import AgencyAccessForm from './AgencyAccessForm.vue'
 
 const openFaq = ref(null)
@@ -45,26 +45,5 @@ const toggleFaq = (index) => {
   openFaq.value = openFaq.value === index ? null : index
 }
 
-const faqs = [
-  {
-    q: 'Combien coute la plateforme ?',
-    a: "L'acces anticipe est gratuit. Les tarifs seront communiques lors du lancement, avec une periode d'essai offerte a toutes les agences inscrites.",
-  },
-  {
-    q: "L'application mobile est-elle incluse ?",
-    a: "Oui. La plateforme web agence et l'app mobile guides sont incluses dans la meme souscription, sans frais supplementaires.",
-  },
-  {
-    q: 'Combien de pelerins puis-je gerer ?',
-    a: `${brand.name} s'adapte a votre volume, de 50 a plusieurs milliers de pelerins. Des forfaits par taille d'agence seront disponibles au lancement.`,
-  },
-  {
-    q: 'La plateforme est-elle disponible en arabe ?',
-    a: `Oui, ${brand.name} est disponible en francais, arabe et anglais. L'interface et les notifications s'adaptent a la langue de chaque utilisateur.`,
-  },
-  {
-    q: 'Que se passe-t-il apres ma demande ?',
-    a: "Notre equipe vous contacte sous 24h pour configurer votre espace agence, vous former et repondre a vos questions.",
-  },
-]
+const faqs = homepageFaqs
 </script>

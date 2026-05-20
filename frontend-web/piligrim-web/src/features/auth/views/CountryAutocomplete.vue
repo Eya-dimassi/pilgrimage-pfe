@@ -17,7 +17,7 @@
 
 <script setup>
 import { computed } from 'vue'
-import { countryNames } from '@/content/countries'
+import { countryNames } from '@/features/auth/composables/countries'
 
 const props = defineProps({
   modelValue: {

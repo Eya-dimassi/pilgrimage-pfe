@@ -23,7 +23,7 @@ import {
   updateAgenceProfile as saveAgenceProfile,
 } from '@/features/agence/services/agence.service'
 import { getInitials } from '@/features/agence/utils/initials'
-import { logout } from '@/services/auth.service'
+import { logout } from '@/features/auth/auth.service'
 
 export const pelerins = ref([])
 export const guides = ref([])

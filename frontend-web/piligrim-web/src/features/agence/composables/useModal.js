@@ -1,8 +1,7 @@
 import { ref } from 'vue'
 import { groupes, guides, pelerins, useAgenceData } from './useAgenceData'
 import { toASTDateKey } from '../utils/astDate'
-
-const TOAST_DURATION_MS = 8500
+import { useToastStore } from '@/stores/useToastStore'
 
 function normalizeGroupe(raw) {
   const guidesList = Array.isArray(raw?.guides)
@@ -26,6 +25,7 @@ function normalizeGroupe(raw) {
 }
 
 export function useModal() {
+  const toastStore = useToastStore()
   const {
     loadAll,
     createPelerin,
@@ -55,13 +55,14 @@ export function useModal() {
   const deleteTarget = ref(null)
   const deleteType = ref('')
   const selectedGroupe = ref(null)
-  const toast = ref({ show: false, message: '', type: 'success' })
 
   function showToast(message, type = 'success') {
-    toast.value = { show: true, message, type }
-    window.setTimeout(() => {
-      toast.value.show = false
-    }, TOAST_DURATION_MS)
+    if (type === 'error') {
+      toastStore.error(message)
+      return
+    }
+
+    toastStore.success(message)
   }
 
   function resetModalError() {
@@ -550,7 +551,6 @@ export function useModal() {
     deleteTarget,
     deleteType,
     selectedGroupe,
-    toast,
     showToast,
     closeModal,
     openModal,
