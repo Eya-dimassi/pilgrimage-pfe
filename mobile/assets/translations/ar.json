@@ -71,6 +71,10 @@
       "chatbot": "سيظهر هنا مساعد السفر للإجابة على أسئلتك بسرعة."
     }
   },
+  "branding": {
+    "tagline": "مركزك للرحلة المقدسة",
+    "splash_subtitle": "الحاج والمرشد والعائلة في مرجع واحد على الهاتف"
+  },
   "alerts": {
     "title": "الإشعارات",
     "mark_all_read": "تحديد الكل كمقروء",
@@ -90,7 +94,8 @@
     },
     "errors": {
       "load_notifications": "تعذّر تحميل الإشعارات",
-      "load_sos": "تعذّر تحميل تنبيهات الطوارئ"
+      "load_sos": "تعذّر تحميل تنبيهات الطوارئ",
+      "delete_notification": "تعذّر حذف الإشعار"
     },
     "guide_sos": {
       "chip": "SOS المرشد",
@@ -226,7 +231,8 @@
   },
   "roles": {
     "pelerin": "حاج",
-    "guide": "مرشد"
+    "guide": "مرشد",
+    "family": "عائلة"
   },
   "profile": {
     "title": "الملف الشخصي",
@@ -497,5 +503,266 @@
     "upcoming_sunrise": "يقترب الفجر. حافظ على إيقاع هادئ قبل التحرك القادم.",
     "none": "احتفظ بمرجع روحي واضح طوال رحلتك المباركة."
   }
+},
+  "journey_home": {
+    "overview": {
+      "title": "نظرة عامة",
+      "subtitle": "المراحل والأماكن والمعالم المشتركة لمجموعتك اليوم."
+    },
+    "header": {
+      "greeting": "مرحبًا"
+    },
+    "hero": {
+      "your_group": "مجموعتك",
+      "no_events": "لا توجد أحداث اليوم",
+      "program": "برنامج اليوم",
+      "trip_progress": "{percent}% من الرحلة",
+      "current_event": "البرنامج الحالي",
+      "no_upcoming_events": "لا توجد أحداث قادمة مشتركة",
+      "waiting_for_next_event": "في انتظار الحدث التالي",
+      "in_progress": "جارٍ الآن",
+      "upcoming": "القادم",
+      "planning_unavailable": "التخطيط غير متاح",
+      "transport": "النقل",
+      "visit": "زيارة",
+      "rite": "منسك",
+      "prayer": "صلاة",
+      "step": "مرحلة"
+    }
+  },
+  "role_home": {
+    "shortcuts": {
+      "title": "أبرز العناصر",
+      "subtitle": "اختصارات مفيدة وبطاقات جوال أوضح، مبنية حول بيانات رحلتك المباشرة."
+    }
+  },
+  "api_error_message": {
+    "timeout": "انتهت مهلة الطلب. حاول مرة أخرى.",
+    "connection_error": "خطأ في الاتصال. تحقق من اتصالك بالإنترنت.",
+    "bad_certificate": "فشل الاتصال الآمن. حاول مرة أخرى لاحقًا.",
+    "cancel": "تم إلغاء الطلب.",
+    "unauthorized": "جلسة منتهية. يرجى تسجيل الدخول مرة أخرى.",
+    "forbidden": "تم رفض الوصول. ليس لديك الإذن.",
+    "not_found": "المحتوى غير موجود. حاول مرة أخرى لاحقًا.",
+    "conflict": "تم الكشف عن تعارض. حاول مرة أخرى.",
+    "unprocessable_entity": "بيانات غير صالحة. تحقق من معلوماتك.",
+    "too_many_requests": "محاولات كثيرة. حاول مرة أخرى بعد قليل.",
+    "server_error": "يواجه الخادم مشكلة. حاول مرة أخرى لاحقًا.",
+    "bad_request": "طلب غير صالح. تحقق من معلوماتك.",
+    "unknown": "حدث خطأ. حاول مرة أخرى."
+  },
+  "login": {
+    "secure_access": "دخول آمن",
+    "title": "تسجيل الدخول",
+    "subtitle": "ادخل إلى مساحتك على الهاتف باستخدام بيانات الاعتماد التي تم تزويدك بها.",
+    "email_label": "البريد الإلكتروني",
+    "email_hint": "name@test.com",
+    "password_label": "كلمة المرور",
+    "password_hint": "كلمة المرور الخاصة بك",
+    "password_required": "يرجى إدخال كلمة المرور",
+    "forgot_password": "هل نسيت كلمة المرور؟",
+    "submit": "تسجيل الدخول",
+    "create_family_account": "إنشاء حساب عائلة",
+    "generic_error": "حدث خطأ"
+  },
+  "forget_password": {
+    "title": "نسيت كلمة المرور",
+    "subtitle": "سيتم إرسال رابط إعادة التعيين إلى البريد الإلكتروني المرتبط بحسابك",
+    "email_label": "البريد الإلكتروني",
+    "email_hint": "name@test.com",
+    "submit": "إرسال التعليمات"
+  },
+
+  "edit_profile": {
+    "title": "تعديل الملف الشخصي",
+    "subtitle": "حدّث معلوماتك الشخصية. ستظهر التغييرات فورًا في مساحتك.",
+    "success": "تم تحديث الملف الشخصي بنجاح",
+    "generic_error": "حدث خطأ",
+    "first_name_required": "يرجى إدخال الاسم",
+    "last_name_required": "يرجى إدخال اللقب",
+    "first_name": "الاسم",
+    "last_name": "اللقب",
+    "email": "البريد الإلكتروني",
+    "phone": "الهاتف",
+    "phone_hint": "+33 6 12 34 56 78",
+    "family_relationship": "صلة القرابة",
+    "specialty": "التخصص",
+    "available": "متاح",
+    "available_subtitle": "يمكن إسنادك إلى مجموعة.",
+    "unavailable_subtitle": "لن يتم إسنادك إلى مجموعة.",
+    "birth_date": "تاريخ الميلاد",
+    "birth_date_picker_help": "تاريخ الميلاد",
+    "nationality": "الجنسية",
+    "passport_number": "رقم جواز السفر",
+    "photo_url": "رابط الصورة",
+    "photo_url_hint": "https://...",
+    "save": "حفظ",
+    "relationship_options": {
+      "father": "الأب",
+      "mother": "الأم",
+      "brother": "الأخ",
+      "sister": "الأخت",
+      "husband": "الزوج",
+      "wife": "الزوجة",
+      "child": "الابن",
+      "other": "أخرى"
+    }
+  },
+   "intro": {
+    "app_name": "Sacred Journey Hub",
+    "skip": "تخطي",
+    "back": "رجوع",
+    "next": "التالي",
+    "start": "ابدأ",
+    "image_placeholder": "أضف صورتك إلى assets/intro.",
+    "slides": {
+      "one": {
+        "title": "رحلة أكثر سكينة",
+        "description": "اعثر بسهولة على معلوماتك المهمة، ومعالم مجموعتك، ووصول أسهل عبر الهاتف طوال الرحلة."
+      },
+      "two": {
+        "title": "مساحة للمرشدين",
+        "description": "حافظ على مجموعاتك بشكل منظم، وتقدم برؤية واضحة للميدان، واطلع بسرعة على التفاصيل المفيدة."
+      },
+      "three": {
+        "title": "صلة للعائلات",
+        "description": "وفّر متابعة أكثر طمأنينة للتجربة، من خلال واجهة واضحة ومناسبة للرحلة المقدسة."
+      }
+    }
+  },
+  "family_home": {
+    "account": {
+      "relatives": "أقاربي",
+      "language": "اللغة",
+      "logout": "تسجيل الخروج"
+    },
+    "language": {
+      "choose": "اختر اللغة",
+      "french": "الفرنسية",
+      "english": "الإنجليزية",
+      "arabic": "العربية"
+    },
+    "messages": {
+      "no_active_group": "هذا القريب ليس لديه مجموعة نشطة لعرضها بعد."
+    },
+    "header": {
+      "greeting": "مرحبًا"
+    },
+    "today": {
+      "title": "اليوم",
+      "see_all": "عرض الكل",
+      "remaining_relatives": "{count} قريب آخر في عرض الكل",
+      "remaining_relatives_plural": "{count} أقارب آخرون في عرض الكل",
+      "details": "عرض التفاصيل",
+      "no_shared_step_today": "لا توجد مرحلة مشتركة اليوم",
+      "waiting_for_update": "اليوم بانتظار التحديث"
+    },
+    "alerts": {
+      "title": "تنبيهات مهمة",
+      "see_all": "عرض الكل",
+      "none_critical": "لا توجد تنبيهات حرجة",
+      "all_under_control": "كل شيء تحت السيطرة. واصل متابعة مراحلهم."
+    },
+    "empty": {
+      "no_relatives_title": "لا يوجد قريب مرتبط حاليًا.",
+      "no_relatives_subtitle": "أضف حاجًا باستخدام رمزه الفريد لمتابعة مراحله هنا."
+    },
+    "links": {
+      "title": "أقاربي",
+      "subtitle": "أضف حاجًا باستخدام رمزه الفريد أو اضغط على بطاقة لرؤية يومه مباشرة.",
+      "add_relative": "إضافة قريب",
+      "none": "لا يوجد قريب مرتبط حاليًا.",
+      "hidden_relatives": "الأقارب المخفيون",
+      "code": "الرمز {code}",
+      "restore": "استعادة"
+    },
+    "archive": {
+      "title": "إخفاء هذا القريب",
+      "message": "هل تريد إخفاء {name} من صفحتك الرئيسية؟ يمكنك العثور عليه مرة أخرى في \"أقاربي\".",
+      "cancel": "إلغاء",
+      "confirm": "إخفاء"
+    },
+    "add_relative_sheet": {
+      "title": "إضافة قريب",
+      "subtitle": "أدخل الرمز الفريد للحاج لربط قريب جديد بحساب العائلة الخاص بك.",
+      "code_label": "الرمز الفريد",
+      "code_hint": "XXXXXXXX",
+      "code_help": "يجب أن يطابق الرمز، الرمز الفريد الذي شاركه قريبك.",
+      "cancel": "إلغاء",
+      "confirm": "إضافة",
+      "generic_error": "حدث خطأ"
+    },
+    "trip": {
+      "no_active_group": "لا توجد مجموعة نشطة",
+      "from_to": "من {start} إلى {end}",
+      "departure_only": "المغادرة في {date}",
+      "return_only": "العودة في {date}",
+      "hajj_year": "حج {year}",
+      "umrah_year": "عمرة {year}"
+    },
+    "timeline": {
+      "instant": "الآن",
+      "minutes_ago": "منذ {count} دقيقة",
+      "hours_ago": "منذ {count} ساعة"
+    },
+    "stages": {
+      "arrival": "مرحلة الوصول",
+      "arrival_tawaf": "مرحلة طواف الوصول",
+      "saee": "مرحلة السعي",
+      "mina": "مرحلة منى",
+      "arafat": "مرحلة عرفة",
+      "muzdalifah": "مرحلة مزدلفة",
+      "stoning": "مرحلة رمي الجمرات",
+      "ifada_tawaf": "مرحلة طواف الإفاضة",
+      "departure": "مرحلة المغادرة",
+      "generic": "مرحلة {name}"
+    }
+  },
+"chat": {
+    "welcome": "السلام عليكم. يمكنني مساعدتك في المناسك، وتخطيط الرحلة، والإرشادات العملية الخاصة بالحج والعمرة.",
+    "input_hint": "اطرح سؤالك على المساعد",
+    "temporary_unavailable": "لم أتمكن من الرد الآن. تحقق من الاتصال أو أعد المحاولة بعد قليل."
+  },
+  "family_signup": {
+    "title": "أنشئ\nحساب العائلة",
+    "subtitle": "سجّل باستخدام الرمز الفريد للحاج ثم ادخل إلى البوابة على الهاتف من خلال شاشة تسجيل الدخول نفسها.",
+    "generic_error": "حدث خطأ",
+    "first_name": "الاسم",
+    "last_name": "اللقب",
+    "email": "البريد الإلكتروني",
+    "email_hint": "name@email.com",
+    "phone": "الهاتف",
+    "phone_hint": "+33 6 12 34 56 78",
+    "relationship": "صلة القرابة",
+    "pilgrim_code": "الرمز الفريد للحاج",
+    "pilgrim_code_hint": "XXXXXXXX",
+    "password": "كلمة المرور",
+    "submit": "إنشاء حساب العائلة",
+    "validation": {
+      "first_name_required": "يرجى إدخال الاسم",
+      "last_name_required": "يرجى إدخال اللقب",
+      "pilgrim_code_required": "يرجى إدخال الرمز الفريد للحاج"
+    },
+    "relationship_options": {
+      "father": "الأب",
+      "mother": "الأم",
+      "brother": "الأخ",
+      "sister": "الأخت",
+      "husband": "الزوج",
+      "wife": "الزوجة",
+      "child": "الابن",
+      "other": "أخرى"
+    }
+  },
+  "auth_controller": {
+    "mobile_portal_restricted": "هذا التطبيق على الهاتف مخصص للحجاج والمرشدين والعائلات فقط.",
+    "generic_error": "حدث خطأ",
+    "pilgrim_code_required": "يرجى إدخال الرمز الفريد للحاج",
+    "session_not_found": "تعذر العثور على الجلسة"
+  },
+  "auth_exception": {
+    "unreachable_server": "تعذر الوصول إلى الخادم",
+    "generic_error": "حدث خطأ"
+  }
 }
-}
+

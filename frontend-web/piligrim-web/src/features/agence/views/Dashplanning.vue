@@ -304,8 +304,6 @@
         </button>
       </template>
     </DashboardModalShell>
-
-    <div v-if="toast.show" :class="['toast', toast.type]">{{ toast.message }}</div>
   </div>
 </template>
 
@@ -313,6 +311,7 @@
 import { computed, nextTick, ref, watch } from 'vue'
 import AppIcon from '@/components/AppIcon.vue'
 import DashboardModalShell from '@/features/agence/components/dashboard/DashboardModalShell.vue'
+import { useToastStore } from '@/stores/useToastStore'
 import {
   createAgencePlanningDay,
   createAgencePlanningEvent,
@@ -492,6 +491,7 @@ const loading = ref(false)
 const saving = ref(false)
 const error = ref('')
 const modalError = ref('')
+const toastStore = useToastStore()
 const selectedGroupId = ref('')
 const hajjStartDateInput = ref('')
 const planningData = ref({ groupe: null, plannings: [], tripDays: [] })
@@ -508,7 +508,6 @@ const eventForm = ref({
   lieu: '',
   heure: '',
 })
-const toast = ref({ show: false, message: '', type: 'success' })
 
 const selectedGroup = computed(() => {
   const listedGroup = props.groupes.find((group) => group.id === selectedGroupId.value)
@@ -588,10 +587,12 @@ const selectedDayPrimaryLieu = computed(() => {
 })
 
 function showToast(message, type = 'success') {
-  toast.value = { show: true, message, type }
-  window.setTimeout(() => {
-    toast.value.show = false
-  }, 6000)
+  if (type === 'error') {
+    toastStore.error(message)
+    return
+  }
+
+  toastStore.success(message)
 }
 
 function getEventFallbackDescription(event) {

@@ -137,8 +137,8 @@ class _MobileAlertsScreenState extends ConsumerState<MobileAlertsScreen> {
           } catch (_) {
             if (context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Impossible de supprimer la notification'),
+                SnackBar(
+                  content: Text('alerts.errors.delete_notification'.tr()),
                 ),
               );
             }

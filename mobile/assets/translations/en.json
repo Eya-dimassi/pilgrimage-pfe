@@ -65,6 +65,10 @@
       "chatbot": "Your travel assistant will appear here to answer useful questions quickly."
     }
   },
+  "branding": {
+    "tagline": "Your center for the sacred journey",
+    "splash_subtitle": "Pilgrim, guide, and family in one shared mobile landmark"
+  },
   "alerts": {
     "title": "Notifications",
     "mark_all_read": "Mark all read",
@@ -84,7 +88,8 @@
     },
     "errors": {
       "load_notifications": "Unable to load notifications",
-      "load_sos": "Unable to load SOS alerts"
+      "load_sos": "Unable to load SOS alerts",
+      "delete_notification": "Unable to delete the notification"
     },
     "guide_sos": {
       "chip": "Guide SOS",
@@ -220,7 +225,8 @@
   },
   "roles": {
     "pelerin": "Pilgrim",
-    "guide": "Guide"
+    "guide": "Guide",
+    "family": "Family"
   },
   "profile": {
     "title": "Profile",
@@ -491,5 +497,258 @@
     "upcoming_sunrise": "Dawn is approaching. Keep a calm rhythm before the next movement.",
     "none": "Keep a clear spiritual landmark throughout the entire journey."
   }
-}
+},
+"journey_home": {
+  "overview": {
+    "title": "Overview",
+    "subtitle": "Shared steps, places, and key points for your group today."
+  },
+    "header": {
+      "greeting": "Hello"
+    },
+    "hero": {
+      "your_group": "Your group",
+      "no_events": "No events today",
+      "program": "Today's program",
+      "trip_progress": "{percent}% of the journey",
+      "current_event": "Current program",
+      "no_upcoming_events": "No upcoming shared events",
+      "waiting_for_next_event": "Waiting for the next event",
+      "in_progress": "In progress",
+      "upcoming": "Up next",
+      "planning_unavailable": "Planning unavailable",
+      "transport": "Transport",
+      "visit": "Visit",
+      "rite": "Rite",
+      "prayer": "Prayer",
+      "step": "Step"
+    }
+},
+"role_home":{
+  "shortcuts": {
+      "title": "Highlights",
+      "subtitle": "Useful shortcuts and clearer mobile cards built around your live trip data."
+    }
+
+},
+"api_error_message": {
+  "timeout": "The request timed out. Please try again.",
+  "connection_error": "Connection error. Check your internet connection.",
+  "bad_certificate": "Secure connection failed. Please try again later.",
+  "cancel": "Request cancelled.",
+  "bad_request": "Invalid request. Please check your information.",
+  "unauthorized": "Session expired. Please log in again.",
+  "forbidden": "Access denied. You do not have permission.",
+  "not_found": "Content not found. Please try again later.",
+  "conflict": "Conflict detected. Please try again.",
+  "unprocessable_entity": "Invalid data. Please check your information.",
+  "too_many_requests": "Too many attempts. Please try again in a few moments.",
+  "server_error": "The server is having trouble. Please try again later.",
+  "unknown": "An error occurred. Please try again."
+},
+"login": {
+    "secure_access": "Secure access",
+    "title": "Sign in",
+    "subtitle": "Access your mobile space with the credentials that were shared with you.",
+    "email_label": "Email",
+    "email_hint": "name@test.com",
+    "password_label": "Password",
+    "password_hint": "Your password",
+    "password_required": "Please enter your password",
+    "forgot_password": "Forgot password?",
+    "submit": "Sign in",
+    "create_family_account": "Create a family account",
+  "generic_error": "An error occurred"
+  },
+  "auth_controller": {
+    "mobile_portal_restricted": "This mobile portal is reserved for pilgrims, guides, and families.",
+    "generic_error": "An error occurred",
+    "pilgrim_code_required": "Please enter the pilgrim's unique code",
+    "session_not_found": "Session not found"
+  },
+  "auth_exception": {
+    "unreachable_server": "Unable to reach the server",
+    "generic_error": "An error occurred"
+  },
+  "edit_profile": {
+    "title": "Edit profile",
+    "subtitle": "Update your personal information. Changes will appear immediately in your space.",
+    "success": "Profile updated successfully",
+    "generic_error": "An error occurred",
+    "first_name_required": "Please enter your first name",
+    "last_name_required": "Please enter your last name",
+    "first_name": "First name",
+    "last_name": "Last name",
+    "email": "Email",
+    "phone": "Phone",
+    "phone_hint": "+33 6 12 34 56 78",
+    "family_relationship": "Family relationship",
+    "specialty": "Specialty",
+    "available": "Available",
+    "available_subtitle": "You can be assigned to a group.",
+    "unavailable_subtitle": "You will not be assigned to a group.",
+    "birth_date": "Date of birth",
+    "birth_date_picker_help": "Date of birth",
+    "nationality": "Nationality",
+    "passport_number": "Passport number",
+    "photo_url": "Photo URL",
+    "photo_url_hint": "https://...",
+    "save": "Save",
+    "relationship_options": {
+      "father": "Father",
+      "mother": "Mother",
+      "brother": "Brother",
+      "sister": "Sister",
+      "husband": "Husband",
+      "wife": "Wife",
+      "child": "Child",
+      "other": "Other"
+    }
+  },
+  "intro": {
+    "app_name": "Sacred Journey Hub",
+    "skip": "Skip",
+    "back": "Back",
+    "next": "Next",
+    "start": "Get started",
+    "image_placeholder": "Add your image to assets/intro.",
+    "slides": {
+      "one": {
+        "title": "A smoother journey",
+        "description": "Easily find your useful information, your group landmarks, and simpler mobile access throughout the journey."
+      },
+      "two": {
+        "title": "A space for guides",
+        "description": "Keep your groups well guided, move forward with a clear field view, and quickly check useful details."
+      },
+      "three": {
+        "title": "A link for families",
+        "description": "Offer a more reassuring follow-up to the experience, with a clear interface adapted to the sacred journey."
+      }
+    }
+  },
+  "family_home": {
+    "account": {
+      "relatives": "My relatives",
+      "language": "Language",
+      "logout": "Log out"
+    },
+    "language": {
+      "choose": "Choose language",
+      "french": "French",
+      "english": "English",
+      "arabic": "Arabic"
+    },
+    "messages": {
+      "no_active_group": "This relative does not yet have an active group to display."
+    },
+    "header": {
+      "greeting": "Hello"
+    },
+    "today": {
+      "title": "Today",
+      "see_all": "See all",
+      "remaining_relatives": "{count} other relative in See all",
+      "remaining_relatives_plural": "{count} other relatives in See all",
+      "details": "View details",
+      "no_shared_step_today": "No shared step today",
+      "waiting_for_update": "Day awaiting update"
+    },
+    "alerts": {
+      "title": "Important alerts",
+      "see_all": "See all",
+      "none_critical": "No critical alert",
+      "all_under_control": "Everything is under control. Keep following their steps."
+    },
+    "empty": {
+      "no_relatives_title": "No linked relative yet.",
+      "no_relatives_subtitle": "Add a pilgrim with their unique code to follow their steps here."
+    },
+    "links": {
+      "title": "My relatives",
+      "subtitle": "Add a pilgrim with their unique code or tap a card to view their live day.",
+      "add_relative": "Add a relative",
+      "none": "No linked relative yet.",
+      "hidden_relatives": "Hidden relatives",
+      "code": "Code {code}",
+      "restore": "Restore"
+    },
+    "archive": {
+      "title": "Hide this relative",
+      "message": "Hide {name} from your home? You can find them again in \"My relatives\".",
+      "cancel": "Cancel",
+      "confirm": "Hide"
+    },
+    "add_relative_sheet": {
+      "title": "Add a relative",
+      "subtitle": "Enter the pilgrim's unique code to link a new relative to your family account.",
+      "code_label": "Unique code",
+      "code_hint": "XXXXXXXX",
+      "code_help": "The code must match the unique code shared by your relative.",
+      "cancel": "Cancel",
+      "confirm": "Add",
+      "generic_error": "An error occurred"
+    },
+    "trip": {
+      "no_active_group": "No active group",
+      "from_to": "From {start} to {end}",
+      "departure_only": "Departure on {date}",
+      "return_only": "Return on {date}",
+      "hajj_year": "Hajj {year}",
+      "umrah_year": "Umrah {year}"
+    },
+    "timeline": {
+      "instant": "Just now",
+      "minutes_ago": "{count} min ago",
+      "hours_ago": "{count} h ago"
+    },
+    "stages": {
+      "arrival": "Arrival stage",
+      "arrival_tawaf": "Arrival tawaf stage",
+      "saee": "Saee stage",
+      "mina": "Mina stage",
+      "arafat": "Arafat stage",
+      "muzdalifah": "Muzdalifah stage",
+      "stoning": "Stoning stage",
+      "ifada_tawaf": "Ifada tawaf stage",
+      "departure": "Departure stage",
+      "generic": "Stage {name}"
+    }
+  },
+  "chat": {
+    "welcome": "Salam. I can help you with rites, trip planning, and practical pilgrimage guidance.",
+    "input_hint": "Ask the chatbot your question",
+    "temporary_unavailable": "I could not answer right now. Check your connection or try again in a moment."
+  },
+  "family_signup": {
+    "title": "Create your\nfamily account",
+    "subtitle": "Sign up with the pilgrim's unique code to then access the mobile portal using the same login screen.",
+    "generic_error": "An error occurred",
+    "first_name": "First name",
+    "last_name": "Last name",
+    "email": "Email",
+    "email_hint": "name@email.com",
+    "phone": "Phone",
+    "phone_hint": "+33 6 12 34 56 78",
+    "relationship": "Family relationship",
+    "pilgrim_code": "Pilgrim unique code",
+    "pilgrim_code_hint": "XXXXXXXX",
+    "password": "Password",
+    "submit": "Create my family account",
+    "validation": {
+      "first_name_required": "Please enter your first name",
+      "last_name_required": "Please enter your last name",
+      "pilgrim_code_required": "Please enter the pilgrim's unique code"
+    },
+    "relationship_options": {
+      "father": "Father",
+      "mother": "Mother",
+      "brother": "Brother",
+      "sister": "Sister",
+      "husband": "Husband",
+      "wife": "Wife",
+      "child": "Child",
+      "other": "Other"
+    }
+  }
 }

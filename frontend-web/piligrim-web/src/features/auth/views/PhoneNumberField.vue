@@ -20,7 +20,7 @@
 
 <script setup>
 import { ref, watch } from 'vue'
-import { countries } from '@/content/countries'
+import { countries } from '@/features/auth/composables/countries'
 
 const props = defineProps({
   modelValue: {

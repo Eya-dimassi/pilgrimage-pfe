@@ -54,21 +54,12 @@
       @close="showProfile = false"
       @submit="saveProfile"
     />
-
-    <Teleport to="body">
-      <div class="ad-toast" :class="[{ 'ad-toast--show': showToast }, `ad-toast--${toastType}`]">
-        <AppIcon v-if="toastType === 'success'" name="check" :size="15" :stroke-width="2.5" />
-        <AppIcon v-else name="x" :size="15" :stroke-width="2.5" />
-        {{ toastMessage }}
-      </div>
-    </Teleport>
   </div>
 </template>
 
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import AppIcon from '@/components/AppIcon.vue'
 import AppSidebar from '@/components/layout/AppSidebar.vue'
 import AppTopbar from '@/components/layout/AppTopbar.vue'
 import { useAdmin } from '@/features/admin/composables/useAdmin'
@@ -76,7 +67,7 @@ import { useAdminToast } from '@/features/admin/composables/useAdminToast'
 import AdminDashboard from './AdminDashboard.vue'
 import AdminAgences from './AdminAgences.vue'
 import AdminProfileModal from './AdminProfileModal.vue'
-import { getMe, logout, updateMe } from '@/services/auth.service'
+import { getMe, logout, updateMe } from '@/features/auth/auth.service'
 import '@/assets/styles/admin.css'
 
 const router = useRouter()
@@ -85,7 +76,7 @@ const user = ref(JSON.parse(localStorage.getItem('user') || '{}'))
 const VALID_VIEWS = ['dashboard', 'agences']
 
 const { pendingCount, loadAgences, isDark, toggleDark, applyDark } = useAdmin()
-const { showToast, toastMessage, toastType } = useAdminToast()
+useAdminToast()
 
 const currentView = ref('dashboard')
 const searchQuery = ref('')

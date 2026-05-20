@@ -25,10 +25,14 @@
 
       <div class="hero-proof">
         <div class="avatar-row">
-          <div class="av">OPS</div>
-          <div class="av">GPS</div>
-          <div class="av gold-av">24h</div>
-          <div class="av">CRM</div>
+          <div
+            v-for="item in heroProofItems"
+            :key="item"
+            class="av"
+            :class="{ 'gold-av': item === 'Famille' }"
+          >
+            {{ item }}
+          </div>
         </div>
         <span><b>Agences, guides et familles</b> relies dans une meme interface</span>
       </div>
@@ -39,7 +43,7 @@
         <div class="hero-card-img">
           <div class="carousel-wrapper">
             <img
-              v-for="(img, i) in slides"
+              v-for="(img, i) in heroSlides"
               :key="img.src"
               :src="img.src"
               :alt="img.alt"
@@ -49,7 +53,7 @@
           </div>
 
           <div class="carousel-caption">
-            {{ slides[currentSlide].caption }}
+            {{ heroSlides[currentSlide].caption }}
           </div>
         </div>
 
@@ -59,7 +63,7 @@
           </div>
           <div class="fc-body">
             <span class="fc-title">Gestion des groupes</span>
-            <span class="fc-sub">Creer et assigner des pelerins</span>
+            <span class="fc-sub">Creer, organiser et assigner</span>
           </div>
           <div class="fc-right-ico">
             <AppIcon name="chevron-down" :size="14" :stroke-width="2" style="transform: rotate(-90deg)" />
@@ -68,11 +72,11 @@
 
         <div class="fc fc-2">
           <div class="fc-ico gr">
-            <AppIcon name="map-pin" :size="16" :stroke-width="2" color="#2D7A4A" />
+            <AppIcon name="calendar" :size="16" :stroke-width="2" color="#2D7A4A" />
           </div>
           <div class="fc-body">
-            <span class="fc-title">Suivi GPS en direct</span>
-            <span class="fc-sub">Localiser chaque guide en temps reel</span>
+            <span class="fc-title">Planning partage</span>
+            <span class="fc-sub">Voir l'etape actuelle et la suivante</span>
           </div>
           <div class="fc-right-ico">
             <AppIcon name="chevron-down" :size="14" :stroke-width="2" style="transform: rotate(-90deg)" />
@@ -82,7 +86,7 @@
 
       <div class="hero-dots">
         <button
-          v-for="(_, i) in slides"
+          v-for="(_, i) in heroSlides"
           :key="i"
           type="button"
           class="hdot"
@@ -98,38 +102,16 @@
 import { onMounted, onUnmounted, ref } from 'vue'
 
 import { brand } from '@/content/brand'
-import AppIcon from './AppIcon.vue'
+import { heroProofItems, heroSlides } from '@/features/Home/views/composables/homepage'
+import AppIcon from '@/components/AppIcon.vue'
 
 defineEmits(['openModal'])
 
 const currentSlide = ref(0)
 let timer
 
-const slides = [
-  {
-    src: 'https://images.unsplash.com/photo-1591604129939-f1efa4d9f7fa?w=1200&q=80',
-    alt: 'Masjid Al-Haram - La Mecque',
-    caption: 'Masjid Al-Haram - La Mecque',
-  },
-  {
-    src: 'https://images.unsplash.com/photo-1564769625905-50e93615e769?w=1200&q=80',
-    alt: 'La Kaaba',
-    caption: 'La Kaaba - Coeur du Hajj',
-  },
-  {
-    src: 'https://images.unsplash.com/photo-1563492065599-3520f775eeed?w=1200&q=80',
-    alt: 'Masjid An-Nabawi - Medine',
-    caption: 'Masjid An-Nabawi - Medine',
-  },
-  {
-    src: 'https://images.unsplash.com/photo-1590108589108-3600131de843?q=80&w=1200',
-    alt: 'Pelerins en priere',
-    caption: 'Hajj - Rassemblement mondial',
-  },
-]
-
 const next = () => {
-  currentSlide.value = (currentSlide.value + 1) % slides.length
+  currentSlide.value = (currentSlide.value + 1) % heroSlides.length
 }
 
 const startTimer = () => {

@@ -1,5 +1,6 @@
 import bcrypt from 'bcrypt';
 import prisma from '../../config/prisma';
+import { normalizeInternationalPhone } from '../../utils/phone.utils';
 
 export const createAgence = async (data: {
   nomAgence: string;
@@ -9,29 +10,45 @@ export const createAgence = async (data: {
   telephone?: string;
   siteWeb?: string;
 }) => {
+  const normalizedAgenceName = data.nomAgence.trim();
+  const normalizedEmail = data.email.trim().toLowerCase();
+  const normalizedPassword = data.motDePasse.trim();
+  const normalizedTelephone = data.telephone?.trim() ?? '';
+  const normalizedAdresse = data.adresse?.trim() ?? '';
+  const normalizedSiteWeb = data.siteWeb?.trim() || null;
+
+  if (!normalizedTelephone) {
+    throw new Error('Telephone requis');
+  }
+
+  if (!normalizedAdresse) {
+    throw new Error('Adresse requise');
+  }
+
   const existing = await prisma.utilisateur.findUnique({
-    where: { email: data.email },
+    where: { email: normalizedEmail },
   });
 
   if (existing) {
     throw new Error('Un compte avec cet email existe déjà');
   }
 
-  const hash = await bcrypt.hash(data.motDePasse, 10);
+  const hash = await bcrypt.hash(normalizedPassword, 10);
+  const phoneNumber = normalizeInternationalPhone(normalizedTelephone);
 
   const utilisateur = await prisma.utilisateur.create({
     data: {
-      email: data.email,
+      email: normalizedEmail,
       motDePasse: hash,
-      nom: data.nomAgence,
+      nom: normalizedAgenceName,
       prenom: '-',          // agencies don't have a prenom — using placeholder
-      telephone: data.telephone,
+      telephone: phoneNumber,
       role: 'AGENCE',
       agence: {
         create: {
-          nomAgence: data.nomAgence,
-          adresse: data.adresse,
-          siteWeb: data.siteWeb,
+          nomAgence: normalizedAgenceName,
+          adresse: normalizedAdresse,
+          siteWeb: normalizedSiteWeb,
         },
       },
     },

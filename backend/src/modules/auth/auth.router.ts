@@ -25,8 +25,8 @@ router.post('/signup',async(req: Request, res: Response)=> {
   try {
     const {nomAgence, email, motDePasse, telephone, adresse, siteWeb}=req.body;
 
-    if (!nomAgence || !email || !motDePasse) {
-      return res.status(400).json({ message: 'Nom agence, email et mot de passe requis'});
+    if (!nomAgence || !email || !motDePasse || !telephone || !adresse) {
+      return res.status(400).json({ message: 'Nom agence, email, mot de passe, telephone et adresse requis'});
     }
 
     const result = await authService.signup({nomAgence, email, motDePasse, telephone, adresse, siteWeb});

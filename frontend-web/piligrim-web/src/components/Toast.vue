@@ -1,15 +1,27 @@
-﻿<template>
+<template>
   <Teleport to="body">
-    <div class="toast" :class="{ show }">
-      <div class="t-ico">✓</div>
+    <div class="toast" :class="[type, { show }]">
+      <div class="t-ico">{{ icon }}</div>
       <div>
-        <div class="t-title">Demande envoyée !</div>
-        <div class="t-sub">Notre équipe vous contactera sous 24h</div>
+        <div class="t-title">{{ resolvedTitle }}</div>
+        <div v-if="message" class="t-sub">{{ message }}</div>
       </div>
     </div>
   </Teleport>
 </template>
 
 <script setup>
-defineProps(['show'])
+import { computed } from 'vue'
+import { storeToRefs } from 'pinia'
+import { useToastStore } from '@/stores/useToastStore'
+
+const toastStore = useToastStore()
+const { show, type, title, message } = storeToRefs(toastStore)
+
+const resolvedTitle = computed(() => {
+  if (title.value) return title.value
+  return type.value === 'error' ? 'Erreur' : 'Succes'
+})
+
+const icon = computed(() => (type.value === 'error' ? '!' : '✓'))
 </script>

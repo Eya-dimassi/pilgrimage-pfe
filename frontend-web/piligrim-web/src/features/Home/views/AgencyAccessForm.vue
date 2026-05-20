@@ -144,10 +144,11 @@
 <script setup>
 import { ref } from 'vue'
 
-import { countries } from '@/content/countries'
-import { register } from '@/services/auth.service'
-import AppIcon from './AppIcon.vue'
-import PhoneNumberField from './forms/PhoneNumberField.vue'
+import { countries } from '@/features/auth/composables/countries'
+import { isValidInternationalPhone, normalizeInternationalPhone } from '@/features/auth/composables/phone'
+import { register } from '@/features/auth/auth.service'
+import AppIcon from '@/components/AppIcon.vue'
+import PhoneNumberField from '@/features/auth/views/PhoneNumberField.vue'
 
 const props = defineProps({
   submitLabel: {
@@ -192,7 +193,6 @@ const showPassword = ref(false)
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i
 const passwordPattern = /^(?=.*[A-Za-z])(?=.*\d).{8,}$/
-const phonePattern = /^\+\d{1,4}\s[\d\s()-]{5,20}$/
 
 const normalizeWebsite = (value) => {
   if (!value?.trim()) return ''
@@ -219,7 +219,7 @@ const validators = {
   telephone: (value) => {
     const normalized = value.trim()
     if (!normalized) return 'Le numero de telephone est requis.'
-    if (!phonePattern.test(normalized)) {
+    if (!isValidInternationalPhone(normalized)) {
       return 'Entrez un numero international valide, par exemple +216 20 123 456.'
     }
     return ''
@@ -238,7 +238,7 @@ const validators = {
     return ''
   },
   adresse: (value) => {
-    if (!value.trim()) return ''
+    if (!value.trim()) return "L'adresse est requise."
     if (value.trim().length < 4) return 'Precisez au moins la ville ou le pays.'
     return ''
   },
@@ -302,11 +302,11 @@ const handleSubmit = async () => {
   try {
     const payload = {
       nomAgence: form.value.nomAgence.trim(),
-      telephone: form.value.telephone.trim(),
+      telephone: normalizeInternationalPhone(form.value.telephone),
       email: form.value.email.trim().toLowerCase(),
       motDePasse: form.value.motDePasse,
       adresse: form.value.adresse.trim(),
-      siteWeb: normalizeWebsite(form.value.siteWeb),
+      siteWeb: form.value.siteWeb.trim() ? normalizeWebsite(form.value.siteWeb) : undefined,
     }
 
     const data = await register(payload)

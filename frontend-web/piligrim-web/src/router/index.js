@@ -1,11 +1,10 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import HomePageView from '@/views/HomePageView.vue'
-import ActivateAccountView from '@/views/ActivateAccountView.vue'
-import ForgotPasswordView from '@/views/ForgotPasswordView.vue'
-import SetPasswordView from '@/views/SetPasswordView.vue'
+import HomePageView from '@/features/Home/views/HomePageView.vue'
+import ActivateAccountView from '@/features/auth/views/ActivateAccountView.vue'
+import ForgotPasswordView from '@/features/auth/views/ForgotPasswordView.vue'
+import SetPasswordView from '@/features/auth/views/SetPasswordView.vue'
 
 const routes = [
-  // Login now lives in the homepage modal, so /login redirects home.
   { path: '/login', redirect: '/' },
   { path: '/', component: HomePageView },
   {

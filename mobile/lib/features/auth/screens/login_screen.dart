@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -55,7 +56,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       if (!mounted) {
         return;
       }
-      showAuthSnackBar(context, 'Une erreur est survenue');
+      showAuthSnackBar(context, 'login.generic_error'.tr());
     } finally {
       if (mounted) {
         setState(() {
@@ -87,8 +88,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 borderRadius: BorderRadius.circular(999),
                 border: Border.all(color: AppColors.border),
               ),
-              child: const Text(
-                'Acces securise',
+              child: Text(
+                'login.secure_access'.tr(),
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 12,
@@ -100,7 +101,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           ),
           const SizedBox(height: 14),
           Text(
-            'Connexion',
+            'login.title'.tr(),
             textAlign: TextAlign.center,
             style: GoogleFonts.syne(
               fontSize: 22,
@@ -109,8 +110,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             ),
           ),
           const SizedBox(height: 6),
-          const Text(
-            'Accedez a votre espace mobile avec les identifiants qui vous ont ete communiques.',
+          Text(
+            'login.subtitle'.tr(),
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 13,
@@ -124,9 +125,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             keyboardType: TextInputType.emailAddress,
             textInputAction: TextInputAction.next,
             validator: AuthValidators.email,
-            decoration: const InputDecoration(
-              labelText: 'Email',
-              hintText: 'nom@test.com',
+            decoration:  InputDecoration(
+              labelText: 'login.email_label'.tr(),
+              hintText: 'login.email_hint'.tr(),
               prefixIcon: Icon(Icons.alternate_email_rounded),
             ),
           ),
@@ -136,7 +137,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             obscureText: _obscurePassword,
             validator: (value) => AuthValidators.required(
               value,
-              message: 'Veuillez entrer votre mot de passe',
+              message: 'login.password_required'.tr(),
             ),
             onFieldSubmitted: (_) {
               if (!isLoading) {
@@ -144,8 +145,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               }
             },
             decoration: InputDecoration(
-              labelText: 'Mot de passe',
-              hintText: 'Votre mot de passe',
+              labelText: 'login.password_label'.tr(),
+              hintText: 'login.password_hint'.tr(),
               prefixIcon: const Icon(Icons.lock_outline_rounded),
               suffixIcon: IconButton(
                 icon: Icon(
@@ -166,7 +167,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             child: TextButton(
               onPressed:
                   isLoading ? null : () => context.push('/forgot-password'),
-              child: const Text('Mot de passe oublie ?'),
+              child: Text('login.forgot_password'.tr()),
             ),
           ),
           const SizedBox(height: 6),
@@ -193,7 +194,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         color: AppColors.text,
                       ),
                     )
-                  : const Text('Se connecter'),
+                  :  Text('login.submit'.tr()),
             ),
           ),
           const SizedBox(height: 8),
@@ -209,7 +210,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ),
               ),
               icon: const Icon(Icons.family_restroom_outlined, size: 18),
-              label: const Text('Creer un compte famille'),
+              label: Text('login.create_family_account'.tr()),
             ),
           ),
         ],

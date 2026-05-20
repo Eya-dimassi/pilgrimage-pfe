@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -74,7 +75,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
           Text(
-            'Mot de passe oublie',
+            'forget_password.title'.tr(),
             style: GoogleFonts.syne(
               fontSize: 24,
               fontWeight: FontWeight.w700,
@@ -82,8 +83,8 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
-            'Le lien de reinitialisation sera envoye a l adresse associee a votre espace SmartHajj.',
+           Text(
+            'forget_password.subtitle'.tr(),
             style: TextStyle(
               fontSize: 14,
               height: 1.5,
@@ -101,9 +102,9 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                 _submit();
               }
             },
-            decoration: const InputDecoration(
-              labelText: 'Email',
-              hintText: 'nom@test.com',
+            decoration:  InputDecoration(
+              labelText: 'forget_password.email_label'.tr(),
+              hintText: 'forget_password.email_hint'.tr(),
               prefixIcon: Icon(Icons.email_outlined),
             ),
           ),
@@ -121,7 +122,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                         color: AppColors.background,
                       ),
                     )
-                  : const Text('Envoyer les instructions'),
+                  : Text('forget_password.submit'.tr()),
             ),
           ),
         ],

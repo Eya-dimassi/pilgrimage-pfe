@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -16,13 +17,7 @@ class MobileChatScreen extends ConsumerStatefulWidget {
 class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  final List<_ChatBubbleMessage> _messages = <_ChatBubbleMessage>[
-    const _ChatBubbleMessage(
-      role: 'assistant',
-      text:
-          'Salam. Je peux vous aider pour les rites, le planning du voyage, et les reperes pratiques du pelerinage.',
-    ),
-  ];
+  final List<_ChatBubbleMessage> _messages = <_ChatBubbleMessage>[];
 
   bool _sending = false;
   String? _activeUserId;
@@ -32,6 +27,19 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
     _messageController.dispose();
     _scrollController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_messages.isEmpty) {
+      _messages.add(
+        _ChatBubbleMessage(
+          role: 'assistant',
+          text: 'chat.welcome'.tr(),
+        ),
+      );
+    }
   }
 
   @override
@@ -48,10 +56,10 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
       _messages
         ..clear()
         ..add(
-          const _ChatBubbleMessage(
+           _ChatBubbleMessage(
             role: 'assistant',
             text:
-                'Salam. Je peux vous aider pour les rites, le planning du voyage, et les reperes pratiques du pelerinage.',
+                'chat.welcome'.tr(),
           ),
         );
       _sending = false;
@@ -141,13 +149,13 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
                 maxLines: 4,
                 minLines: 1,
                 textInputAction: TextInputAction.newline,
-                decoration: const InputDecoration(
-                  hintText: 'Posez votre question au chatbot',
+                decoration: InputDecoration(
+                  hintText: 'chat.input_hint'.tr(),
                   border: InputBorder.none,
                   enabledBorder: InputBorder.none,
                   focusedBorder: InputBorder.none,
                   filled: false,
-                  contentPadding: EdgeInsets.symmetric(
+                  contentPadding: const EdgeInsets.symmetric(
                     horizontal: 4,
                     vertical: 10,
                   ),
@@ -217,10 +225,10 @@ class _MobileChatScreenState extends ConsumerState<MobileChatScreen> {
       if (!mounted) return;
       setState(() {
         _messages.add(
-          const _ChatBubbleMessage(
+           _ChatBubbleMessage(
             role: 'assistant',
             text:
-                'Je n ai pas pu repondre pour le moment. Verifiez la connexion ou reessayez dans un instant.',
+                'chat.temporary_unavailable'.tr(),
           ),
         );
       });

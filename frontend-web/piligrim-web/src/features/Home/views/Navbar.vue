@@ -39,8 +39,8 @@
 
 <script setup>
 import { brand } from '@/content/brand'
-import AppIcon from './AppIcon.vue'
-import BrandIdentity from './BrandIdentity.vue'
+import AppIcon from '@/components/AppIcon.vue'
+import BrandIdentity from '@/components/BrandIdentity.vue'
 
 defineProps({
   isDark: {

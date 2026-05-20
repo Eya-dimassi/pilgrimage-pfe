@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -28,9 +29,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   final _nationaliteController = TextEditingController();
   final _numeroPasseportController = TextEditingController();
   final _photoUrlController = TextEditingController();
-  final List<String> _lienParenteOptions = const [
-    'Pere',
+  final List<String> _lienParenteOptions = [
     'Mere',
+    'Pere',
     'Frere',
     'Soeur',
     'Epoux',
@@ -38,7 +39,6 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     'Enfant',
     'Autre',
   ];
-
   bool _isSubmitting = false;
   bool _initialized = false;
   bool _guideDisponible = true;
@@ -94,7 +94,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       initialDate: initialDate,
       firstDate: DateTime(1900),
       lastDate: DateTime.now(),
-      helpText: 'Date de naissance',
+      helpText: 'edit_profile.birth_date_picker_help'.tr(),
     );
 
     if (pickedDate == null) {
@@ -148,7 +148,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         return;
       }
 
-      showAuthSnackBar(context, 'Profil mis a jour avec succes');
+      showAuthSnackBar(context, 'edit_profile.success'.tr());
       context.go(_profilePathForRole(user.role));
     } on AuthException catch (error) {
       if (!mounted) {
@@ -159,7 +159,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       if (!mounted) {
         return;
       }
-      showAuthSnackBar(context, 'Une erreur est survenue');
+      showAuthSnackBar(context, 'edit_profile.generic_error'.tr());
     } finally {
       if (mounted) {
         setState(() {
@@ -194,7 +194,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              'Modifier le profil',
+              'edit_profile.title'.tr(),
               textAlign: TextAlign.center,
               style: GoogleFonts.syne(
                 fontSize: 24,
@@ -205,8 +205,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               ),
             ),
             const SizedBox(height: 12),
-            const Text(
-              'Mettez a jour vos informations personnelles. Les changements seront visibles immediatement dans votre espace.',
+             Text(
+              'edit_profile.subtitle'.tr(),
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 12.5,
@@ -220,10 +220,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               textInputAction: TextInputAction.next,
               validator: (value) => AuthValidators.required(
                 value,
-                message: 'Veuillez entrer votre prenom',
+                message: 'edit_profile.first_name_required'.tr(),
               ),
-              decoration: const InputDecoration(
-                labelText: 'Prenom',
+              decoration:  InputDecoration(
+                labelText: 'edit_profile.first_name'.tr(),
                 prefixIcon: Icon(Icons.person_outline_rounded),
               ),
             ),
@@ -233,10 +233,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               textInputAction: TextInputAction.next,
               validator: (value) => AuthValidators.required(
                 value,
-                message: 'Veuillez entrer votre nom',
+                message: 'edit_profile.last_name_required'.tr(),
               ),
-              decoration: const InputDecoration(
-                labelText: 'Nom',
+              decoration:  InputDecoration(
+                labelText: 'edit_profile.last_name'.tr(),
                 prefixIcon: Icon(Icons.badge_outlined),
               ),
             ),
@@ -246,8 +246,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               keyboardType: TextInputType.emailAddress,
               textInputAction: TextInputAction.next,
               validator: AuthValidators.email,
-              decoration: const InputDecoration(
-                labelText: 'Email',
+              decoration:  InputDecoration(
+                labelText: 'edit_profile.email'.tr(),
                 prefixIcon: Icon(Icons.alternate_email_rounded),
               ),
             ),
@@ -259,9 +259,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                   ? TextInputAction.next
                   : TextInputAction.done,
               validator: AuthValidators.internationalPhone,
-              decoration: const InputDecoration(
-                labelText: 'Telephone',
-                hintText: '+33 6 12 34 56 78',
+              decoration:  InputDecoration(
+                labelText: 'edit_profile.phone'.tr(),
+                hintText: 'edit_profile.phone_hint'.tr(),
                 prefixIcon: Icon(Icons.phone_outlined),
               ),
             ),
@@ -273,7 +273,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                     .map(
                       (option) => DropdownMenuItem<String>(
                         value: option,
-                        child: Text(option),
+                        child: Text(_relationLabel(option).tr()),
                       ),
                     )
                     .toList(),
@@ -285,8 +285,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                     _selectedLienParente = value;
                   });
                 },
-                decoration: const InputDecoration(
-                  labelText: 'Lien de parente',
+                decoration:  InputDecoration(
+                  labelText: 'edit_profile.family_relationship'.tr(),
                   prefixIcon: Icon(Icons.family_restroom_outlined),
                 ),
               ),
@@ -296,8 +296,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               TextFormField(
                 controller: _specialiteController,
                 textInputAction: TextInputAction.done,
-                decoration: const InputDecoration(
-                  labelText: 'Specialite',
+                decoration:  InputDecoration(
+                  labelText: 'edit_profile.specialty'.tr(),
                   prefixIcon: Icon(Icons.workspace_premium_outlined),
                 ),
               ),
@@ -312,8 +312,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 },
                 // ignore: deprecated_member_use
                 activeColor: AppColors.green,
-                title: const Text(
-                  'Disponible',
+                title:  Text(
+                  'edit_profile.available'.tr(),
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
@@ -322,8 +322,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 ),
                 subtitle: Text(
                   _guideDisponible
-                      ? 'Vous pouvez etre affecte a un groupe.'
-                      : 'Vous ne serez pas affecte a un groupe.',
+                      ? 'edit_profile.available_subtitle'.tr()
+                      : 'edit_profile.unavailable_subtitle'.tr(),
                   style: const TextStyle(
                     fontSize: 12,
                     color: AppColors.textMuted,
@@ -339,7 +339,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 onTap: _pickDateNaissance,
                 textInputAction: TextInputAction.next,
                 decoration: InputDecoration(
-                  labelText: 'Date de naissance',
+                  labelText: 'edit_profile.birth_date'.tr(),
                   prefixIcon: const Icon(Icons.cake_outlined),
                   suffixIcon: IconButton(
                     onPressed: _pickDateNaissance,
@@ -351,8 +351,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               TextFormField(
                 controller: _nationaliteController,
                 textInputAction: TextInputAction.next,
-                decoration: const InputDecoration(
-                  labelText: 'Nationalite',
+                decoration:  InputDecoration(
+                  labelText: 'edit_profile.nationality'.tr(),
                   prefixIcon: Icon(Icons.public_rounded),
                 ),
               ),
@@ -360,8 +360,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               TextFormField(
                 controller: _numeroPasseportController,
                 textInputAction: TextInputAction.next,
-                decoration: const InputDecoration(
-                  labelText: 'Numero de passeport',
+                decoration:  InputDecoration(
+                  labelText: 'edit_profile.passport_number'.tr(),
                   prefixIcon: Icon(Icons.badge_outlined),
                 ),
               ),
@@ -370,9 +370,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 controller: _photoUrlController,
                 keyboardType: TextInputType.url,
                 textInputAction: TextInputAction.done,
-                decoration: const InputDecoration(
-                  labelText: 'Photo URL',
-                  hintText: 'https://...',
+                decoration:  InputDecoration(
+                  labelText: 'edit_profile.photo_url'.tr(),
+                  hintText: 'edit_profile.photo_url_hint'.tr(),
                   prefixIcon: Icon(Icons.link_rounded),
                 ),
               ),
@@ -399,7 +399,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                           color: AppColors.text,
                         ),
                       )
-                    : const Text('Enregistrer'),
+                    : Text('edit_profile.save'.tr()),
               ),
             ),
           ],
@@ -428,6 +428,26 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       case 'PELERIN':
       default:
         return '/home?tab=profile';
+    }
+  }
+  String _relationLabel(String value) {
+    switch (value) {
+      case 'Mere':
+        return 'edit_profile.relationship_options.mother';
+      case 'Pere':
+        return 'edit_profile.relationship_options.father';
+      case 'Frere':
+        return 'edit_profile.relationship_options.brother';
+      case 'Soeur':
+        return 'edit_profile.relationship_options.sister';
+      case 'Epoux':
+        return 'edit_profile.relationship_options.husband';
+      case 'Epouse':
+        return 'edit_profile.relationship_options.wife';
+      case 'Enfant':
+        return 'edit_profile.relationship_options.child';
+      default:
+        return 'edit_profile.relationship_options.other';
     }
   }
 }

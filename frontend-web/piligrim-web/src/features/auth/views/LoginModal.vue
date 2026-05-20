@@ -78,9 +78,9 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { brand } from '@/content/brand'
-import { login, saveSession } from '@/services/auth.service'
-import AppIcon from './AppIcon.vue'
-import BrandMark from './BrandMark.vue'
+import { login, saveSession } from '@/features/auth/auth.service'
+import AppIcon from '@/components/AppIcon.vue'
+import BrandMark from '@/components/BrandMark.vue'
 
 defineProps({
   show: { type: Boolean, default: false },

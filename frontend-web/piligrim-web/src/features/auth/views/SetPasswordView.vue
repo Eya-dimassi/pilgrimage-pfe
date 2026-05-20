@@ -79,8 +79,8 @@
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { brand } from '@/content/brand'
-import { getPasswordStrength, hasDigit, hasUppercase, isStrongPassword, normalizeQueryToken, validatePasswordConfirmation } from '@/composables/usePasswordRules'
-import { setPassword } from '@/services/auth.service'
+import { getPasswordStrength, hasDigit, hasUppercase, isStrongPassword, normalizeQueryToken, validatePasswordConfirmation } from '@/features/auth/composables/usePasswordRules'
+import { setPassword } from '@/features/auth/auth.service'
 
 const route = useRoute()
 const router = useRouter()

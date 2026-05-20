@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -110,12 +111,11 @@ class RoleJourneyHomeContent extends ConsumerWidget {
               ],
               if (showOverviewSection) ...[
                 const SizedBox(height: AppSpacing.m),
-                const SectionTitle(
-                  'Vue d ensemble',
-                  subtitle:
-                      'Les etapes, lieux et reperes partages pour votre groupe aujourd hui.',
+                SectionTitle(
+                  'journey_home.overview.title'.tr(),
+                  subtitle: 'journey_home.overview.subtitle'.tr(),
                   bottomPadding: AppSpacing.sm,
-                  titleStyle: TextStyle(
+                  titleStyle: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
                     letterSpacing: -0.4,
@@ -149,8 +149,8 @@ class _HomeHeader extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Bonjour',
+              Text(
+                'journey_home.header.greeting'.tr(),
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
@@ -310,7 +310,8 @@ class _RoleHero extends StatelessWidget {
       anchorDay: SaudiTime.now(),
       currentEvent: currentEvent,
     );
-    final groupLabel = group?.nom ?? fallbackGroupName ?? 'Votre groupe';
+    final groupLabel =
+        group?.nom ?? fallbackGroupName ?? 'journey_home.hero.your_group'.tr();
     final progress = computeTripProgress(
       group?.dateDepart,
       group?.dateRetour,
@@ -356,31 +357,32 @@ class _RoleHero extends StatelessWidget {
             child: IgnorePointer(
               child: Opacity(
                 opacity: 0.96,
-                child: AppHeroAsset(
-                  assetPath: heroAssetPath,
-                  width: 150,
-                  height: 176,
-                  scale: 1.0,
-                  alignment: Alignment.bottomCenter,
-                  fit: BoxFit.contain,
-                )
-                    .animate(onPlay: (controller) => controller.repeat(reverse: true))
-                    .fadeIn(
-                      duration: 420.ms,
-                      curve: Curves.easeOutCubic,
-                    )
-                    .slideX(
-                      begin: 0.08,
-                      end: 0,
-                      duration: 420.ms,
-                      curve: Curves.easeOutCubic,
-                    )
-                    .moveY(
-                      begin: 0,
-                      end: -5,
-                      duration: 2200.ms,
-                      curve: Curves.easeInOut,
-                    ),
+                child:
+                    AppHeroAsset(
+                          assetPath: heroAssetPath,
+                          width: 150,
+                          height: 176,
+                          scale: 1.0,
+                          alignment: Alignment.bottomCenter,
+                          fit: BoxFit.contain,
+                        )
+                        .animate(
+                          onPlay: (controller) =>
+                              controller.repeat(reverse: true),
+                        )
+                        .fadeIn(duration: 420.ms, curve: Curves.easeOutCubic)
+                        .slideX(
+                          begin: 0.08,
+                          end: 0,
+                          duration: 420.ms,
+                          curve: Curves.easeOutCubic,
+                        )
+                        .moveY(
+                          begin: 0,
+                          end: -5,
+                          duration: 2200.ms,
+                          curve: Curves.easeInOut,
+                        ),
               ),
             ),
           ),
@@ -397,7 +399,7 @@ class _RoleHero extends StatelessWidget {
                         AppStatusChip(
                           label: group?.typeVoyage == 'HAJJ'
                               ? 'HAJJ ${group?.annee ?? ''}'.trim()
-                              : 'OMRA ${group?.annee ?? ''}'.trim(),
+                              : 'UMRAH ${group?.annee ?? ''}'.trim(),
                           icon: Icons.auto_awesome_rounded,
                           backgroundColor: Colors.white.withValues(alpha: 0.10),
                           foregroundColor: const Color(0xFF72E0A5),
@@ -405,7 +407,8 @@ class _RoleHero extends StatelessWidget {
                         ),
                         const SizedBox(height: 14),
                         Text(
-                          currentEvent?.titre ?? 'Aucune etape aujourd hui',
+                          currentEvent?.titre ??
+                              'journey_home.hero.no_events'.tr(),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
@@ -418,7 +421,7 @@ class _RoleHero extends StatelessWidget {
                         const SizedBox(height: 4),
                         Text(
                           _heroMeta(currentEvent, groupLabel) ??
-                              'Programme du jour',
+                              'journey_home.hero.program'.tr(),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
@@ -479,7 +482,9 @@ class _HeroProgressBlock extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Text(
-          '${(progress * 100).round()}% du voyage',
+          'journey_home.hero.trip_progress'.tr(
+            namedArgs: {'percent': '${(progress * 100).round()}'},
+          ),
           style: const TextStyle(
             color: Colors.white,
             fontSize: 11.5,
@@ -504,11 +509,14 @@ class _HeroEventPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final currentTitle = currentEvent?.titre ?? 'Programme du moment';
+    final currentTitle =
+        currentEvent?.titre ?? 'journey_home.hero.current_event'.tr();
     final currentMeta = _heroPanelMeta(currentEvent) ?? fallbackLocation;
-    final upcomingTitle = nextEvent?.titre ?? 'Aucune suite partagee';
+    final upcomingTitle =
+        nextEvent?.titre ?? 'journey_home.hero.no_upcoming_events'.tr();
     final upcomingMeta =
-        _heroPanelMeta(nextEvent) ?? 'En attente de la prochaine etape';
+        _heroPanelMeta(nextEvent) ??
+        'journey_home.hero.waiting_for_next_event'.tr();
 
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 14, 14, 13),
@@ -523,7 +531,7 @@ class _HeroEventPanel extends StatelessWidget {
             icon: _eventTypeIcon(currentEvent?.type),
             title: currentTitle,
             meta: currentMeta,
-            label: 'En cours',
+            label: 'journey_home.hero.in_progress'.tr(),
           ),
           if (nextEvent != null) ...[
             Padding(
@@ -538,7 +546,7 @@ class _HeroEventPanel extends StatelessWidget {
               icon: _eventTypeIcon(nextEvent?.type),
               title: upcomingTitle,
               meta: upcomingMeta,
-              label: 'Ensuite',
+              label: 'journey_home.hero.upcoming'.tr(),
               trailingIcon: Icons.chevron_right_rounded,
             ),
           ],
@@ -682,7 +690,7 @@ class _DailyFlowPanel extends StatelessWidget {
       ),
       error: (error, _) => _FlowCard(
         eventType: null,
-        title: 'Planning indisponible',
+        title: 'journey_home.hero.planning_unavailable'.tr(),
         meta: error.toString(),
         icon: Icons.info_outline_rounded,
         toneColor: AppColors.red,
@@ -708,9 +716,7 @@ class _DailyFlowPanel extends StatelessWidget {
           children: [
             _FlowCard(
               eventType: currentEvent?.type,
-              title:
-                  currentEvent?.titre ??
-                  'Aucune etape aujourd hui',
+              title: currentEvent?.titre ?? 'journey_home.hero.no_events'.tr(),
               meta: _eventMeta(currentEvent),
               icon: _eventTypeIcon(currentEvent?.type),
               toneColor: _eventTypeColor(currentEvent?.type),
@@ -803,8 +809,6 @@ List<MobilePlanningDay> _expandPlanningsForTrip(
   List<MobilePlanningDay> plannings,
 ) => sortPlanningDaysByDate(plannings);
 
-
-
 String? _primaryLocation(List<MobilePlanningEvent> events) {
   for (final event in events) {
     for (final lieu in event.lieux) {
@@ -874,15 +878,15 @@ Color _eventTypeColor(String? type) {
 String _eventTypeLabel(String? type) {
   switch (type) {
     case 'TRANSPORT':
-      return 'Transport';
+      return 'journey_home.hero.transport'.tr();
     case 'VISITE':
-      return 'Visite';
+      return 'journey_home.hero.visit'.tr();
     case 'RITE':
-      return 'Rite';
+      return 'journey_home.hero.rite'.tr();
     case 'PRIERE':
-      return 'Priere';
+      return 'journey_home.hero.prayer'.tr();
     default:
-      return 'Etape';
+      return 'journey_home.hero.step'.tr();
   }
 }
 

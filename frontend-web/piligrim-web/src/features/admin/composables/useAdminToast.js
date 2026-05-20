@@ -1,17 +1,17 @@
-import { ref } from 'vue'
-
-const showToast    = ref(false)
-const toastMessage = ref('')
-const toastType    = ref('success')
-let timer = null
+import { storeToRefs } from 'pinia'
+import { useToastStore } from '@/stores/useToastStore'
 
 export function useAdminToast() {
+  const toastStore = useToastStore()
+  const { show: showToast, message: toastMessage, type: toastType } = storeToRefs(toastStore)
+
   function toast(message, type = 'success') {
-    if (timer) clearTimeout(timer)
-    toastMessage.value = message
-    toastType.value    = type
-    showToast.value    = true
-    timer = setTimeout(() => { showToast.value = false }, 5000)
+    if (type === 'error') {
+      toastStore.error(message)
+      return
+    }
+
+    toastStore.success(message)
   }
 
   return { showToast, toastMessage, toastType, toast }

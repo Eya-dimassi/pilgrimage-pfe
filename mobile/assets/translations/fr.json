@@ -65,6 +65,10 @@
       "chatbot": "Votre assistant de voyage apparaitra ici pour repondre rapidement aux questions utiles."
     }
   },
+  "branding": {
+    "tagline": "Votre centre pour le voyage sacre",
+    "splash_subtitle": "Pelerin, guide et famille dans un meme repere mobile"
+  },
   "alerts": {
     "title": "Notifications",
     "mark_all_read": "Tout lire",
@@ -84,7 +88,8 @@
     },
     "errors": {
       "load_notifications": "Impossible de charger les notifications",
-      "load_sos": "Impossible de charger les alertes SOS"
+      "load_sos": "Impossible de charger les alertes SOS",
+      "delete_notification": "Impossible de supprimer la notification"
     },
     "guide_sos": {
       "chip": "Guide SOS",
@@ -220,7 +225,8 @@
   },
   "roles": {
     "pelerin": "Pelerin",
-    "guide": "Guide"
+    "guide": "Guide",
+    "family": "Famille"
   },
   "profile": {
     "title": "Profil",
@@ -491,5 +497,272 @@
     "upcoming_sunrise": "Le lever du jour approche. Gardez un rythme calme avant le prochain mouvement.",
     "none": "Gardez un repère spirituel clair pendant tout le voyage."
   }
-}
+},
+"journey_home": {
+  "header": {
+    "greeting": "Bonjour"
+  },
+  "overview": {
+    "title": "Vue d ensemble",
+    "subtitle": "Les etapes, lieux et reperes partages pour votre groupe aujourd hui."
+    
+  },
+  "hero": {
+    "your_group": "Votre groupe",
+    "no_step_today": "Aucune etape aujourd hui",
+    "today_program": "Programme du jour",
+    "trip_progress": "{percent}% du voyage",
+    "current_program": "Programme du moment",
+    "no_upcoming_shared": "Aucune suite partagee",
+    "waiting_next_step": "En attente de la prochaine etape",
+    "current": "En cours",
+    "next": "Ensuite"
+  },
+  "flow": {
+    "planning_unavailable": "Planning indisponible",
+    "no_step_today": "Aucune etape aujourd hui"
+  },
+  "event_type": {
+    "transport": "Transport",
+    "visit": "Visite",
+    "rite": "Rite",
+    "prayer": "Priere",
+    "step": "Etape"
+  }
+},
+"role_home": {
+    "shortcuts": {
+      "title": "Points forts",
+      "subtitle": "Des raccourcis utiles et des cartes mobiles plus claires, construites autour des donnees en direct de votre voyage."
+    }
+  },
+  "api_error_message": {
+    "timeout": "Le delai de la requete est depasse. Reessayez.",
+    "connection_error": "Erreur de connexion. Verifiez votre connexion internet.",
+    "bad_certificate": "La connexion securisee a echoue. Reessayez plus tard.",
+    "cancel": "Requete annulee.",
+    "bad_request": "Requete invalide. Verifiez vos informations.",
+    "unauthorized": "Session expirée. Veuillez vous reconnecter.",
+    "forbidden": "Accès refusé. Vous n'avez pas l'autorisation.",
+    "not_found": "Contenu introuvable. Réessayez plus tard.",
+    "conflict": "Conflit détecté. Réessayez.",
+    "unprocessable_entity": "Données invalides. Vérifiez vos informations.",
+    "too_many_requests": "Trop de tentatives. Réessayez dans quelques instants.",
+    "server_error": "Le serveur rencontre un problème. Réessayez plus tard.",
+    "unknown": "Une erreur est survenue. Réessayez."
+  },
+  "login": {
+    "secure_access": "Acces securise",
+    "title": "Connexion",
+    "subtitle": "Accedez a votre espace mobile avec les identifiants qui vous ont ete communiques.",
+    "email_label": "Email",
+    "email_hint": "nom@test.com",
+    "password_label": "Mot de passe",
+    "password_hint": "Votre mot de passe",
+    "password_required": "Veuillez entrer votre mot de passe",
+    "forgot_password": "Mot de passe oublie ?",
+    "submit": "Se connecter",
+    "create_family_account": "Creer un compte famille",
+    "generic_error": "Une erreur est survenue"
+  },
+  "auth_controller": {
+    "mobile_portal_restricted": "Ce portail mobile est reserve aux pelerins, guides et familles",
+    "generic_error": "Une erreur est survenue",
+    "pilgrim_code_required": "Veuillez entrer le code unique du pelerin",
+    "session_not_found": "Session introuvable"
+  },
+  "auth_exception": {
+    "unreachable_server": "Impossible de joindre le serveur",
+    "generic_error": "Une erreur est survenue"
+  },
+  "forget_password": {
+    "title": "Mot de passe oublie",
+    "subtitle": "Le lien de reinitialisation sera envoye a l adresse associee a votre espace SmartHajj.",
+    "email_label": "Email",
+    "email_hint": "nom@test.com",
+    "submit": "Envoyer les instructions"
+  },
+  "edit_profile": {
+    "title": "Modifier le profil",
+    "subtitle": "Mettez a jour vos informations personnelles. Les changements seront visibles immediatement dans votre espace.",
+    "success": "Profil mis a jour avec succes",
+    "generic_error": "Une erreur est survenue",
+    "first_name_required": "Veuillez entrer votre prenom",
+    "last_name_required": "Veuillez entrer votre nom",
+    "first_name": "Prenom",
+    "last_name": "Nom",
+    "email": "Email",
+    "phone": "Telephone",
+    "phone_hint": "+33 6 12 34 56 78",
+    "family_relationship": "Lien de parente",
+    "specialty": "Specialite",
+    "available": "Disponible",
+    "available_subtitle": "Vous pouvez etre affecte a un groupe.",
+    "unavailable_subtitle": "Vous ne serez pas affecte a un groupe.",
+    "birth_date": "Date de naissance",
+    "birth_date_picker_help": "Date de naissance",
+    "nationality": "Nationalite",
+    "passport_number": "Numero de passeport",
+    "photo_url": "Photo URL",
+    "photo_url_hint": "https://...",
+    "save": "Enregistrer",
+    "relationship_options": {
+      "father": "Pere",
+      "mother": "Mere",
+      "brother": "Frere",
+      "sister": "Soeur",
+      "husband": "Epoux",
+      "wife": "Epouse",
+      "child": "Enfant",
+      "other": "Autre"
+    }
+  },
+  "intro": {
+    "app_name": "Sacred Journey Hub",
+    "skip": "Passer",
+    "back": "Retour",
+    "next": "Suivant",
+    "start": "Commencer",
+    "image_placeholder": "Ajoutez votre image dans assets/intro.",
+    "slides": {
+      "one": {
+        "title": "Un voyage plus serein",
+        "description": "Retrouvez facilement vos informations utiles, vos reperes de groupe et un acces mobile plus simple tout au long du voyage."
+      },
+      "two": {
+        "title": "Un espace pour les guides",
+        "description": "Gardez vos groupes bien encadres, avancez avec une vue claire du terrain et consultez rapidement les details utiles."
+      },
+      "three": {
+        "title": "Un lien pour les familles",
+        "description": "Offrez un suivi plus rassurant de l experience, avec une interface lisible et adaptee au voyage sacre."
+      }
+    }
+  },
+  "family_home": {
+    "account": {
+      "relatives": "Mes proches",
+      "language": "Langue",
+      "logout": "Deconnexion"
+    },
+    "language": {
+      "choose": "Choisir la langue",
+      "french": "Francais",
+      "english": "Anglais",
+      "arabic": "Arabe"
+    },
+    "messages": {
+      "no_active_group": "Ce proche n a pas encore de groupe actif a afficher."
+    },
+    "header": {
+      "greeting": "Bonjour"
+    },
+    "today": {
+      "title": "Aujourd hui",
+      "see_all": "Voir tout",
+      "remaining_relatives": "{count} autre proche dans Voir tout",
+      "remaining_relatives_plural": "{count} autres proches dans Voir tout",
+      "details": "Voir les details",
+      "no_shared_step_today": "Aucune etape partagee aujourd hui",
+      "waiting_for_update": "Journee en attente de partage"
+    },
+    "alerts": {
+      "title": "Alertes importantes",
+      "see_all": "Voir tout",
+      "none_critical": "Aucune alerte critique",
+      "all_under_control": "Tout est sous controle. Continuez a suivre leurs etapes."
+    },
+    "empty": {
+      "no_relatives_title": "Aucun proche lie pour le moment.",
+      "no_relatives_subtitle": "Ajoutez un pelerin avec son code unique pour suivre ses etapes ici."
+    },
+    "links": {
+      "title": "Mes proches",
+      "subtitle": "Ajoutez un pelerin avec son code unique ou touchez une carte pour voir sa journee en direct.",
+      "add_relative": "Ajouter un proche",
+      "none": "Aucun proche lie pour le moment.",
+      "hidden_relatives": "Proches masques",
+      "code": "Code {code}",
+      "restore": "Restaurer"
+    },
+    "archive": {
+      "title": "Masquer ce proche",
+      "message": "Masquer {name} de votre accueil ? Vous pourrez le retrouver dans \"Mes proches\".",
+      "cancel": "Annuler",
+      "confirm": "Masquer"
+    },
+    "add_relative_sheet": {
+      "title": "Ajouter un proche",
+      "subtitle": "Entrez le code unique du pelerin pour lier un nouveau proche a votre compte famille.",
+      "code_label": "Code unique",
+      "code_hint": "XXXXXXXX",
+      "code_help": "Le code doit correspondre au code unique partage par votre proche.",
+      "cancel": "Annuler",
+      "confirm": "Ajouter",
+      "generic_error": "Une erreur est survenue"
+    },
+    "trip": {
+      "no_active_group": "Sans groupe actif",
+      "from_to": "Du {start} au {end}",
+      "departure_only": "Depart le {date}",
+      "return_only": "Retour le {date}",
+      "hajj_year": "Hajj {year}",
+      "umrah_year": "Omra {year}"
+    },
+    "timeline": {
+      "instant": "A l instant",
+      "minutes_ago": "Il y a {count} min",
+      "hours_ago": "Il y a {count} h"
+    },
+    "stages": {
+      "arrival": "Etape arrivee",
+      "arrival_tawaf": "Etape tawaf arrivee",
+      "saee": "Etape saee",
+      "mina": "Etape Mina",
+      "arafat": "Etape Arafat",
+      "muzdalifah": "Etape Mouzdalifa",
+      "stoning": "Etape lapidation",
+      "ifada_tawaf": "Etape tawaf ifada",
+      "departure": "Etape depart",
+      "generic": "Etape {name}"
+    }
+  },
+  
+  "chat": {
+    "welcome": "Salam. Je peux vous aider pour les rites, le planning du voyage, et les reperes pratiques du pelerinage.",
+    "input_hint": "Posez votre question au chatbot",
+    "temporary_unavailable": "Je n ai pas pu repondre pour le moment. Verifiez la connexion ou reessayez dans un instant."
+  },
+  "family_signup": {
+    "title": "Creez votre compte\nfamille",
+    "subtitle": "Inscrivez-vous avec le code unique du pelerin pour acceder ensuite au portail mobile avec le meme ecran de connexion.",
+    "generic_error": "Une erreur est survenue",
+    "first_name": "Prenom",
+    "last_name": "Nom",
+    "email": "Email",
+    "email_hint": "nom@email.com",
+    "phone": "Telephone",
+    "phone_hint": "+33 6 12 34 56 78",
+    "relationship": "Lien de parente",
+    "pilgrim_code": "Code unique du pelerin",
+    "pilgrim_code_hint": "XXXXXXXX",
+    "password": "Mot de passe",
+    "submit": "Creer mon compte famille",
+    "validation": {
+      "first_name_required": "Veuillez entrer votre prenom",
+      "last_name_required": "Veuillez entrer votre nom",
+      "pilgrim_code_required": "Veuillez entrer le code unique du pelerin"
+    },
+    "relationship_options": {
+      "father": "Pere",
+      "mother": "Mere",
+      "brother": "Frere",
+      "sister": "Soeur",
+      "husband": "Epoux",
+      "wife": "Epouse",
+      "child": "Enfant",
+      "other": "Autre"
+    }
+  }
+
 }

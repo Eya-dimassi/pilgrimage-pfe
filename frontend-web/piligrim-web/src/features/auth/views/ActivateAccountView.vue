@@ -105,8 +105,8 @@ import { useRoute, useRouter } from 'vue-router'
 import AppIcon from '@/components/AppIcon.vue'
 import BrandMark from '@/components/BrandMark.vue'
 import { brand } from '@/content/brand'
-import { getPasswordStrength, hasDigit, hasUppercase, isStrongPassword, normalizeQueryToken, validatePasswordConfirmation } from '@/composables/usePasswordRules'
-import { setPassword, verifyActivationToken } from '@/services/auth.service'
+import { getPasswordStrength, hasDigit, hasUppercase, isStrongPassword, normalizeQueryToken, validatePasswordConfirmation } from '@/features/auth/composables/usePasswordRules'
+import { setPassword, verifyActivationToken } from '@/features/auth/auth.service'
 
 const route = useRoute()
 const router = useRouter()

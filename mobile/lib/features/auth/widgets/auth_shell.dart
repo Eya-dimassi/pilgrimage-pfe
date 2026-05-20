@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -42,9 +43,9 @@ class AuthShell extends StatelessWidget {
                       leading!,
                       const SizedBox(width: 12),
                     ],
-                    const Expanded(
+                    Expanded(
                       child: BrandWordmark(
-                        caption: 'Votre centre pour le voyage sacre',
+                        caption: 'branding.tagline'.tr(),
                         markSize: 40,
                         titleSize: 18,
                       ),

@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/storage/secure_storage.dart';
@@ -81,8 +82,8 @@ class AuthController extends AsyncNotifier<AuthSession?> {
       );
 
       if (!_isAllowedMobileRole(session.user.role)) {
-        throw const AuthException(
-          'Ce portail mobile est reserve aux pelerins, guides et familles',
+        throw AuthException(
+          'auth_controller.mobile_portal_restricted'.tr(),
         );
       }
 
@@ -121,7 +122,7 @@ class AuthController extends AsyncNotifier<AuthSession?> {
     } on AuthException {
       rethrow;
     } catch (_) {
-      throw const AuthException('Une erreur est survenue');
+      throw AuthException('auth_controller.generic_error'.tr());
     }
   }
 
@@ -195,7 +196,7 @@ class AuthController extends AsyncNotifier<AuthSession?> {
     final normalizedCode = codeUnique.trim();
 
     if (normalizedCode.isEmpty) {
-      throw const AuthException('Veuillez entrer le code unique du pelerin');
+      throw AuthException('auth_controller.pilgrim_code_required'.tr());
     }
 
     return repository.addFamilyLink(codeUnique: normalizedCode);
@@ -255,7 +256,7 @@ class AuthController extends AsyncNotifier<AuthSession?> {
   }) async {
     final session = state.valueOrNull;
     if (session == null) {
-      throw const AuthException('Session introuvable');
+      throw AuthException('auth_controller.session_not_found'.tr());
     }
 
     final repository = ref.read(authRepositoryProvider);
