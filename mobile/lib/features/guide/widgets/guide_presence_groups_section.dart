@@ -140,7 +140,7 @@ class _GroupPresenceTile extends ConsumerWidget {
     final subtitle = snapshotAsync.when(
       data: (snapshot) {
         if (!snapshot.hasActiveCall && !canStartNewCall) {
-          return 'Le groupe doit etre EN_COURS pour lancer un appel.';
+          return 'impossible de lancer un appel';
         }
         if (!snapshot.hasActiveCall) {
           return 'guide.presence.groups.no_active_call'.tr();

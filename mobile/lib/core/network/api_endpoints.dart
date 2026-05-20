@@ -57,6 +57,9 @@ class ApiEndpoints {
   static String marquerPresenceBulk(String appelId) =>
       '/guide/presence/appels/$appelId/bulk';
 
+  static String scanPresenceQr(String appelId) =>
+      '/guide/presence/appels/$appelId/scan';
+
   static String cloturerAppel(String appelId) =>
       '/guide/presence/appels/$appelId/cloturer';
 

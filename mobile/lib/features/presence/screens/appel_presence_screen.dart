@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:easy_localization/easy_localization.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../domain/models/appel_presence.dart';
 import '../domain/models/confirmation_presence.dart';
@@ -30,7 +31,11 @@ class AppelPresenceScreen extends ConsumerStatefulWidget {
 }
 
 class _AppelPresenceScreenState extends ConsumerState<AppelPresenceScreen> {
+  static const Duration _scanDebounceWindow = Duration(seconds: 2);
   bool _isSaving = false;
+  bool _isScanningQr = false;
+  DateTime? _lastScanAt;
+  String? _lastScanCode;
   Timer? _refreshTimer;
 
   @override
@@ -64,6 +69,21 @@ class _AppelPresenceScreenState extends ConsumerState<AppelPresenceScreen> {
         ),
         title: Text('presence.title'.tr()),
         actions: [
+          if (appelAsync.hasValue && appelAsync.value!.appel.statut == 'EN_COURS')
+            IconButton(
+              icon: _isScanningQr
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Icon(Icons.qr_code_scanner_rounded),
+              onPressed: _isScanningQr ? null : () => _scannerQr(context),
+              tooltip: 'Scanner QR',
+            ),
           if (appelAsync.hasValue && appelAsync.value!.appel.statut == 'EN_COURS')
             IconButton(
               icon: const Icon(Icons.check_circle_outline),
@@ -463,6 +483,71 @@ class _AppelPresenceScreenState extends ConsumerState<AppelPresenceScreen> {
     }
   }
 
+  Future<void> _scannerQr(BuildContext context) async {
+    final appelData = ref.read(appelPresenceProvider(widget.appelId)).value;
+    if (appelData == null || appelData.appel.statut != 'EN_COURS') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('L\'appel doit être en cours pour scanner.')),
+      );
+      return;
+    }
+
+    final codeUnique = await Navigator.of(context).push<String>(
+      MaterialPageRoute(
+        builder: (_) => const _QrScannerScreen(),
+      ),
+    );
+
+    if (!mounted || codeUnique == null || codeUnique.trim().isEmpty) {
+      return;
+    }
+
+    final normalizedCode = codeUnique.trim().toUpperCase();
+    final now = DateTime.now();
+    if (_lastScanCode == normalizedCode &&
+        _lastScanAt != null &&
+        now.difference(_lastScanAt!) < _scanDebounceWindow) {
+      return;
+    }
+    _lastScanCode = normalizedCode;
+    _lastScanAt = now;
+
+    setState(() => _isScanningQr = true);
+    try {
+      final repository = ref.read(presenceRepositoryProvider);
+      final result = await repository.scanPresenceByQr(
+        appelId: widget.appelId,
+        codeUnique: codeUnique.trim(),
+      );
+
+      ref.invalidate(appelPresenceProvider(widget.appelId));
+      _clearLocalChanges();
+
+      if (!mounted) return;
+      final message = result['message']?.toString().trim();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            message?.isNotEmpty == true ? message! : 'Présence confirmée par scan QR.',
+          ),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(error.toString()),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isScanningQr = false);
+      }
+    }
+  }
+
   void _clearLocalChanges() {
     ref.read(localStatutsProvider.notifier).state = {};
     ref.read(localNotesProvider.notifier).state = {};
@@ -488,5 +573,79 @@ class _AppelPresenceScreenState extends ConsumerState<AppelPresenceScreen> {
         context.go('/home');
         break;
     }
+  }
+}
+
+class _QrScannerScreen extends StatefulWidget {
+  const _QrScannerScreen();
+
+  @override
+  State<_QrScannerScreen> createState() => _QrScannerScreenState();
+}
+
+class _QrScannerScreenState extends State<_QrScannerScreen> {
+  final MobileScannerController _controller = MobileScannerController(
+    formats: const [BarcodeFormat.qrCode],
+  );
+  bool _handled = false;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _onDetect(BarcodeCapture capture) {
+    if (_handled) return;
+
+    String? code;
+    for (final barcode in capture.barcodes) {
+      final raw = barcode.rawValue?.trim();
+      if (raw != null && raw.isNotEmpty) {
+        code = raw;
+        break;
+      }
+    }
+
+    if (code == null) return;
+    _handled = true;
+    Navigator.of(context).pop(code);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Scanner QR'),
+      ),
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          MobileScanner(
+            controller: _controller,
+            onDetect: _onDetect,
+          ),
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: Container(
+              margin: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.55),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Text(
+                'Placez le code QR du pèlerin dans le cadre.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

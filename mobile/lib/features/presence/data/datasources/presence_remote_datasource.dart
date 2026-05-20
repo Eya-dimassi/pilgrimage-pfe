@@ -47,6 +47,17 @@ class PresenceRemoteDataSource {
     return response.data['data'];
   }
 
+  Future<Map<String, dynamic>> scanPresenceByQr({
+    required String appelId,
+    required String codeUnique,
+  }) async {
+    final response = await dio.post(
+      ApiEndpoints.scanPresenceQr(appelId),
+      data: {'codeUnique': codeUnique},
+    );
+    return response.data['data'];
+  }
+
   Future<Map<String, dynamic>> cloturerAppel(String appelId) async {
     final response = await dio.post(
       ApiEndpoints.cloturerAppel(appelId),

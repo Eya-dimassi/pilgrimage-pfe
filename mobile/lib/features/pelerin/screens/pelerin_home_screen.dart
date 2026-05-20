@@ -17,6 +17,8 @@ import '../../notifications/screens/mobile_alerts_screen.dart';
 import '../../planning/domain/mobile_planning_models.dart';
 import '../../planning/providers/mobile_planning_provider.dart';
 import '../../planning/screens/role_planning_pages.dart';
+import '../../presence/domain/models/pelerin_presence_call.dart';
+import '../../presence/providers/presence_provider.dart';
 import '../../sos/presentation/sos_screen.dart';
 import '../../sos/providers/sos_provider.dart';
 
@@ -217,7 +219,7 @@ class _LanguageOptionTile extends StatelessWidget {
   }
 }
 
-class _PelerinHomeContent extends ConsumerWidget {
+class _PelerinHomeContent extends ConsumerStatefulWidget {
   const _PelerinHomeContent({
     required this.firstName,
     required this.groupeNom,
@@ -229,10 +231,48 @@ class _PelerinHomeContent extends ConsumerWidget {
   final AsyncValue<List<MobilePlanningGroup>> groupsAsync;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final selectedGroup = groupsAsync.valueOrNull?.isNotEmpty == true
-        ? pickBestPlanningGroup(groupsAsync.valueOrNull!)
+  ConsumerState<_PelerinHomeContent> createState() => _PelerinHomeContentState();
+}
+
+class _PelerinHomeContentState extends ConsumerState<_PelerinHomeContent> {
+  bool _isConfirmingPresenceCard = false;
+
+  Future<bool> _confirmPresence(PelerinPresenceCall call) async {
+    try {
+      await ref.read(presenceRepositoryProvider).confirmerPresencePelerin(
+            confirmationId: call.confirmation.id,
+          );
+      ref.invalidate(pelerinPresenceActiveProvider);
+      if (!mounted) return true;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('presence.pilgrim.confirm_success'.tr())),
+      );
+      return true;
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'presence.error.with_message'.tr(namedArgs: {'error': '$error'}),
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return false;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final selectedGroup = widget.groupsAsync.valueOrNull?.isNotEmpty == true
+        ? pickBestPlanningGroup(widget.groupsAsync.valueOrNull!)
         : null;
+    ref.listen(notificationFeedRefreshProvider, (_, __) {
+      ref.invalidate(pelerinPresenceActiveProvider);
+    });
+    final activePresenceAsync = ref.watch(pelerinPresenceActiveProvider);
+    final activePresence = activePresenceAsync.valueOrNull;
 
     final planningAsync = selectedGroup == null
         ? const AsyncValue<MobilePlanningData?>.data(null)
@@ -242,6 +282,7 @@ class _PelerinHomeContent extends ConsumerWidget {
       ref.invalidate(mobilePlanningGroupsProvider);
       ref.invalidate(mobileNotificationsProvider);
       ref.invalidate(sosControllerProvider);
+      ref.invalidate(pelerinPresenceActiveProvider);
       if (selectedGroup != null) {
         ref.invalidate(mobilePlanningDetailProvider(selectedGroup.id));
       }
@@ -252,6 +293,7 @@ class _PelerinHomeContent extends ConsumerWidget {
       }
       await ref.read(mobileNotificationsProvider.future);
       await ref.read(sosControllerProvider.future);
+      await ref.read(pelerinPresenceActiveProvider.future);
     }
 
     return Stack(
@@ -264,8 +306,24 @@ class _PelerinHomeContent extends ConsumerWidget {
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.fromLTRB(18, 8, 18, 6),
             children: [
-              _Header(firstName: firstName, groupeNom: groupeNom),
+              _Header(firstName: widget.firstName, groupeNom: widget.groupeNom),
               const SizedBox(height: 12),
+              if (activePresence != null &&
+                  activePresence.appel.statut == 'EN_COURS') ...[
+                _PresenceCallHomeCard(
+                  asyncCall: activePresenceAsync,
+                  isConfirming: _isConfirmingPresenceCard,
+                  onConfirm: () async {
+                    if (_isConfirmingPresenceCard) return;
+                    setState(() => _isConfirmingPresenceCard = true);
+                    await _confirmPresence(activePresence);
+                    if (mounted) {
+                      setState(() => _isConfirmingPresenceCard = false);
+                    }
+                  },
+                ),
+                const SizedBox(height: 12),
+              ],
               _HeroCard(group: selectedGroup, planningAsync: planningAsync),
               const SizedBox(height: 12),
               const AdhanPanel(
@@ -574,6 +632,128 @@ class _Header extends StatelessWidget {
         ],
       ],
     );
+  }
+}
+
+class _PresenceCallHomeCard extends StatelessWidget {
+  const _PresenceCallHomeCard({
+    required this.asyncCall,
+    required this.isConfirming,
+    required this.onConfirm,
+  });
+
+  final AsyncValue<PelerinPresenceCall?> asyncCall;
+  final bool isConfirming;
+  final Future<void> Function()? onConfirm;
+
+  @override
+  Widget build(BuildContext context) {
+    return asyncCall.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+      data: (call) {
+        if (call == null || call.appel.statut != 'EN_COURS') {
+          return const SizedBox.shrink();
+        }
+
+        final minutesLeft = _minutesLeft(call.appel.date);
+        final progress = (minutesLeft / 60).clamp(0.0, 1.0);
+        final canConfirm = call.canConfirm && call.confirmation.isEnAttente;
+
+        return Container(
+          padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+          decoration: BoxDecoration(
+            color: const Color(0xFFE8F7EF),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: const Color(0xFFA4D6BE)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Appel de présence en cours',
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                'Groupe ${call.appel.groupe.nom} • Guide ${call.appel.guide.fullName}',
+                style: const TextStyle(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Text(
+                    'Temps restant : $minutesLeft min',
+                    style: const TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(999),
+                      child: LinearProgressIndicator(
+                        value: progress,
+                        minHeight: 6,
+                        backgroundColor: AppColors.borderSoft,
+                        valueColor: const AlwaysStoppedAnimation<Color>(
+                          AppColors.green,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: (!canConfirm || isConfirming || onConfirm == null)
+                      ? null
+                      : () => onConfirm!(),
+                  icon: isConfirming
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : Icon(
+                          call.confirmation.isPresent
+                              ? Icons.check_circle_rounded
+                              : Icons.check_rounded,
+                        ),
+                  label: Text(
+                    call.confirmation.isPresent
+                        ? 'Présence déjà confirmée'
+                        : 'Confirmer maintenant',
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  int _minutesLeft(DateTime appelDate) {
+    final deadline = appelDate.add(const Duration(hours: 1));
+    final diff = deadline.difference(SaudiTime.now());
+    if (diff.inMinutes < 0) return 0;
+    return diff.inMinutes;
   }
 }
 

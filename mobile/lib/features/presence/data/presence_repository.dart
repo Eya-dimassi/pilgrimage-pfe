@@ -87,6 +87,21 @@ class PresenceRepository {
     }
   }
 
+  /// Scanner un QR pour confirmer la presence d'un pelerin
+  Future<Map<String, dynamic>> scanPresenceByQr({
+    required String appelId,
+    required String codeUnique,
+  }) async {
+    try {
+      return await remoteDataSource.scanPresenceByQr(
+        appelId: appelId,
+        codeUnique: codeUnique,
+      );
+    } on DioException catch (e) {
+      throw PresenceException.fromDio(e);
+    }
+  }
+
   Future<Map<String, dynamic>> reinitialiserAbsents(String appelId) async {
     try {
       return await remoteDataSource.reinitialiserAbsents(appelId);
