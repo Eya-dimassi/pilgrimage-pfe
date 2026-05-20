@@ -233,6 +233,14 @@
     "personal_info": "Personal information",
     "account_active": "{role} - Active account",
     "code_copied": "Unique code copied",
+    "qr": {
+      "button": "My QR code",
+      "title": "My QR code",
+      "unique_code": "Unique code: {code}",
+      "description": "This code allows the guide to quickly confirm your presence.",
+      "copy_button": "Copy code",
+      "copy_success": "Code copied"
+    },
     "common": {
       "not_provided": "Not provided",
       "not_assigned": "Not assigned"
@@ -284,7 +292,10 @@
       "today_program": "Today's program",
       "trip_progress": "{percent}% of the trip",
       "shared_program_coming": "Shared program coming soon",
-      "next_step": "Next step"
+      "next_step": "Next step",
+      "presence_call_active_title": "Active attendance call",
+      "presence_call_group_guide": "Group {group} • Guide {guide}",
+      "presence_call_remaining_time": "Time left: {minutes} min"
     },
     "sos": {
       "title": "SOS emergency",
@@ -359,12 +370,15 @@
       "groups": {
         "section_title": "Attendance calls",
         "open_error": "Unable to open the call",
+        "group_must_be_in_progress": "Unable to start a call: the group must be IN_PROGRESS.",
+        "cannot_launch": "Unable to start a call",
         "no_active_call": "No active call",
         "pending_summary": "{pending} pending of {total}",
         "loading": "Checking...",
         "unavailable": "Status unavailable",
         "action_open": "Open",
-        "action_launch": "Start"
+        "action_launch": "Start",
+        "action_unavailable": "Unavailable"
       }
     }
   },

@@ -101,9 +101,9 @@ class _CreerAppelScreenState extends ConsumerState<CreerAppelScreen> {
   Future<void> _creerAppel() async {
     if (widget.groupeStatus != 'EN_COURS') {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text(
-            'Impossible de lancer un appel: le groupe doit etre EN_COURS.',
+            'guide.presence.groups.group_must_be_in_progress'.tr(),
           ),
         ),
       );

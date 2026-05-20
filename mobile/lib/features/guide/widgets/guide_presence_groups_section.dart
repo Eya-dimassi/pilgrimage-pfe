@@ -73,9 +73,9 @@ class _GuidePresenceGroupsSectionState
         if (group.status != 'EN_COURS') {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
+              SnackBar(
                 content: Text(
-                  'Impossible de lancer un appel: le groupe doit etre EN_COURS.',
+                  'guide.presence.groups.group_must_be_in_progress'.tr(),
                 ),
               ),
             );
@@ -140,7 +140,7 @@ class _GroupPresenceTile extends ConsumerWidget {
     final subtitle = snapshotAsync.when(
       data: (snapshot) {
         if (!snapshot.hasActiveCall && !canStartNewCall) {
-          return 'impossible de lancer un appel';
+          return 'guide.presence.groups.cannot_launch'.tr();
         }
         if (!snapshot.hasActiveCall) {
           return 'guide.presence.groups.no_active_call'.tr();
@@ -229,7 +229,7 @@ class _GroupPresenceTile extends ConsumerWidget {
                         ? 'guide.presence.groups.action_open'.tr()
                         : canOpenOrLaunch
                             ? 'guide.presence.groups.action_launch'.tr()
-                            : 'Indisponible',
+                            : 'guide.presence.groups.action_unavailable'.tr(),
                     style: TextStyle(
                       fontSize: 11.5,
                       fontWeight: FontWeight.w800,

@@ -233,6 +233,14 @@
     "personal_info": "Informations personnelles",
     "account_active": "{role} - Compte actif",
     "code_copied": "Code unique copie",
+    "qr": {
+      "button": "Mon code QR",
+      "title": "Mon code QR",
+      "unique_code": "Code unique : {code}",
+      "description": "Ce code permet au guide de confirmer rapidement votre presence.",
+      "copy_button": "Copier le code",
+      "copy_success": "Code copie"
+    },
     "common": {
       "not_provided": "Non renseigne",
       "not_assigned": "Non attribue"
@@ -284,7 +292,10 @@
       "today_program": "Programme du jour",
       "trip_progress": "{percent}% du voyage",
       "shared_program_coming": "Programme partage a venir",
-      "next_step": "Prochaine etape"
+      "next_step": "Prochaine etape",
+      "presence_call_active_title": "Appel de presence en cours",
+      "presence_call_group_guide": "Groupe {group} • Guide {guide}",
+      "presence_call_remaining_time": "Temps restant : {minutes} min"
     },
     "sos": {
       "title": "Urgence SOS",
@@ -359,12 +370,15 @@
       "groups": {
         "section_title": "Appels de presence",
         "open_error": "Impossible d ouvrir l appel",
+        "group_must_be_in_progress": "Impossible de lancer un appel: le groupe doit etre EN_COURS.",
+        "cannot_launch": "Impossible de lancer un appel",
         "no_active_call": "Aucun appel en cours",
         "pending_summary": "{pending} en attente sur {total}",
         "loading": "Verification...",
         "unavailable": "Etat indisponible",
         "action_open": "Ouvrir",
-        "action_launch": "Lancer"
+        "action_launch": "Lancer",
+        "action_unavailable": "Indisponible"
       }
     }
   },

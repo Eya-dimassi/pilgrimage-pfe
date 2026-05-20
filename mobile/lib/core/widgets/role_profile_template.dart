@@ -142,7 +142,7 @@ class RoleProfileTemplate extends StatelessWidget {
                           ),
                         ),
                         icon: const Icon(Icons.qr_code_2_rounded, size: 18),
-                        label: const Text('Mon code QR'),
+                        label: Text('profile.qr.button'.tr()),
                       ),
                     ],
                   ],
@@ -294,8 +294,8 @@ class RoleProfileTemplate extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 14),
-                    const Text(
-                      'Mon code QR',
+                    Text(
+                      'profile.qr.title'.tr(),
                       style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.w800,
@@ -304,7 +304,9 @@ class RoleProfileTemplate extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Code unique : $codeUnique',
+                      'profile.qr.unique_code'.tr(
+                        namedArgs: {'code': codeUnique},
+                      ),
                       textAlign: TextAlign.center,
                       style: const TextStyle(
                         fontSize: 14,
@@ -328,8 +330,8 @@ class RoleProfileTemplate extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 14),
-                    const Text(
-                      'Ce code permet au guide de confirmer rapidement votre présence.',
+                    Text(
+                      'profile.qr.description'.tr(),
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 13,
@@ -352,11 +354,13 @@ class RoleProfileTemplate extends StatelessWidget {
                           final messenger = ScaffoldMessenger.of(sheetContext);
                           messenger.hideCurrentSnackBar();
                           messenger.showSnackBar(
-                            const SnackBar(content: Text('Code copié')),
+                            SnackBar(
+                              content: Text('profile.qr.copy_success'.tr()),
+                            ),
                           );
                         },
                         icon: const Icon(Icons.copy_rounded),
-                        label: const Text('Copier le code'),
+                        label: Text('profile.qr.copy_button'.tr()),
                       ),
                     ),
                   ],
@@ -637,3 +641,4 @@ class _GuideDisponibiliteTile extends StatelessWidget {
     );
   }
 }
+

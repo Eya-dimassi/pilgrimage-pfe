@@ -239,6 +239,14 @@
     "personal_info": "المعلومات الشخصية",
     "account_active": "{role} - حساب نشط",
     "code_copied": "تم نسخ الرمز الفريد",
+    "qr": {
+      "button": "رمز QR الخاص بي",
+      "title": "رمز QR الخاص بي",
+      "unique_code": "الرمز الفريد: {code}",
+      "description": "يسمح هذا الرمز للمرشد بتأكيد حضورك بسرعة.",
+      "copy_button": "نسخ الرمز",
+      "copy_success": "تم نسخ الرمز"
+    },
     "common": {
       "not_provided": "غير مذكور",
       "not_assigned": "غير مخصص"
@@ -290,7 +298,10 @@
       "today_program": "برنامج اليوم",
       "trip_progress": "{percent}٪ من الرحلة",
       "shared_program_coming": "البرنامج المشترك قريباً",
-      "next_step": "الخطوة التالية"
+      "next_step": "الخطوة التالية",
+      "presence_call_active_title": "نداء حضور جارٍ",
+      "presence_call_group_guide": "المجموعة {group} • المرشد {guide}",
+      "presence_call_remaining_time": "الوقت المتبقي: {minutes} دقيقة"
     },
     "sos": {
       "title": "طوارئ SOS",
@@ -365,12 +376,15 @@
       "groups": {
         "section_title": "نداءات الحضور",
         "open_error": "تعذّر فتح النداء",
+        "group_must_be_in_progress": "يتعذّر بدء نداء: يجب أن تكون حالة المجموعة IN_PROGRESS.",
+        "cannot_launch": "يتعذّر بدء النداء",
         "no_active_call": "لا يوجد نداء نشط",
         "pending_summary": "{pending} قيد الانتظار من {total}",
         "loading": "جارٍ التحقق...",
         "unavailable": "الحالة غير متاحة",
         "action_open": "فتح",
-        "action_launch": "بدء"
+        "action_launch": "بدء",
+        "action_unavailable": "غير متاح"
       }
     }
   },

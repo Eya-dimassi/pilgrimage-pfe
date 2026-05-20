@@ -670,9 +670,9 @@ class _PresenceCallHomeCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Appel de présence en cours',
-                style: TextStyle(
+              Text(
+                'pelerin.home.presence_call_active_title'.tr(),
+                style: const TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.w800,
                   color: AppColors.textPrimary,
@@ -680,7 +680,12 @@ class _PresenceCallHomeCard extends StatelessWidget {
               ),
               const SizedBox(height: 3),
               Text(
-                'Groupe ${call.appel.groupe.nom} • Guide ${call.appel.guide.fullName}',
+                'pelerin.home.presence_call_group_guide'.tr(
+                  namedArgs: {
+                    'group': call.appel.groupe.nom,
+                    'guide': call.appel.guide.fullName,
+                  },
+                ),
                 style: const TextStyle(
                   fontSize: 12.5,
                   fontWeight: FontWeight.w600,
@@ -691,7 +696,9 @@ class _PresenceCallHomeCard extends StatelessWidget {
               Row(
                 children: [
                   Text(
-                    'Temps restant : $minutesLeft min',
+                    'pelerin.home.presence_call_remaining_time'.tr(
+                      namedArgs: {'minutes': '$minutesLeft'},
+                    ),
                     style: const TextStyle(
                       fontSize: 12.5,
                       fontWeight: FontWeight.w700,
@@ -737,8 +744,8 @@ class _PresenceCallHomeCard extends StatelessWidget {
                         ),
                   label: Text(
                     call.confirmation.isPresent
-                        ? 'Présence déjà confirmée'
-                        : 'Confirmer maintenant',
+                        ? 'presence.pilgrim.already_confirmed'.tr()
+                        : 'presence.pilgrim.confirm_me'.tr(),
                   ),
                 ),
               ),
