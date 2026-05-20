@@ -13,9 +13,9 @@ router.post(
     try {
       const { nomAgence, email, motDePasse, adresse, telephone, siteWeb } = req.body;
 
-      if (!nomAgence || !email || !motDePasse) {
+      if (!nomAgence || !email || !motDePasse || !telephone || !adresse) {
         return res.status(400).json({
-          message: 'Nom de l\'agence, email et mot de passe sont requis',
+          message: 'Nom de l\'agence, email, mot de passe, telephone et adresse sont requis',
         });
       }
 

@@ -5,6 +5,7 @@ import prisma from '../../config/prisma';
 import { env } from '../../config/env';
 import { Role,StatutAgence} from '../../../generated/prisma/enums';
 import { createPasswordToken, verifyPasswordToken, consumePasswordToken, hashToken } from '../../utils/token.utils';
+import { normalizeInternationalPhone } from '../../utils/phone.utils';
 import { sortGroupsByEffectiveStatus, syncEffectiveStatuses, withEffectiveGroupStatus } from '../agences/groupes/group-status.utils';
 import { sendPasswordResetEmail } from '../../utils/mailer.utils';
 
@@ -124,29 +125,49 @@ export const signup = async (data: {
   adresse?: string;
   siteWeb?: string;
 }) => {
+  const normalizedAgenceName = data.nomAgence.trim();
+  const normalizedEmail = data.email.trim().toLowerCase();
+  const normalizedPassword = data.motDePasse.trim();
+  const normalizedTelephone = data.telephone?.trim() ?? '';
+  const normalizedAdresse = data.adresse?.trim() ?? '';
+  const normalizedSiteWeb = data.siteWeb?.trim() || null;
+
+  if (!normalizedAgenceName || !normalizedEmail || !normalizedPassword) {
+    throw new Error('Nom agence, email et mot de passe requis');
+  }
+
+  if (!normalizedTelephone) {
+    throw new Error('Telephone requis');
+  }
+
+  if (!normalizedAdresse) {
+    throw new Error('Adresse requise');
+  }
+
   // check email not already taken
   const exist = await prisma.utilisateur.findUnique({
-    where: { email: data.email },
+    where: { email: normalizedEmail },
   });
   if (exist) throw new Error('Un compte avec cet email existe déjà');
 
-  const hash = await bcrypt.hash(data.motDePasse, 10);
+  const hash = await bcrypt.hash(normalizedPassword, 10);
+  const phoneNumber = normalizeInternationalPhone(normalizedTelephone);
 
   const utilisateur = await prisma.utilisateur.create({
     data: {
-      email: data.email,
+      email: normalizedEmail,
       motDePasse: hash,
-      nom: data.nomAgence,
+      nom: normalizedAgenceName,
       prenom: '-',
-      telephone: data.telephone,
+      telephone: phoneNumber,
       role: Role.AGENCE,
       actif: false,          // can't log in until approved
       agence: {
         create: {
-          nomAgence: data.nomAgence,
-          adresse: data.adresse,
-          siteWeb: data.siteWeb,
-          status: StatutAgence.PENDING, // admin must approve
+          nomAgence: normalizedAgenceName,
+          adresse: normalizedAdresse,
+          siteWeb: normalizedSiteWeb,
+          status: StatutAgence.PENDING, 
         },
       },
     },
