@@ -307,7 +307,7 @@ export class PresenceService {
     confirmationId: string,
     data: {
       statut: 'PRESENT' | 'ABSENT' | 'EXCUSE'
-      mode?: 'AUTOMATIQUE' | 'MANUEL'
+      mode?: 'AUTOMATIQUE' | 'MANUEL' | 'QR'
       note?: string
     },
   ) {
@@ -371,6 +371,141 @@ export class PresenceService {
 
     return {
       message: 'Presence mise a jour',
+      confirmation: updated,
+    }
+  }
+
+  /**
+   * Scanner un QR pour marquer un pelerin present dans un appel en cours
+   */
+  static async scannerPresenceParQr(
+    guideId: string,
+    appelId: string,
+    codeUniqueRaw: string,
+  ) {
+    const codeUnique = codeUniqueRaw.trim()
+    if (!codeUnique) {
+      throw PresenceService.businessError('Code QR invalide', 'QR_INVALID')
+    }
+
+    const appel = await prisma.appelPresence.findFirst({
+      where: {
+        id: appelId,
+        guideId,
+      },
+      select: {
+        id: true,
+        groupeId: true,
+        date: true,
+        statut: true,
+      },
+    })
+
+    if (!appel) {
+      throw PresenceService.businessError('Appel introuvable', 'APPEL_NOT_FOUND')
+    }
+
+    if (appel.statut !== 'EN_COURS') {
+      throw PresenceService.businessError('Appel non actif', 'APPEL_NOT_ACTIVE')
+    }
+
+    if (PresenceService.isAutoCloseDue(appel.date)) {
+      await PresenceService.closeAppelById(appel.id)
+      throw PresenceService.businessError(
+        'Appel cloture automatiquement apres 1 heure',
+        'APPEL_NOT_ACTIVE',
+      )
+    }
+
+    const pelerin = await prisma.pelerin.findUnique({
+      where: { codeUnique },
+      select: { id: true },
+    })
+
+    if (!pelerin) {
+      throw PresenceService.businessError('Code QR invalide', 'QR_INVALID')
+    }
+
+    const membreGroupe = await prisma.groupePelerin.findFirst({
+      where: {
+        groupeId: appel.groupeId,
+        pelerinId: pelerin.id,
+        actif: true,
+      },
+      select: { id: true },
+    })
+
+    if (!membreGroupe) {
+      throw PresenceService.businessError(
+        'Pelerin hors du groupe de cet appel',
+        'PELERIN_NOT_IN_GROUP',
+      )
+    }
+
+    const confirmation = await prisma.confirmationPresence.findFirst({
+      where: {
+        appelPresenceId: appel.id,
+        pelerinId: pelerin.id,
+      },
+      select: {
+        id: true,
+      },
+    })
+
+    if (!confirmation) {
+      throw PresenceService.businessError(
+        'Confirmation introuvable pour ce pelerin',
+        'CONFIRMATION_NOT_FOUND',
+      )
+    }
+
+    const now = new Date()
+    const updatedCount = await prisma.confirmationPresence.updateMany({
+      where: {
+        id: confirmation.id,
+        statut: {
+          not: 'PRESENT',
+        },
+      },
+      data: {
+        statut: 'PRESENT',
+        confirmeMode: 'QR',
+        confirmeAt: now,
+      },
+    })
+
+    if (updatedCount.count === 0) {
+      throw PresenceService.businessError(
+        'Presence deja confirmee',
+        'ALREADY_PRESENT',
+      )
+    }
+
+    const updated = await prisma.confirmationPresence.findUnique({
+      where: { id: confirmation.id },
+      include: {
+        pelerin: {
+          include: {
+            utilisateur: {
+              select: {
+                nom: true,
+                prenom: true,
+              },
+            },
+          },
+        },
+      },
+    })
+
+    if (!updated) {
+      throw PresenceService.businessError(
+        'Confirmation introuvable pour ce pelerin',
+        'CONFIRMATION_NOT_FOUND',
+      )
+    }
+
+    return {
+      message: 'Presence confirmee par scan QR',
       confirmation: updated,
     }
   }

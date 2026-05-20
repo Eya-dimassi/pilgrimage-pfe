@@ -156,6 +156,55 @@ router.post('/appels/:appelId/bulk', async (req: AuthRequest, res: Response) => 
 })
 
 /**
+ * POST /guide/presence/appels/:appelId/scan
+ */
+router.post('/appels/:appelId/scan', async (req: AuthRequest, res: Response) => {
+  try {
+    const guideId = await getGuideId(req, res)
+    if (!guideId) return
+
+    const appelId = String(req.params.appelId)
+    const codeUnique = String(req.body?.codeUnique ?? '')
+
+    if (!codeUnique.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'codeUnique est requis',
+      })
+    }
+
+    const result = await PresenceService.scannerPresenceParQr(
+      guideId,
+      appelId,
+      codeUnique,
+    )
+
+    return res.status(200).json({
+      success: true,
+      data: result,
+    })
+  } catch (error: any) {
+    console.error('Error in scannerPresenceParQr route:', error)
+    const errorCode = error?.code
+    const statusCodeByCode: Record<string, number> = {
+      APPEL_NOT_FOUND: 404,
+      APPEL_NOT_ACTIVE: 409,
+      QR_INVALID: 404,
+      PELERIN_NOT_IN_GROUP: 403,
+      CONFIRMATION_NOT_FOUND: 404,
+      ALREADY_PRESENT: 409,
+    }
+    const statusCode = statusCodeByCode[errorCode] ?? 400
+
+    return res.status(statusCode).json({
+      success: false,
+      message: error.message || 'Erreur lors du scan QR',
+      ...(errorCode ? { code: errorCode } : {}),
+    })
+  }
+})
+
+/**
  * POST /guide/presence/appels/:appelId/cloturer
  */
 router.post('/appels/:appelId/cloturer', async (req: AuthRequest, res: Response) => {
