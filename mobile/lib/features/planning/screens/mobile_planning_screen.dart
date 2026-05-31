@@ -1378,7 +1378,9 @@ class _TimelineEventTile extends StatelessWidget {
                       runSpacing: 6,
                       children: [
                         AppStatusChip(
-                          label: _eventTypeLabel(context, event.type),
+                          label: event.typeLabel?.trim().isNotEmpty == true
+                              ? event.typeLabel!.trim()
+                              : _eventTypeLabel(context, event.type),
                           icon: _eventTypeIcon(event.type),
                           backgroundColor: _eventTypeSoftColor(event.type),
                           foregroundColor: _eventTypeStrongColor(event.type),

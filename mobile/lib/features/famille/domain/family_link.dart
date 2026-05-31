@@ -45,6 +45,7 @@ class FamilyLinkedGroup {
     required this.nom,
     required this.typeVoyage,
     required this.annee,
+    this.status,
     this.dateDepart,
     this.dateRetour,
   });
@@ -53,6 +54,7 @@ class FamilyLinkedGroup {
   final String nom;
   final String typeVoyage;
   final int annee;
+  final String? status;
   final DateTime? dateDepart;
   final DateTime? dateRetour;
 
@@ -62,6 +64,7 @@ class FamilyLinkedGroup {
       nom: json['nom'] as String? ?? '',
       typeVoyage: json['typeVoyage'] as String? ?? '',
       annee: json['annee'] as int? ?? 0,
+      status: json['status'] as String?,
       dateDepart: json['dateDepart'] is String
           ? DateTime.tryParse(json['dateDepart'] as String)
           : null,

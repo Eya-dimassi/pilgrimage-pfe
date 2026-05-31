@@ -69,6 +69,7 @@ class MobilePlanningEvent {
     required this.id,
     required this.type,
     required this.titre,
+    this.typeLabel,
     this.description,
     this.lieu,
     this.heureDebutPrevue,
@@ -82,6 +83,7 @@ class MobilePlanningEvent {
   final String id;
   final String type;
   final String titre;
+  final String? typeLabel;
   final String? description;
   final String? lieu;
   final DateTime? heureDebutPrevue;
@@ -112,6 +114,7 @@ class MobilePlanningEvent {
       id: json['id'] as String? ?? '',
       type: json['type'] as String? ?? '',
       titre: json['titre'] as String? ?? '',
+      typeLabel: json['typeLabel'] as String?,
       description: json['description'] as String?,
       lieu: json['lieu'] as String?,
       heureDebutPrevue: json['heureDebutPrevue'] is String

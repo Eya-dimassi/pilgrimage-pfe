@@ -20,6 +20,8 @@ import '../../notifications/screens/mobile_alerts_screen.dart';
 import '../../planning/screens/role_planning_pages.dart';
 import '../widgets/guide_groupes_sheet.dart';
 import '../widgets/guide_groupe_pelerins_sheet.dart';
+import '../../../services/notification_feed_refresh_service.dart';
+import '../../../services/planning_feed_refresh_service.dart';
 
 class GuideHomeScreen extends ConsumerStatefulWidget {
   const GuideHomeScreen({
@@ -222,6 +224,8 @@ Future<void> _showLanguagePicker(BuildContext context) async {
   }
 
   await context.setLocale(selectedLocale);
+  NotificationFeedRefreshService.instance.bump();
+  PlanningFeedRefreshService.instance.bump();
 }
 
 class _LanguagePickerSheet extends StatelessWidget {

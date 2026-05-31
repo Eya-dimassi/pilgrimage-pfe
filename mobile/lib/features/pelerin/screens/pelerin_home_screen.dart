@@ -21,6 +21,8 @@ import '../../presence/domain/models/pelerin_presence_call.dart';
 import '../../presence/providers/presence_provider.dart';
 import '../../sos/presentation/sos_screen.dart';
 import '../../sos/providers/sos_provider.dart';
+import '../../../services/notification_feed_refresh_service.dart';
+import '../../../services/planning_feed_refresh_service.dart';
 
 class PelerinHomeScreen extends ConsumerWidget {
   const PelerinHomeScreen({super.key, this.initialTabIndex = 0});
@@ -109,6 +111,8 @@ Future<void> _showLanguagePicker(BuildContext context) async {
   }
 
   await context.setLocale(selectedLocale);
+  NotificationFeedRefreshService.instance.bump();
+  PlanningFeedRefreshService.instance.bump();
 }
 
 class _LanguagePickerSheet extends StatelessWidget {

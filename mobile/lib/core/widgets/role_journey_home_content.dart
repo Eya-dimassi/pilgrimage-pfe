@@ -716,6 +716,7 @@ class _DailyFlowPanel extends StatelessWidget {
           children: [
             _FlowCard(
               eventType: currentEvent?.type,
+              eventTypeLabel: currentEvent?.typeLabel,
               title: currentEvent?.titre ?? 'journey_home.hero.no_events'.tr(),
               meta: _eventMeta(currentEvent),
               icon: _eventTypeIcon(currentEvent?.type),
@@ -725,6 +726,7 @@ class _DailyFlowPanel extends StatelessWidget {
             if (nextEvent != null)
               _FlowCard(
                 eventType: nextEvent.type,
+                eventTypeLabel: nextEvent.typeLabel,
                 title: nextEvent.titre,
                 meta: _eventMeta(nextEvent),
                 icon: _eventTypeIcon(nextEvent.type),
@@ -744,9 +746,11 @@ class _FlowCard extends StatelessWidget {
     required this.meta,
     required this.icon,
     required this.toneColor,
+    this.eventTypeLabel,
   });
 
   final String? eventType;
+  final String? eventTypeLabel;
   final String title;
   final String? meta;
   final IconData icon;
@@ -790,7 +794,9 @@ class _FlowCard extends StatelessWidget {
                 ],
                 const SizedBox(height: 7),
                 AppStatusChip(
-                  label: _eventTypeLabel(eventType),
+                  label: eventTypeLabel?.trim().isNotEmpty == true
+                      ? eventTypeLabel!.trim()
+                      : _eventTypeLabel(eventType),
                   icon: icon,
                   backgroundColor: toneColor.withValues(alpha: 0.12),
                   foregroundColor: toneColor,

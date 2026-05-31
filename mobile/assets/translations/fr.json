@@ -523,14 +523,23 @@
   },
   "hero": {
     "your_group": "Votre groupe",
-    "no_step_today": "Aucune etape aujourd hui",
+    "no_events": "Aucune etape aujourd hui",
     "today_program": "Programme du jour",
+    "program": "Programme du jour",
     "trip_progress": "{percent}% du voyage",
-    "current_program": "Programme du moment",
+    "current_event": "Programme du moment",
     "no_upcoming_shared": "Aucune suite partagee",
+    "no_upcoming_events": "Aucune suite partagee",
     "waiting_next_step": "En attente de la prochaine etape",
-    "current": "En cours",
-    "next": "Ensuite"
+    "waiting_for_next_event": "En attente de la prochaine etape",
+    "in_progress": "En cours",
+    "upcoming": "Ensuite",
+    "planning_unavailable": "Planning indisponible",
+    "transport": "Transport",
+    "visit": "Visite",
+    "rite": "Rite",
+    "prayer": "Priere",
+    "step": "Etape"
   },
   "flow": {
     "planning_unavailable": "Planning indisponible",
@@ -698,6 +707,11 @@
       "hidden_relatives": "Proches masques",
       "code": "Code {code}",
       "restore": "Restaurer"
+    },
+    "presence_status": {
+      "present": "Present",
+      "absent": "Absent",
+      "excuse": "Excuse"
     },
     "archive": {
       "title": "Masquer ce proche",

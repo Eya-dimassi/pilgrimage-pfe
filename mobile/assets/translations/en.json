@@ -687,6 +687,11 @@
       "code": "Code {code}",
       "restore": "Restore"
     },
+    "presence_status": {
+      "present": "Present",
+      "absent": "Absent",
+      "excuse": "Excused"
+    },
     "archive": {
       "title": "Hide this relative",
       "message": "Hide {name} from your home? You can find them again in \"My relatives\".",

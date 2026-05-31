@@ -1,7 +1,11 @@
+import 'dart:ui' as ui;
+
 import 'package:dio/dio.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../features/auth/providers/auth_provider.dart';
+import '../../services/notification_navigation_service.dart';
 import '../storage/secure_storage.dart';
 import 'api_endpoints.dart';
 
@@ -31,6 +35,7 @@ final dioProvider = Provider<Dio>((ref) {
   dio.interceptors.add(
     InterceptorsWrapper(
       onRequest: (options, handler) async {
+        options.headers['Accept-Language'] = _currentLanguageCode();
         final token = await storage.readAccessToken();
         if (token != null && token.isNotEmpty) {
           options.headers['Authorization'] = 'Bearer $token';
@@ -96,6 +101,17 @@ final dioProvider = Provider<Dio>((ref) {
 
   return dio;
 });
+
+String _currentLanguageCode() {
+  final context = NotificationNavigationService.navigatorKey.currentContext;
+  final languageCode =
+      context?.locale.languageCode ??
+      ui.PlatformDispatcher.instance.locale.languageCode;
+  if (languageCode == 'ar' || languageCode == 'en' || languageCode == 'fr') {
+    return languageCode;
+  }
+  return 'fr';
+}
 
 Future<Map<String, String>> _refreshTokens({
   required Dio refreshDio,

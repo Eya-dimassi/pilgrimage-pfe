@@ -18,8 +18,11 @@ import '../../notifications/screens/mobile_alerts_screen.dart';
 import '../../planning/domain/mobile_planning_models.dart';
 import '../../planning/providers/mobile_planning_provider.dart';
 import '../../planning/screens/role_planning_pages.dart';
+import '../../../services/notification_feed_refresh_service.dart';
+import '../../../services/planning_feed_refresh_service.dart';
 import '../domain/family_link.dart';
 import '../providers/family_links_provider.dart';
+import '../providers/family_presence_provider.dart';
 import '../providers/hidden_links_provider.dart';
 
 // ─────────────────────────────────────────────────────────────
@@ -281,6 +284,8 @@ Future<void> _showLanguagePicker(BuildContext context) async {
   }
 
   await context.setLocale(selectedLocale);
+  NotificationFeedRefreshService.instance.bump();
+  PlanningFeedRefreshService.instance.bump();
 }
 
 class _LanguagePickerSheet extends StatelessWidget {
@@ -600,6 +605,20 @@ class _FamilyTodayCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final presenceStatusesAsync = ref.watch(familyPresenceStatusesProvider);
+    final statusesByPelerinId = presenceStatusesAsync.maybeWhen(
+      data: (statuses) => <String, String>{
+        for (final status in statuses)
+          if (status.pelerinId.trim().isNotEmpty)
+            status.pelerinId.trim(): status.statusForFamily.trim().toUpperCase(),
+      },
+      orElse: () => const <String, String>{},
+    );
+    final showPresenceStatus = _shouldShowFamilyPresenceStatus(link.groupe);
+    final presenceStatus = _resolveFamilyPresenceStatus(
+      statusesByPelerinId[link.pelerinId.trim()],
+    );
+
     final groupeId = link.groupe?.id;
     final planningAsync = (groupeId == null || groupeId.isEmpty)
         ? const AsyncValue<MobilePlanningData?>.data(null)
@@ -689,6 +708,10 @@ class _FamilyTodayCard extends ConsumerWidget {
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: AppColors.textMuted),
                     ),
+                    if (showPresenceStatus) ...[
+                      const SizedBox(height: 8),
+                      _FamilyPresenceStatusBadge(status: presenceStatus),
+                    ],
                     if (currentEvent?.etape?.trim().isNotEmpty == true) ...[
                       const SizedBox(height: 10),
                       DecoratedBox(
@@ -931,6 +954,15 @@ class _FamilyLinksSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final hiddenIds = ref.watch(hiddenLinkIdsProvider).valueOrNull ?? {};
+    final presenceStatusesAsync = ref.watch(familyPresenceStatusesProvider);
+    final statusesByPelerinId = presenceStatusesAsync.maybeWhen(
+      data: (statuses) => <String, String>{
+        for (final status in statuses)
+          if (status.pelerinId.trim().isNotEmpty)
+            status.pelerinId.trim(): status.statusForFamily.trim().toUpperCase(),
+      },
+      orElse: () => const <String, String>{},
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -979,6 +1011,11 @@ class _FamilyLinksSection extends ConsumerWidget {
                   child: _FamilyLinkCard(
                     link: link,
                     selected: link.groupe?.id == selectedGroupId,
+                    presenceStatus: _shouldShowFamilyPresenceStatus(link.groupe)
+                        ? _resolveFamilyPresenceStatus(
+                            statusesByPelerinId[link.pelerinId.trim()],
+                          )
+                        : null,
                     onTap: () => onSelectLink(link),
                     onArchive: () async {
                       if (onArchiveLink != null) {
@@ -1034,12 +1071,14 @@ class _FamilyLinkCard extends StatelessWidget {
   const _FamilyLinkCard({
     required this.link,
     required this.selected,
+    required this.presenceStatus,
     required this.onTap,
     this.onArchive,
   });
 
   final FamilyLink link;
   final bool selected;
+  final String? presenceStatus;
   final VoidCallback onTap;
   final VoidCallback? onArchive;
 
@@ -1088,6 +1127,10 @@ class _FamilyLinkCard extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text('family_home.links.code'.tr(namedArgs: {'code': link.codeUnique}),
                           style: const TextStyle(fontSize: 12, color: AppColors.textFaint, fontWeight: FontWeight.w600)),
+                      if (presenceStatus != null) ...[
+                        const SizedBox(height: 8),
+                        _FamilyPresenceStatusBadge(status: presenceStatus!),
+                      ],
                       const SizedBox(height: 6),
                       Text(groupLabel,
                           style: const TextStyle(fontSize: 13, color: AppColors.textMuted)),
@@ -1169,6 +1212,75 @@ class _FamilyLinkCard extends StatelessWidget {
     );
     if (confirmed == true) onArchive!();
   }
+}
+
+class _FamilyPresenceStatusBadge extends StatelessWidget {
+  const _FamilyPresenceStatusBadge({required this.status});
+
+  final String status;
+
+  @override
+  Widget build(BuildContext context) {
+    final normalized = _resolveFamilyPresenceStatus(status);
+    final Color bgColor;
+    final Color fgColor;
+
+    switch (normalized) {
+      case 'ABSENT':
+        bgColor = const Color(0xFFFDECEC);
+        fgColor = const Color(0xFFB42318);
+        break;
+      case 'EXCUSE':
+        bgColor = const Color(0xFFFFF5E8);
+        fgColor = const Color(0xFFB54708);
+        break;
+      default:
+        bgColor = const Color(0xFFEAF7EF);
+        fgColor = const Color(0xFF027A48);
+        break;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        _familyPresenceStatusLabelKey(normalized).tr(),
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w800,
+          color: fgColor,
+          letterSpacing: 0.1,
+        ),
+      ),
+    );
+  }
+}
+
+String _resolveFamilyPresenceStatus(String? rawStatus) {
+  final normalized = rawStatus?.trim().toUpperCase();
+  if (normalized == 'ABSENT' || normalized == 'EXCUSE') {
+    return normalized!;
+  }
+  return 'PRESENT';
+}
+
+String _familyPresenceStatusLabelKey(String normalizedStatus) {
+  switch (normalizedStatus) {
+    case 'ABSENT':
+      return 'family_home.presence_status.absent';
+    case 'EXCUSE':
+      return 'family_home.presence_status.excuse';
+    default:
+      return 'family_home.presence_status.present';
+  }
+}
+
+bool _shouldShowFamilyPresenceStatus(FamilyLinkedGroup? group) {
+  final status = group?.status?.trim().toUpperCase();
+  return status == 'EN_COURS';
 }
 
 // ─────────────────────────────────────────────────────────────
