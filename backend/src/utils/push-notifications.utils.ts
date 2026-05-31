@@ -2,6 +2,7 @@ import admin from 'firebase-admin'
 
 import prisma from '../config/prisma'
 import { env } from '../config/env'
+import { SupportedLanguage, translateText } from './translation.provider'
 
 let firebaseApp: admin.app.App | null = null
 
@@ -48,18 +49,22 @@ type PushPayload = {
   role: 'GUIDE' | 'PELERIN' | 'FAMILLE'
   title: string
   body: string
+  language?: SupportedLanguage
   data?: Record<string, string>
 }
 
 export async function sendPushToUsers(payload: PushPayload) {
   const uniqueUserIds = Array.from(new Set(payload.userIds.filter(Boolean)))
+  const targetLanguage = payload.language ?? 'fr'
+  const title = (await translateText(payload.title, targetLanguage)) ?? payload.title
+  const body = (await translateText(payload.body, targetLanguage)) ?? payload.body
 
   if (uniqueUserIds.length) {
     await prisma.notification.createMany({
       data: uniqueUserIds.map((utilisateurId) => ({
         utilisateurId,
-        title: payload.title,
-        body: payload.body,
+        title,
+        body,
         type: payload.data?.type,
         tab: payload.data?.tab,
         groupeId: payload.data?.groupeId,
@@ -101,8 +106,8 @@ export async function sendPushToUsers(payload: PushPayload) {
     const response = await admin.messaging(app).sendEachForMulticast({
       tokens,
       notification: {
-        title: payload.title,
-        body: payload.body,
+        title,
+        body,
       },
       data: {
         role: payload.role,

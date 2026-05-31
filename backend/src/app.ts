@@ -17,11 +17,13 @@ import mobileSosRouter from './modules/mobile/sos/sos.router';
 import mobileGuideSosRouter from './modules/mobile/guide-sos/guide-sos.router';
 import mobilePresenceRouter from './modules/mobile/presence/presence.router';
 import mobileChatRouter from './modules/mobile/chat/chat.router';
+import { requestLanguageMiddleware } from './middlewares/request-language.middleware';
 const app=express();
 
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(requestLanguageMiddleware);
 
 app.get("/health", (req, res) => {
   res.json({ status: 'ok' });

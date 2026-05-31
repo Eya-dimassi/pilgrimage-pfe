@@ -1,5 +1,4 @@
 import prisma from '../../../config/prisma'
-import { sendPushToUsers } from '../../../utils/push-notifications.utils'
 
 const AUTO_CLOSE_DELAY_MS = 60 * 60 * 1000
 
@@ -294,35 +293,10 @@ export async function confirmPresenceAsPelerin(
       },
     },
     include: {
-      pelerin: {
-        include: {
-          utilisateur: {
-            select: {
-              id: true,
-              nom: true,
-              prenom: true,
-            },
-          },
-        },
-      },
       appelPresence: {
-        include: {
-          groupe: {
-            select: {
-              id: true,
-              nom: true,
-              guides: {
-                where: { actif: true },
-                select: {
-                  guide: {
-                    select: {
-                      utilisateurId: true,
-                    },
-                  },
-                },
-              },
-            },
-          },
+        select: {
+          id: true,
+          date: true,
         },
       },
     },
@@ -358,33 +332,6 @@ export async function confirmPresenceAsPelerin(
       confirmeAt: new Date(),
     },
   })
-
-  const guideUserIds = Array.from(
-    new Set(
-      confirmation.appelPresence.groupe.guides
-        .map((entry) => entry.guide.utilisateurId)
-        .filter(Boolean),
-    ),
-  )
-
-  if (guideUserIds.length > 0) {
-    const fullName =
-      `${confirmation.pelerin.utilisateur.prenom} ${confirmation.pelerin.utilisateur.nom}`.trim()
-
-    await sendPushToUsers({
-      userIds: guideUserIds,
-      role: 'GUIDE',
-      title: 'Presence confirmee',
-      body: `${fullName} a confirme sa presence.`,
-      data: {
-        type: 'presence_update',
-        tab: 'alerts',
-        groupeId: confirmation.appelPresence.groupe.id,
-        eventId: confirmation.appelPresence.id,
-        etape: 'CONFIRMATION',
-      },
-    })
-  }
 
   return {
     message: 'Presence confirmee',

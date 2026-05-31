@@ -16,7 +16,7 @@ router.use(requireRole('GUIDE', 'PELERIN', 'FAMILLE'))
 
 router.get('/', async (req: AuthRequest, res: Response) => {
   try {
-    const result = await getMyNotifications(req.user!.id)
+    const result = await getMyNotifications(req.user!.id, req.language ?? 'fr')
     return res.status(200).json(result)
   } catch (error: any) {
     return res.status(400).json({ message: error.message })

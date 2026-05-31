@@ -42,6 +42,7 @@ router.get('/groupes/:groupeId', async (req: AuthRequest, res: Response) => {
       req.user!.id,
       req.user!.role,
       String(req.params.groupeId),
+      req.language ?? 'fr',
     )
     return res.status(200).json(planning)
   } catch (error: any) {

@@ -7,6 +7,7 @@ import {
   withEffectiveGroupStatus,
 } from '../../agences/groupes/group-status.utils'
 import { sendPushToUsers } from '../../../utils/push-notifications.utils'
+import { SupportedLanguage, translateBatch } from '../../../utils/translation.provider'
 
 const MOBILE_GROUP_SELECT = {
   id: true,
@@ -49,12 +50,93 @@ type OrderedGroupEventRow = {
   planningDate: Date
 }
 
+type TranslatablePlanningEvent = {
+  type?: string | null
+  titre: string
+  description?: string | null
+  lieu?: string | null
+  etape?: string | null
+}
+
+const EVENT_TYPE_LABELS_FR: Record<string, string> = {
+  PRIERE: 'Prière',
+  TRANSPORT: 'Transport',
+  VISITE: 'Visite',
+  REPAS: 'Repas',
+  RITE: 'Rite',
+  REPOS: 'Repos',
+  AUTRE: 'Autre',
+}
+
+function getEventTypeLabel(type: string | null | undefined) {
+  return EVENT_TYPE_LABELS_FR[String(type ?? '').trim().toUpperCase()] ?? EVENT_TYPE_LABELS_FR.AUTRE
+}
+
 function isResolvedEventStatus(status: MobileEventStatus | null | undefined) {
   return status === 'TERMINE' || status === 'ANNULE'
 }
 
 function isCompletedEventStatus(status: MobileEventStatus | null | undefined) {
   return status === 'TERMINE'
+}
+
+async function translatePlanningResponse<
+  T extends { plannings: Array<{ evenements: TranslatablePlanningEvent[] }> },
+>(payload: T, language: SupportedLanguage): Promise<T> {
+  const fields = payload.plannings.flatMap((planning, planningIndex) =>
+    planning.evenements.flatMap((event, eventIndex) => [
+      {
+        key: `event:${planningIndex}:${eventIndex}:typeLabel`,
+        text: getEventTypeLabel(event.type),
+      },
+      {
+        key: `event:${planningIndex}:${eventIndex}:titre`,
+        text: event.titre,
+      },
+      {
+        key: `event:${planningIndex}:${eventIndex}:description`,
+        text: event.description,
+      },
+      {
+        key: `event:${planningIndex}:${eventIndex}:lieu`,
+        text: event.lieu,
+      },
+      {
+        key: `event:${planningIndex}:${eventIndex}:etape`,
+        text: event.etape,
+      },
+    ]),
+  )
+  const translatedByKey = new Map(
+    language === 'fr'
+      ? fields.map((item) => [item.key, item.text ?? null] as const)
+      : (await translateBatch(fields, language)).map((item) => [item.key, item.text] as const),
+  )
+
+  const plannings = await Promise.all(
+    payload.plannings.map(async (planning, planningIndex) => ({
+      ...planning,
+      evenements: planning.evenements.map((event, eventIndex) => ({
+        ...event,
+        typeLabel:
+          translatedByKey.get(`event:${planningIndex}:${eventIndex}:typeLabel`) ??
+          getEventTypeLabel(event.type),
+        titre:
+          translatedByKey.get(`event:${planningIndex}:${eventIndex}:titre`) ??
+          event.titre,
+        description: translatedByKey.get(
+          `event:${planningIndex}:${eventIndex}:description`,
+        ),
+        lieu: translatedByKey.get(`event:${planningIndex}:${eventIndex}:lieu`),
+        etape: translatedByKey.get(`event:${planningIndex}:${eventIndex}:etape`),
+      })),
+    })),
+  )
+
+  return {
+    ...payload,
+    plannings,
+  }
 }
 
 function sortMobileGroups<T extends { status?: string | null; dateDepart?: Date | null; dateRetour?: Date | null; annee?: number | null }>(
@@ -635,6 +717,7 @@ async function getWindowedPlanningForGroup(
   role: 'FAMILLE' | 'PELERIN',
   groupeId: string,
   dayOffsets: number[],
+  language: SupportedLanguage,
 ) {
   await assertMobilePlanningAccess(userId, role, groupeId)
 
@@ -674,20 +757,25 @@ async function getWindowedPlanningForGroup(
   visiblePlannings.sort((left, right) => left.date.getTime() - right.date.getTime())
   const planningsWithValidation = await attachEventValidation(visiblePlannings)
 
-  return {
+  return translatePlanningResponse({
     groupe: withEffectiveGroupStatus(groupe),
     plannings: planningsWithValidation,
-  }
+  }, language)
 }
 
 // Returns the full read-only planning for one accessible group.
-export async function getMobilePlanningForGroup(userId: string, role: string, groupeId: string) {
+export async function getMobilePlanningForGroup(
+  userId: string,
+  role: string,
+  groupeId: string,
+  language: SupportedLanguage = 'fr',
+) {
   if (role === 'FAMILLE') {
-    return getWindowedPlanningForGroup(userId, role, groupeId, [0])
+    return getWindowedPlanningForGroup(userId, role, groupeId, [0], language)
   }
 
   if (role === 'PELERIN') {
-    return getWindowedPlanningForGroup(userId, role, groupeId, [-1, 0, 1])
+    return getWindowedPlanningForGroup(userId, role, groupeId, [-1, 0, 1], language)
   }
 
   await assertMobilePlanningAccess(userId, role, groupeId)
@@ -716,8 +804,8 @@ export async function getMobilePlanningForGroup(userId: string, role: string, gr
   const visiblePlannings = keepFromTripStart(plannings, groupe.dateDepart)
   const planningsWithValidation = await attachEventValidation(visiblePlannings)
 
-  return {
+  return translatePlanningResponse({
     groupe: withEffectiveGroupStatus(groupe),
     plannings: planningsWithValidation,
-  }
+  }, language)
 }

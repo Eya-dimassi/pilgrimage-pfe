@@ -1,11 +1,12 @@
 import prisma from '../../../config/prisma'
+import { SupportedLanguage, translateBatch } from '../../../utils/translation.provider'
 
 type DeviceTokenPayload = {
   token: string
   platform: string
 }
 
-export async function getMyNotifications(userId: string) {
+export async function getMyNotifications(userId: string, language: SupportedLanguage = 'fr') {
   const notifications = await prisma.notification.findMany({
     where: { utilisateurId: userId },
     orderBy: { createdAt: 'desc' },
@@ -32,9 +33,39 @@ export async function getMyNotifications(userId: string) {
     },
   })
 
+  const items = language === 'fr'
+    ? notifications
+    : await (async () => {
+        const fields = notifications.flatMap((notification) => [
+          {
+            key: `notification:${notification.id}:title`,
+            text: notification.title,
+          },
+          {
+            key: `notification:${notification.id}:body`,
+            text: notification.body,
+          },
+        ])
+
+        const translatedFields = await translateBatch(fields, language)
+        const translatedByKey = new Map(
+          translatedFields.map((item) => [item.key, item.text]),
+        )
+
+        return notifications.map((notification) => ({
+          ...notification,
+          title:
+            translatedByKey.get(`notification:${notification.id}:title`) ??
+            notification.title,
+          body:
+            translatedByKey.get(`notification:${notification.id}:body`) ??
+            notification.body,
+        }))
+      })()
+
   return {
     unreadCount,
-    items: notifications,
+    items,
   }
 }
 
