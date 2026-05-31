@@ -358,6 +358,23 @@ model AlerteSOS {
   @@index([resolueParGuideId])
 }
 
+model TranslationCache {
+  id             String   @id @default(uuid())
+  sourceLang     String
+  targetLang     String
+  sourceHash     String
+  sourceText     String
+  translatedText String
+  provider       String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  lastUsedAt     DateTime @default(now())
+
+  @@unique([sourceLang, targetLang, sourceHash])
+  @@index([targetLang])
+  @@index([lastUsedAt])
+}
+
 enum Role {
   PELERIN
   GUIDE

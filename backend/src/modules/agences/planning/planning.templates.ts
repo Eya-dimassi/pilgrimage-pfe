@@ -8,10 +8,10 @@ export type TemplateEvent = {
   type: PlanningEventType
   key: string
   titre: string
-  heureRendezVous: string // HH:mm in AST
+  heureRendezVous: string 
   description?: string
   lieu?: string | string[]
-  etape?: EtapeVoyage // ← new
+  etape?: EtapeVoyage 
 }
 
 export type TemplateDay = {
