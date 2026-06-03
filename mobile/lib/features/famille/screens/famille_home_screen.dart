@@ -758,71 +758,64 @@ class _FamilyAlertsPreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
+    return notificationsAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, _) => const SizedBox.shrink(),
+      data: (feed) {
+        final featured = feed.items
+            .where((item) =>
+                !item.isRead &&
+                item.type?.toLowerCase().trim() == 'sos' &&
+                (selectedGroupId == null ||
+                    item.groupeId == null ||
+                    item.groupeId == selectedGroupId))
+            .firstOrNull;
+
+        if (featured == null) {
+          return const SizedBox.shrink();
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
-              child: Text('family_home.alerts.title'.tr(),
-                  style: TextStyle(
-                    fontSize: 19, fontWeight: FontWeight.w800,
-                    letterSpacing: -0.5, color: AppColors.primaryDark,
-                  )),
+            Row(
+              children: [
+                Expanded(
+                  child: Text('family_home.alerts.title'.tr(),
+                      style: TextStyle(
+                        fontSize: 19, fontWeight: FontWeight.w800,
+                        letterSpacing: -0.5, color: AppColors.primaryDark,
+                      )),
+                ),
+                TextButton(
+                  onPressed: onOpenAlerts,
+                  child: Text('family_home.alerts.see_all'.tr(),
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.primaryDark)),
+                ),
+              ],
             ),
-            TextButton(
-              onPressed: onOpenAlerts,
-              child: Text('family_home.alerts.see_all'.tr(),
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.primaryDark)),
+            const SizedBox(height: 12),
+            _FamilyFeaturedAlertCard(
+              item: featured,
+              onTap: onOpenAlerts,
             ),
           ],
-        ),
-        const SizedBox(height: 12),
-        notificationsAsync.when(
-          loading: () => const Padding(
-            padding: EdgeInsets.symmetric(vertical: 28),
-            child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
-          ),
-          error: (error, _) => AppCard(
-            padding: const EdgeInsets.all(18),
-            radius: 24,
-            child: Text(error.toString(),
-                style: const TextStyle(fontSize: 12.5, color: AppColors.textMuted)),
-          ),
-          data: (feed) {
-            final relevant = feed.items
-                .where((item) =>
-                    selectedGroupId == null ||
-                    item.groupeId == null ||
-                    item.groupeId == selectedGroupId)
-                .toList(growable: false);
-
-            final featured = relevant.firstWhere(
-              (item) => !item.isRead,
-              orElse: () => relevant.isNotEmpty ? relevant.first : throw StateError(''),
-            );
-
-            return _FamilyFeaturedAlertCard(
-              item: relevant.isEmpty ? null : featured,
-              onTap: onOpenAlerts,
-            );
-          },
-        ),
-      ],
+        );
+      },
     );
   }
 }
 
 class _FamilyFeaturedAlertCard extends StatelessWidget {
   const _FamilyFeaturedAlertCard({required this.item, required this.onTap});
-  final MobileNotificationItem? item;
+  final MobileNotificationItem item;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final title = item?.title ?? 'family_home.alerts.none_critical'.tr();
-    final body = item?.body ?? 'family_home.alerts.all_under_control'.tr();
-    final footer = item == null ? null : _formatFamilyNotificationTime(item!.createdAt);
+    final title = item.title;
+    final body = item.body;
+    final footer = _formatFamilyNotificationTime(item.createdAt);
 
     return Material(
       color: Colors.transparent,
@@ -863,11 +856,9 @@ class _FamilyFeaturedAlertCard extends StatelessWidget {
                         maxLines: 3,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(fontSize: 12, height: 1.45, color: Color(0xFF8A6D3B))),
-                    if (footer != null) ...[
-                      const SizedBox(height: 8),
-                      Text(footer,
-                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFFB88D3C))),
-                    ],
+                    const SizedBox(height: 8),
+                    Text(footer,
+                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFFB88D3C))),
                   ],
                 ),
               ),

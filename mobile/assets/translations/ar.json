@@ -86,6 +86,16 @@
       "yesterday": "أمس",
       "earlier": "سابقاً"
     },
+    "guide_categories": {
+      "sos": "SOS",
+      "presence": "الحضور",
+      "events": "المراحل",
+      "empty": {
+        "sos": "لا توجد إشعارات SOS",
+        "presence": "لا توجد إشعارات حضور",
+        "events": "لا توجد إشعارات مراحل"
+      }
+    },
     "empty": {
       "today": "لا توجد إشعارات اليوم",
       "yesterday": "لا توجد إشعارات أمس",
@@ -324,7 +334,10 @@
       "logout": "تسجيل الخروج",
       "disponible_toast": "أنت متاح الآن",
       "indisponible_toast": "أنت غير متاح الآن",
-      "disponibilite_error": "تعذّر تحديث حالة التوفر"
+      "disponibilite_error": "تعذّر تحديث حالة التوفر",
+      "active_sos_title": "SOS نشط",
+      "active_sos_view_all": "عرض الكل",
+      "active_sos_group_unknown": "المجموعة غير محددة"
     },
     "groups_sheet": {
       "title": "المجموعات",
