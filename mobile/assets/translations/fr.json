@@ -80,6 +80,16 @@
       "yesterday": "Hier",
       "earlier": "Plus ancien"
     },
+    "guide_categories": {
+      "sos": "SOS",
+      "presence": "Presence",
+      "events": "Etapes",
+      "empty": {
+        "sos": "Aucune notification SOS",
+        "presence": "Aucune notification de presence",
+        "events": "Aucune notification d etape"
+      }
+    },
     "empty": {
       "today": "Aucune notification aujourd hui",
       "yesterday": "Aucune notification hier",
@@ -340,7 +350,10 @@
       "logout": "Déconnexion",
       "disponible_toast": "Vous êtes maintenant disponible",
       "indisponible_toast": "Vous êtes maintenant indisponible",
-      "disponibilite_error": "Impossible de mettre à jour la disponibilité"
+      "disponibilite_error": "Impossible de mettre à jour la disponibilité",
+      "active_sos_title": "SOS actif",
+      "active_sos_view_all": "Voir tout",
+      "active_sos_group_unknown": "Groupe non renseigne"
     },
     "groups_sheet": {
       "title": "Groupes",
@@ -541,7 +554,6 @@
   "overview": {
     "title": "Vue d ensemble",
     "subtitle": "Les etapes, lieux et reperes partages pour votre groupe aujourd hui."
-    
   },
   "hero": {
     "your_group": "Votre groupe",
@@ -564,10 +576,16 @@
     "step": "Etape"
   },
   "flow": {
+    "no_event": "Aucune etape aujourd hui",
+    "no_events": "Aucune etape aujourd hui",
+    "program": "Programme du jour",
+    "trip_progress": "{percent}% du voyage",
+    "current_event": "Programme du moment",
+    "no_upcoming_events": "Aucune suite partagee",
+    "waiting_for_next_event": "En attente de la prochaine etape",
+    "in_progress": "En cours",
+    "upcoming": "Ensuite",
     "planning_unavailable": "Planning indisponible",
-    "no_step_today": "Aucune etape aujourd hui"
-  },
-  "event_type": {
     "transport": "Transport",
     "visit": "Visite",
     "rite": "Rite",

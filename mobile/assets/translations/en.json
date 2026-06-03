@@ -80,6 +80,16 @@
       "yesterday": "Yesterday",
       "earlier": "Earlier"
     },
+    "guide_categories": {
+      "sos": "SOS",
+      "presence": "Presence",
+      "events": "Events",
+      "empty": {
+        "sos": "No SOS notifications",
+        "presence": "No presence notifications",
+        "events": "No event notifications"
+      }
+    },
     "empty": {
       "today": "No notifications today",
       "yesterday": "No notifications yesterday",
@@ -340,7 +350,10 @@
       "logout": "Log out",
       "disponible_toast": "You are now available",
       "indisponible_toast": "You are now unavailable",
-      "disponibilite_error": "Unable to update availability"
+      "disponibilite_error": "Unable to update availability",
+      "active_sos_title": "Active SOS",
+      "active_sos_view_all": "View all",
+      "active_sos_group_unknown": "Group not specified"
     },
     "groups_sheet": {
       "title": "Groups",

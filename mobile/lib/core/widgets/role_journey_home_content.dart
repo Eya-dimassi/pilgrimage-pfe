@@ -39,6 +39,7 @@ class RoleJourneyHomeContent extends ConsumerWidget {
     this.quickActions = const [],
     this.heroAssetPath = 'assets/images/mosque_guide.png',
     this.showOverviewSection = true,
+    this.preHeroSections = const [],
     this.extraSections = const [],
   });
 
@@ -50,6 +51,7 @@ class RoleJourneyHomeContent extends ConsumerWidget {
   final List<HomeQuickAction> quickActions;
   final String heroAssetPath;
   final bool showOverviewSection;
+  final List<Widget> preHeroSections;
   final List<Widget> extraSections;
 
   @override
@@ -89,6 +91,10 @@ class RoleJourneyHomeContent extends ConsumerWidget {
             children: [
               _HomeHeader(firstName: firstName, groupeNom: groupeNom),
               const SizedBox(height: 12),
+              if (preHeroSections.isNotEmpty) ...[
+                ...preHeroSections,
+                const SizedBox(height: AppSpacing.m),
+              ],
               _RoleHero(
                 fallbackGroupName: groupeNom,
                 group: selectedGroup,

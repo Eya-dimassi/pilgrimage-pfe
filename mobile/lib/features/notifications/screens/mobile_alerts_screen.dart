@@ -21,8 +21,19 @@ enum _AlertsScope {
   earlier,
 }
 
+enum _GuideAlertsCategory {
+  sos,
+  presence,
+  events,
+}
+
 class MobileAlertsScreen extends ConsumerStatefulWidget {
-  const MobileAlertsScreen({super.key});
+  const MobileAlertsScreen({
+    super.key,
+    this.initialGuideCategory = 'sos',
+  });
+
+  final String initialGuideCategory;
 
   @override
   ConsumerState<MobileAlertsScreen> createState() => _MobileAlertsScreenState();
@@ -30,6 +41,25 @@ class MobileAlertsScreen extends ConsumerStatefulWidget {
 
 class _MobileAlertsScreenState extends ConsumerState<MobileAlertsScreen> {
   _AlertsScope _selectedScope = _AlertsScope.today;
+  _GuideAlertsCategory _selectedGuideCategory = _GuideAlertsCategory.sos;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedGuideCategory = _guideCategoryFromString(
+      widget.initialGuideCategory,
+    );
+  }
+
+  @override
+  void didUpdateWidget(covariant MobileAlertsScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialGuideCategory != widget.initialGuideCategory) {
+      _selectedGuideCategory = _guideCategoryFromString(
+        widget.initialGuideCategory,
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -66,19 +96,29 @@ class _MobileAlertsScreenState extends ConsumerState<MobileAlertsScreen> {
                     },
           ),
           const SizedBox(height: AppSpacing.l),
-          _AlertsScopeBar(
-            selectedScope: _selectedScope,
-            onChanged: (scope) {
-              setState(() {
-                _selectedScope = scope;
-              });
-            },
-          ),
+          if (userRole == 'GUIDE')
+            _GuideAlertsCategoryBar(
+              selectedCategory: _selectedGuideCategory,
+              onChanged: (category) {
+                setState(() {
+                  _selectedGuideCategory = category;
+                });
+              },
+            )
+          else
+            _AlertsScopeBar(
+              selectedScope: _selectedScope,
+              onChanged: (scope) {
+                setState(() {
+                  _selectedScope = scope;
+                });
+              },
+            ),
           const SizedBox(height: AppSpacing.l),
           if (userRole == 'GUIDE') ...[
             _GuideSosSection(
               alertsAsync: guideSosAsync,
-              selectedScope: _selectedScope,
+              isVisible: _selectedGuideCategory == _GuideAlertsCategory.sos,
             ),
             const SizedBox(height: AppSpacing.l),
           ],
@@ -97,12 +137,16 @@ class _MobileAlertsScreenState extends ConsumerState<MobileAlertsScreen> {
                   subtitle: error.toString(),
                 ),
             data: (feed) {
-              final items = _filterNotifications(feed.items, _selectedScope);
+              final items = userRole == 'GUIDE'
+                  ? _filterGuideNotifications(feed.items, _selectedGuideCategory)
+                  : _filterNotifications(feed.items, _selectedScope);
 
               if (items.isEmpty) {
                 return _AlertsEmptyState(
                   icon: Icons.notifications_none_rounded,
-                  title: _emptyTitleForScope(_selectedScope),
+                  title: userRole == 'GUIDE'
+                      ? _emptyTitleForGuideCategory(_selectedGuideCategory)
+                      : _emptyTitleForScope(_selectedScope),
                   subtitle:
                       'alerts.empty.feed_subtitle'.tr(),
                 );
@@ -193,6 +237,59 @@ class _MobileAlertsScreenState extends ConsumerState<MobileAlertsScreen> {
         return 'alerts.empty.yesterday'.tr();
       case _AlertsScope.earlier:
         return 'alerts.empty.earlier'.tr();
+    }
+  }
+
+  List<MobileNotificationItem> _filterGuideNotifications(
+    List<MobileNotificationItem> items,
+    _GuideAlertsCategory category,
+  ) {
+    return items.where((item) => _matchesGuideCategory(item, category)).toList();
+  }
+
+  bool _matchesGuideCategory(
+    MobileNotificationItem item,
+    _GuideAlertsCategory category,
+  ) {
+    final type = item.type?.toLowerCase().trim() ?? '';
+
+    switch (category) {
+      case _GuideAlertsCategory.sos:
+        return type == 'sos' || type == 'sos_resolved';
+      case _GuideAlertsCategory.presence:
+        return type == 'presence_call' ||
+            type == 'presence_call_reminder' ||
+            type == 'presence_update';
+      case _GuideAlertsCategory.events:
+        return type == 'alert' ||
+            type == 'planning' ||
+            type == 'planning_update' ||
+            type == 'upcoming_rendezvous' ||
+            (item.eventId?.trim().isNotEmpty ?? false) ||
+            (item.etape?.trim().isNotEmpty ?? false);
+    }
+  }
+
+  String _emptyTitleForGuideCategory(_GuideAlertsCategory category) {
+    switch (category) {
+      case _GuideAlertsCategory.sos:
+        return 'alerts.guide_categories.empty.sos'.tr();
+      case _GuideAlertsCategory.presence:
+        return 'alerts.guide_categories.empty.presence'.tr();
+      case _GuideAlertsCategory.events:
+        return 'alerts.guide_categories.empty.events'.tr();
+    }
+  }
+
+  _GuideAlertsCategory _guideCategoryFromString(String value) {
+    switch (value.trim().toLowerCase()) {
+      case 'presence':
+        return _GuideAlertsCategory.presence;
+      case 'events':
+        return _GuideAlertsCategory.events;
+      case 'sos':
+      default:
+        return _GuideAlertsCategory.sos;
     }
   }
 }
@@ -286,6 +383,41 @@ class _AlertsScopeBar extends StatelessWidget {
   }
 }
 
+class _GuideAlertsCategoryBar extends StatelessWidget {
+  const _GuideAlertsCategoryBar({
+    required this.selectedCategory,
+    required this.onChanged,
+  });
+
+  final _GuideAlertsCategory selectedCategory;
+  final ValueChanged<_GuideAlertsCategory> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        _ScopeChip(
+          label: 'alerts.guide_categories.sos'.tr(),
+          selected: selectedCategory == _GuideAlertsCategory.sos,
+          onTap: () => onChanged(_GuideAlertsCategory.sos),
+        ),
+        const SizedBox(width: AppSpacing.s),
+        _ScopeChip(
+          label: 'alerts.guide_categories.presence'.tr(),
+          selected: selectedCategory == _GuideAlertsCategory.presence,
+          onTap: () => onChanged(_GuideAlertsCategory.presence),
+        ),
+        const SizedBox(width: AppSpacing.s),
+        _ScopeChip(
+          label: 'alerts.guide_categories.events'.tr(),
+          selected: selectedCategory == _GuideAlertsCategory.events,
+          onTap: () => onChanged(_GuideAlertsCategory.events),
+        ),
+      ],
+    );
+  }
+}
+
 class _ScopeChip extends StatelessWidget {
   const _ScopeChip({
     required this.label,
@@ -325,14 +457,18 @@ class _ScopeChip extends StatelessWidget {
 class _GuideSosSection extends StatelessWidget {
   const _GuideSosSection({
     required this.alertsAsync,
-    required this.selectedScope,
+    required this.isVisible,
   });
 
   final AsyncValue<List<GuideSosAlert>> alertsAsync;
-  final _AlertsScope selectedScope;
+  final bool isVisible;
 
   @override
   Widget build(BuildContext context) {
+    if (!isVisible) {
+      return const SizedBox.shrink();
+    }
+
     return alertsAsync.when(
       loading:
           () => const Padding(
@@ -346,8 +482,7 @@ class _GuideSosSection extends StatelessWidget {
             subtitle: error.toString(),
           ),
       data: (alerts) {
-        final filtered = _filterAlerts(alerts, selectedScope);
-        if (filtered.isEmpty) {
+        if (alerts.isEmpty) {
           return Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(
@@ -383,7 +518,7 @@ class _GuideSosSection extends StatelessWidget {
               ],
             ),
             const SizedBox(height: AppSpacing.sm),
-            for (final alert in filtered) ...[
+            for (final alert in alerts) ...[
               _GuideSosCard(alert: alert),
               const SizedBox(height: AppSpacing.sm),
             ],
@@ -391,28 +526,6 @@ class _GuideSosSection extends StatelessWidget {
         );
       },
     );
-  }
-
-  List<GuideSosAlert> _filterAlerts(
-    List<GuideSosAlert> alerts,
-    _AlertsScope scope,
-  ) {
-    final now = SaudiTime.now();
-    final today = SaudiTime.dayOf(now);
-    final yesterday = today.subtract(const Duration(days: 1));
-
-    return alerts.where((alert) {
-      final itemDay = SaudiTime.dayOf(alert.createdAt);
-
-      switch (scope) {
-        case _AlertsScope.today:
-          return itemDay == today;
-        case _AlertsScope.yesterday:
-          return itemDay == yesterday;
-        case _AlertsScope.earlier:
-          return itemDay.isBefore(yesterday);
-      }
-    }).toList();
   }
 }
 
@@ -607,6 +720,26 @@ class _GuideSosCardState extends ConsumerState<_GuideSosCard> {
             ),
           ],
           const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: _callPilgrim,
+                  icon: const Icon(Icons.call_outlined, size: 16),
+                  label: Text('alerts.guide_sos.call'.tr()),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: _openMaps,
+                  icon: const Icon(Icons.location_on_outlined, size: 16),
+                  label: Text('alerts.guide_sos.location'.tr()),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
@@ -627,26 +760,6 @@ class _GuideSosCardState extends ConsumerState<_GuideSosCard> {
                     : 'alerts.guide_sos.resolve'.tr(),
               ),
             ),
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: _callPilgrim,
-                  icon: const Icon(Icons.call_outlined, size: 16),
-                  label: Text('alerts.guide_sos.call'.tr()),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: _openMaps,
-                  icon: const Icon(Icons.location_on_outlined, size: 16),
-                  label: Text('alerts.guide_sos.location'.tr()),
-                ),
-              ),
-            ],
           ),
         ],
       ),

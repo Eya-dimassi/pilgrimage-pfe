@@ -18,6 +18,8 @@ import '../../planning/domain/mobile_planning_models.dart';
 import '../../planning/providers/mobile_planning_provider.dart';
 import '../../notifications/screens/mobile_alerts_screen.dart';
 import '../../planning/screens/role_planning_pages.dart';
+import '../../sos/domain/guide_sos_alert.dart';
+import '../../sos/providers/guide_sos_provider.dart';
 import '../widgets/guide_groupes_sheet.dart';
 import '../widgets/guide_groupe_pelerins_sheet.dart';
 import '../../../services/notification_feed_refresh_service.dart';
@@ -38,6 +40,21 @@ class GuideHomeScreen extends ConsumerStatefulWidget {
 class _GuideHomeScreenState extends ConsumerState<GuideHomeScreen> {
   bool _isUpdatingDisponibilite = false;
   bool? _optimisticDisponibilite;
+  late int _currentTabIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentTabIndex = widget.initialTabIndex;
+  }
+
+  @override
+  void didUpdateWidget(covariant GuideHomeScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.initialTabIndex != widget.initialTabIndex) {
+      _currentTabIndex = widget.initialTabIndex;
+    }
+  }
 
   Future<void> _updateDisponibiliteGuide(bool isDisponible) async {
     if (_isUpdatingDisponibilite) {
@@ -107,6 +124,7 @@ class _GuideHomeScreenState extends ConsumerState<GuideHomeScreen> {
         : (fullName.isNotEmpty ? fullName.split(' ').first : user.email);
     final planningGroupsAsync = ref.watch(mobilePlanningGroupsProvider);
     final guideGroups = planningGroupsAsync.valueOrNull ?? const <MobilePlanningGroup>[];
+    final guideSosAsync = ref.watch(guideSosProvider);
 
     void openGroupesSheet() {
       showModalBottomSheet<void>(
@@ -144,7 +162,10 @@ class _GuideHomeScreenState extends ConsumerState<GuideHomeScreen> {
 
     return RoleShell(
       key: ValueKey('guide-shell-${user.id}'),
-      initialIndex: widget.initialTabIndex,
+      initialIndex: _currentTabIndex,
+      onIndexChanged: (index) {
+        _currentTabIndex = index;
+      },
       accountActions: [
         RoleShellAccountAction(
           label: 'guide.home.groupes_list'.tr(),
@@ -185,6 +206,16 @@ class _GuideHomeScreenState extends ConsumerState<GuideHomeScreen> {
         roleToneLabel: '',
         quickActions: const [],
         showOverviewSection: false,
+        preHeroSections: [
+          _GuideActiveSosEntry(
+            alertsAsync: guideSosAsync,
+            onTap: () {
+              setState(() {
+                _currentTabIndex = 2;
+              });
+            },
+          ),
+        ],
         extraSections: [
           _GuidePresenceEntryCard(
             onTap: () => context.push('/guide-presence-home'),
@@ -192,7 +223,10 @@ class _GuideHomeScreenState extends ConsumerState<GuideHomeScreen> {
         ],
       ),
       planningChild: const GuidePlanningPage(),
-      alertsChild: const MobileAlertsScreen(),
+      alertsChild: MobileAlertsScreen(
+        key: ValueKey('guide-alerts-tab-$_currentTabIndex'),
+        initialGuideCategory: _currentTabIndex == 2 ? 'sos' : 'sos',
+      ),
       chatbotChild: const MobileChatScreen(),
       profileChild: RoleProfileTemplate(
         user: user,
@@ -202,6 +236,245 @@ class _GuideHomeScreenState extends ConsumerState<GuideHomeScreen> {
         onGuideDisponibiliteChanged: _updateDisponibiliteGuide,
         guideDisponibiliteUpdating: _isUpdatingDisponibilite,
         guideDisponibiliteOverride: _optimisticDisponibilite,
+      ),
+    );
+  }
+}
+
+class _GuideActiveSosEntry extends StatelessWidget {
+  const _GuideActiveSosEntry({
+    required this.alertsAsync,
+    required this.onTap,
+  });
+
+  final AsyncValue<List<GuideSosAlert>> alertsAsync;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return alertsAsync.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, _) => const SizedBox.shrink(),
+      data: (alerts) {
+        if (alerts.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        final first = alerts.first;
+        final sosCount = alerts.length;
+        final elapsed = _elapsedLabel(first.createdAt);
+        final groupLabel =
+            first.groupeNom?.trim().isNotEmpty == true
+                ? first.groupeNom!
+                : 'guide.home.active_sos_group_unknown'.tr();
+
+        return Padding(
+          padding: const EdgeInsets.only(bottom: AppSpacing.m),
+          child: AppCard(
+            onTap: onTap,
+            radius: 20,
+            borderColor: const Color(0xFFF2DCDD),
+            gradient: const LinearGradient(
+              colors: [Color(0xFFFFFBFB), Color(0xFFFDF1F2)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.sos_rounded,
+                            size: 18,
+                            color: AppColors.red,
+                          ),
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: Text(
+                              'guide.home.active_sos_title'.tr(),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w900,
+                                color: AppColors.red,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      width: 22,
+                      height: 22,
+                      alignment: Alignment.center,
+                      decoration: const BoxDecoration(
+                        color: AppColors.red,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Text(
+                        '$sosCount',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                    const Spacer(),
+                    Flexible(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Flexible(
+                            child: Text(
+                              'guide.home.active_sos_view_all'.tr(),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.red,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          const Icon(
+                            Icons.chevron_right_rounded,
+                            size: 18,
+                            color: AppColors.red,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    Container(
+                      width: 42,
+                      height: 42,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFECEE),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Text(
+                        _initials(first.pelerinName),
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.red,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            first.pelerinName.isNotEmpty
+                                ? first.pelerinName
+                                : 'alerts.guide_sos.pilgrim_fallback'.tr(),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Wrap(
+                            spacing: 6,
+                            runSpacing: 6,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            children: [
+                              _GuideSosMetaChip(label: first.type.label),
+                              Text(
+                                groupLabel,
+                                style: const TextStyle(
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.textMuted,
+                                ),
+                              ),
+                              Text(
+                                '• $elapsed',
+                                style: const TextStyle(
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.textMuted,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  static String _initials(String name) {
+    final parts = name.trim().split(' ').where((part) => part.isNotEmpty).toList();
+    if (parts.length >= 2) {
+      return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+    }
+    if (parts.isNotEmpty && parts.first.isNotEmpty) {
+      return parts.first[0].toUpperCase();
+    }
+    return '?';
+  }
+
+  static String _elapsedLabel(DateTime createdAt) {
+    final diff = DateTime.now().difference(createdAt);
+    if (diff.inMinutes < 1) return 'alerts.guide_sos.elapsed.now'.tr();
+    if (diff.inMinutes < 60) {
+      return 'alerts.guide_sos.elapsed.minutes_ago'.tr(
+        namedArgs: {'count': '${diff.inMinutes}'},
+      );
+    }
+    return 'alerts.guide_sos.elapsed.hours_ago'.tr(
+      namedArgs: {'count': '${diff.inHours}'},
+    );
+  }
+}
+
+class _GuideSosMetaChip extends StatelessWidget {
+  const _GuideSosMetaChip({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: const Color(0xFFEAF2FF),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          fontSize: 11.5,
+          fontWeight: FontWeight.w700,
+          color: AppColors.blue,
+        ),
       ),
     );
   }
