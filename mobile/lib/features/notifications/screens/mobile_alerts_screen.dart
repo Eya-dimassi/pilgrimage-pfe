@@ -903,6 +903,11 @@ class _NotificationRow extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final role = ref.watch(authProvider).valueOrNull?.user.role ?? 'PELERIN';
     final presentation = _presentationForNotification(item);
+    final stepLabel = (item.etape ?? '').trim().isEmpty
+        ? null
+        : _notificationStepLabel(item.etape!);
+    final shouldShowStepLabel =
+        stepLabel != null && stepLabel != presentation.label;
 
     return Material(
       color: Colors.transparent,
@@ -916,15 +921,18 @@ class _NotificationRow extends ConsumerWidget {
             ref.invalidate(mobileNotificationsProvider);
           }
 
-          NotificationNavigationService.openFromPayload({
-            if (item.type != null) 'type': item.type!,
-            if (item.tab != null) 'tab': item.tab!,
-            if (item.groupeId != null) 'groupeId': item.groupeId!,
-            if (item.eventId != null) 'eventId': item.eventId!,
-            if (item.etape != null) 'etape': item.etape!,
-          }, role: role);
+          NotificationNavigationService.openFromPayload(
+            {
+              if (item.type != null) 'type': item.type!,
+              if (item.tab != null) 'tab': item.tab!,
+              if (item.groupeId != null) 'groupeId': item.groupeId!,
+              if (item.eventId != null) 'eventId': item.eventId!,
+              if (item.etape != null) 'etape': item.etape!,
+            },
+            role: role,
+          );
         },
-          child: Container(
+        child: Container(
           padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
           decoration: BoxDecoration(
             color:
@@ -991,8 +999,7 @@ class _NotificationRow extends ConsumerWidget {
                         height: 1.35,
                       ),
                     ),
-                    if ((item.etape ?? '').trim().isNotEmpty ||
-                        presentation.label != null) ...[
+                    if (shouldShowStepLabel || presentation.label != null) ...[
                       const SizedBox(height: 8),
                       Wrap(
                         spacing: 8,
@@ -1006,9 +1013,9 @@ class _NotificationRow extends ConsumerWidget {
                               foregroundColor: presentation.foreground,
                               compact: true,
                             ),
-                          if ((item.etape ?? '').trim().isNotEmpty)
+                          if (shouldShowStepLabel)
                             AppStatusChip(
-                              label: item.etape!,
+                              label: stepLabel,
                               backgroundColor: AppColors.section,
                               foregroundColor: AppColors.textSecondary,
                               compact: true,
@@ -1147,12 +1154,65 @@ _NotificationPresentation _presentationForNotification(
     );
   }
 
+  if (type == 'confirmation') {
+    return _NotificationPresentation(
+      background: AppColors.blueSoft,
+      foreground: AppColors.blue,
+      icon: Icons.verified_outlined,
+      label: 'alerts.notification.steps.confirmation'.tr(),
+    );
+  }
+
+  if (type == 'presence') {
+    return _NotificationPresentation(
+      background: AppColors.blueSoft,
+      foreground: AppColors.blue,
+      icon: Icons.fact_check_outlined,
+      label: 'alerts.notification.steps.presence'.tr(),
+    );
+  }
+
+  if (type == 'presence_call' || type == 'presence_update') {
+    return _NotificationPresentation(
+      background: AppColors.blueSoft,
+      foreground: AppColors.blue,
+      icon: Icons.fact_check_outlined,
+      label: 'alerts.notification.labels.presence_call'.tr(),
+    );
+  }
+
+  if (type == 'presence_call_reminder') {
+    return _NotificationPresentation(
+      background: AppColors.goldSoft,
+      foreground: AppColors.gold,
+      icon: Icons.notifications_active_outlined,
+      label: 'alerts.notification.labels.presence_reminder'.tr(),
+    );
+  }
+
   return _NotificationPresentation(
     background: AppColors.blueSoft,
     foreground: AppColors.blue,
     icon: Icons.notifications_none_rounded,
     label: 'alerts.notification.labels.generic'.tr(),
   );
+}
+
+String _notificationStepLabel(String rawValue) {
+  final normalized = rawValue.trim().toLowerCase();
+  switch (normalized) {
+    case 'confirmation':
+      return 'alerts.notification.steps.confirmation'.tr();
+    case 'presence':
+      return 'alerts.notification.steps.presence'.tr();
+    case 'presence_call':
+    case 'presence_update':
+      return 'alerts.notification.labels.presence_call'.tr();
+    case 'presence_call_reminder':
+      return 'alerts.notification.labels.presence_reminder'.tr();
+    default:
+      return rawValue.trim().replaceAll('_', ' ');
+  }
 }
 
 class _AlertsEmptyState extends StatelessWidget {

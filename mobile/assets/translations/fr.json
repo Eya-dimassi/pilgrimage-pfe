@@ -130,7 +130,13 @@
         "step_completed": "Etape terminee",
         "planning": "Planning",
         "reminder": "Rappel",
+        "presence_call": "Appel presence",
+        "presence_reminder": "Rappel presence",
         "generic": "Notification"
+      },
+      "steps": {
+        "confirmation": "Confirmation",
+        "presence": "Presence"
       }
     }
   },
@@ -201,6 +207,22 @@
       "meal": "Repas",
       "rest": "Repos",
       "other": "Autre"
+    },
+    "stages": {
+      "arrival": "Arrivee",
+      "arrival_tawaf": "Tawaf d arrivee",
+      "ihram": "Ihram",
+      "umrah_tawaf": "Tawaf de la Omra",
+      "saee": "Saee",
+      "tahallul": "Tahallul",
+      "mina": "Mina",
+      "arafat": "Arafat",
+      "muzdalifah": "Mouzdalifa",
+      "stoning": "Rami des Jamarat",
+      "ifada_tawaf": "Tawaf al-Ifada",
+      "farewell_tawaf": "Tawaf al-Wada",
+      "departure": "Depart",
+      "generic": "{name}"
     },
     "status": {
       "cancelled": "Annulee",
@@ -283,7 +305,7 @@
       "choose_language": "Choisir la langue",
       "language_french": "Francais",
       "language_english": "Anglais",
-      "language_arabic": "Arabe",
+      "language_arabic": "العربية",
       "group_history_title": "Historique de vos groupes",
       "group_history_empty": "Aucun historique de groupe disponible.",
       "depart_only": "Depart: {date}", 
@@ -314,7 +336,7 @@
       "choose_language": "Choisir la langue",
       "language_french": "Francais",
       "language_english": "Anglais",
-      "language_arabic": "Arabe",
+      "language_arabic": "العربية",
       "logout": "Déconnexion",
       "disponible_toast": "Vous êtes maintenant disponible",
       "indisponible_toast": "Vous êtes maintenant indisponible",
@@ -672,7 +694,7 @@
       "choose": "Choisir la langue",
       "french": "Francais",
       "english": "Anglais",
-      "arabic": "Arabe"
+      "arabic": "العربية"
     },
     "messages": {
       "no_active_group": "Ce proche n a pas encore de groupe actif a afficher."
@@ -727,7 +749,11 @@
       "code_help": "Le code doit correspondre au code unique partage par votre proche.",
       "cancel": "Annuler",
       "confirm": "Ajouter",
-      "generic_error": "Une erreur est survenue"
+      "success": "Proche ajoute avec succes",
+      "generic_error": "Une erreur est survenue",
+      "family_account_not_found": "Compte famille introuvable",
+      "different_agency": "Ce pelerin n appartient pas a la meme agence",
+      "already_linked": "Ce proche est deja lie a votre compte"
     },
     "trip": {
       "no_active_group": "Sans groupe actif",
@@ -745,12 +771,16 @@
     "stages": {
       "arrival": "Etape arrivee",
       "arrival_tawaf": "Etape tawaf arrivee",
+      "ihram": "Etape ihram",
+      "umrah_tawaf": "Etape tawaf de la Omra",
       "saee": "Etape saee",
+      "tahallul": "Etape tahallul",
       "mina": "Etape Mina",
       "arafat": "Etape Arafat",
       "muzdalifah": "Etape Mouzdalifa",
       "stoning": "Etape lapidation",
       "ifada_tawaf": "Etape tawaf ifada",
+      "farewell_tawaf": "Etape tawaf al-Wada",
       "departure": "Etape depart",
       "generic": "Etape {name}"
     }
@@ -775,11 +805,16 @@
     "pilgrim_code": "Code unique du pelerin",
     "pilgrim_code_hint": "XXXXXXXX",
     "password": "Mot de passe",
+    "success": "Compte famille cree avec succes. Vous pouvez maintenant vous connecter.",
     "submit": "Creer mon compte famille",
     "validation": {
       "first_name_required": "Veuillez entrer votre prenom",
       "last_name_required": "Veuillez entrer votre nom",
-      "pilgrim_code_required": "Veuillez entrer le code unique du pelerin"
+      "pilgrim_code_required": "Veuillez entrer le code unique du pelerin",
+      "required_fields": "Nom, prenom, email, mot de passe et code unique requis",
+      "password_too_short": "Mot de passe trop court (8 caracteres minimum)",
+      "email_exists": "Un compte avec cet email existe deja",
+      "pilgrim_code_not_found": "Code unique pelerin introuvable"
     },
     "relationship_options": {
       "father": "Pere",

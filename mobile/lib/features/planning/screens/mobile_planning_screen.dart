@@ -1881,11 +1881,43 @@ IconData _eventTypeIcon(String type) {
 }
 
 String _formatEtapeLabel(String value) {
-  return value
-      .split('_')
-      .where((part) => part.isNotEmpty)
-      .map((part) => '${part[0]}${part.substring(1).toLowerCase()}')
-      .join(' ');
+  final normalized = value.trim().toLowerCase();
+  switch (normalized) {
+    case 'arrivee':
+      return 'planning.stages.arrival'.tr();
+    case 'tawaf_arrivee':
+      return 'planning.stages.arrival_tawaf'.tr();
+    case 'ihram':
+      return 'planning.stages.ihram'.tr();
+    case 'tawaf_umrah':
+      return 'planning.stages.umrah_tawaf'.tr();
+    case 'saee':
+    case 'sai':
+      return 'planning.stages.saee'.tr();
+    case 'tahallul':
+      return 'planning.stages.tahallul'.tr();
+    case 'mina':
+      return 'planning.stages.mina'.tr();
+    case 'arafat':
+      return 'planning.stages.arafat'.tr();
+    case 'mouzdalifa':
+    case 'muzdalifah':
+      return 'planning.stages.muzdalifah'.tr();
+    case 'lapidation':
+    case 'rami_jamarat':
+      return 'planning.stages.stoning'.tr();
+    case 'tawaf_ifada':
+    case 'tawaf_al_ifada':
+      return 'planning.stages.ifada_tawaf'.tr();
+    case 'tawaf_al_wada':
+      return 'planning.stages.farewell_tawaf'.tr();
+    case 'depart':
+      return 'planning.stages.departure'.tr();
+    default:
+      return 'planning.stages.generic'.tr(
+        namedArgs: {'name': value.replaceAll('_', ' ')},
+      );
+  }
 }
 
 String _eventStatusLabel(BuildContext context, MobilePlanningEvent event) {

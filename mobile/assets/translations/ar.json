@@ -136,7 +136,13 @@
         "step_completed": "تمت الخطوة",
         "planning": "التخطيط",
         "reminder": "تذكير",
+        "presence_call": "نداء الحضور",
+        "presence_reminder": "تذكير بالحضور",
         "generic": "إشعار"
+      },
+      "steps": {
+        "confirmation": "تأكيد",
+        "presence": "الحضور"
       }
     }
   },
@@ -207,6 +213,22 @@
       "meal": "وجبة",
       "rest": "راحة",
       "other": "أخرى"
+    },
+    "stages": {
+      "arrival": "الوصول",
+      "arrival_tawaf": "طواف الوصول",
+      "ihram": "الإحرام",
+      "umrah_tawaf": "طواف العمرة",
+      "saee": "السعي",
+      "tahallul": "التحلل",
+      "mina": "منى",
+      "arafat": "عرفة",
+      "muzdalifah": "مزدلفة",
+      "stoning": "رمي الجمرات",
+      "ifada_tawaf": "طواف الإفاضة",
+      "farewell_tawaf": "طواف الوداع",
+      "departure": "المغادرة",
+      "generic": "{name}"
     },
     "status": {
       "cancelled": "ملغى",
@@ -709,7 +731,11 @@
       "code_help": "يجب أن يطابق الرمز، الرمز الفريد الذي شاركه قريبك.",
       "cancel": "إلغاء",
       "confirm": "إضافة",
-      "generic_error": "حدث خطأ"
+      "success": "تمت إضافة القريب بنجاح",
+      "generic_error": "حدث خطأ",
+      "family_account_not_found": "تعذر العثور على حساب العائلة",
+      "different_agency": "هذا الحاج لا ينتمي إلى الوكالة نفسها",
+      "already_linked": "هذا القريب مرتبط بالفعل بحسابك"
     },
     "trip": {
       "no_active_group": "لا توجد مجموعة نشطة",
@@ -727,12 +753,16 @@
     "stages": {
       "arrival": "مرحلة الوصول",
       "arrival_tawaf": "مرحلة طواف الوصول",
+      "ihram": "مرحلة الإحرام",
+      "umrah_tawaf": "مرحلة طواف العمرة",
       "saee": "مرحلة السعي",
+      "tahallul": "مرحلة التحلل",
       "mina": "مرحلة منى",
       "arafat": "مرحلة عرفة",
       "muzdalifah": "مرحلة مزدلفة",
       "stoning": "مرحلة رمي الجمرات",
       "ifada_tawaf": "مرحلة طواف الإفاضة",
+      "farewell_tawaf": "مرحلة طواف الوداع",
       "departure": "مرحلة المغادرة",
       "generic": "مرحلة {name}"
     }
@@ -756,11 +786,16 @@
     "pilgrim_code": "الرمز الفريد للحاج",
     "pilgrim_code_hint": "XXXXXXXX",
     "password": "كلمة المرور",
+    "success": "تم إنشاء حساب العائلة بنجاح. يمكنك تسجيل الدخول الآن.",
     "submit": "إنشاء حساب العائلة",
     "validation": {
       "first_name_required": "يرجى إدخال الاسم",
       "last_name_required": "يرجى إدخال اللقب",
-      "pilgrim_code_required": "يرجى إدخال الرمز الفريد للحاج"
+      "pilgrim_code_required": "يرجى إدخال الرمز الفريد للحاج",
+      "required_fields": "اللقب والاسم والبريد الإلكتروني وكلمة المرور والرمز الفريد مطلوبة",
+      "password_too_short": "كلمة المرور قصيرة جدًا (8 أحرف على الأقل)",
+      "email_exists": "يوجد حساب بهذا البريد الإلكتروني بالفعل",
+      "pilgrim_code_not_found": "تعذر العثور على الرمز الفريد للحاج"
     },
     "relationship_options": {
       "father": "الأب",

@@ -130,7 +130,13 @@
         "step_completed": "Step completed",
         "planning": "Planning",
         "reminder": "Reminder",
+        "presence_call": "Attendance call",
+        "presence_reminder": "Attendance reminder",
         "generic": "Notification"
+      },
+      "steps": {
+        "confirmation": "Confirmation",
+        "presence": "Attendance"
       }
     }
   },
@@ -201,6 +207,22 @@
       "meal": "Meal",
       "rest": "Rest",
       "other": "Other"
+    },
+    "stages": {
+      "arrival": "Arrival",
+      "arrival_tawaf": "Arrival tawaf",
+      "ihram": "Ihram",
+      "umrah_tawaf": "Umrah tawaf",
+      "saee": "Saee",
+      "tahallul": "Tahallul",
+      "mina": "Mina",
+      "arafat": "Arafat",
+      "muzdalifah": "Muzdalifah",
+      "stoning": "Rami Jamarat",
+      "ifada_tawaf": "Tawaf al-Ifada",
+      "farewell_tawaf": "Tawaf al-Wada",
+      "departure": "Departure",
+      "generic": "{name}"
     },
     "status": {
       "cancelled": "Cancelled",
@@ -283,7 +305,7 @@
       "choose_language": "Choose language",
       "language_french": "French",
       "language_english": "English",
-      "language_arabic": "Arabic",
+      "language_arabic": "العربية",
       "group_history_title": "Your group history",
       "group_history_empty": "No group history available.",
       "depart_only": "Departure: {date}",
@@ -651,7 +673,7 @@
       "choose": "Choose language",
       "french": "French",
       "english": "English",
-      "arabic": "Arabic"
+      "arabic": "العربية"
     },
     "messages": {
       "no_active_group": "This relative does not yet have an active group to display."
@@ -706,7 +728,11 @@
       "code_help": "The code must match the unique code shared by your relative.",
       "cancel": "Cancel",
       "confirm": "Add",
-      "generic_error": "An error occurred"
+      "success": "Relative added successfully",
+      "generic_error": "An error occurred",
+      "family_account_not_found": "Family account not found",
+      "different_agency": "This pilgrim does not belong to the same agency",
+      "already_linked": "This relative is already linked to your account"
     },
     "trip": {
       "no_active_group": "No active group",
@@ -724,12 +750,16 @@
     "stages": {
       "arrival": "Arrival stage",
       "arrival_tawaf": "Arrival tawaf stage",
+      "ihram": "Ihram stage",
+      "umrah_tawaf": "Umrah tawaf stage",
       "saee": "Saee stage",
+      "tahallul": "Tahallul stage",
       "mina": "Mina stage",
       "arafat": "Arafat stage",
       "muzdalifah": "Muzdalifah stage",
       "stoning": "Stoning stage",
       "ifada_tawaf": "Ifada tawaf stage",
+      "farewell_tawaf": "Farewell tawaf stage",
       "departure": "Departure stage",
       "generic": "Stage {name}"
     }
@@ -753,11 +783,16 @@
     "pilgrim_code": "Pilgrim unique code",
     "pilgrim_code_hint": "XXXXXXXX",
     "password": "Password",
+    "success": "Family account created successfully. You can now sign in.",
     "submit": "Create my family account",
     "validation": {
       "first_name_required": "Please enter your first name",
       "last_name_required": "Please enter your last name",
-      "pilgrim_code_required": "Please enter the pilgrim's unique code"
+      "pilgrim_code_required": "Please enter the pilgrim's unique code",
+      "required_fields": "Last name, first name, email, password, and unique code are required",
+      "password_too_short": "Password is too short (8 characters minimum)",
+      "email_exists": "An account with this email already exists",
+      "pilgrim_code_not_found": "Pilgrim unique code not found"
     },
     "relationship_options": {
       "father": "Father",

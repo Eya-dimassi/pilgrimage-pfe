@@ -196,7 +196,7 @@ class RoleProfileTemplate extends StatelessWidget {
               _ProfileTile(
                 icon: Icons.family_restroom_outlined,
                 title: 'profile.fields.relationship'.tr(),
-                subtitle: user.lienParente!,
+                subtitle: _profileRelationshipLabel(user.lienParente!),
               ),
             if (user.role == 'GUIDE')
               _ProfileTile(
@@ -371,6 +371,29 @@ class RoleProfileTemplate extends StatelessWidget {
         );
       },
     );
+  }
+}
+
+String _profileRelationshipLabel(String value) {
+  switch (value.trim()) {
+    case 'Mere':
+      return 'edit_profile.relationship_options.mother'.tr();
+    case 'Pere':
+      return 'edit_profile.relationship_options.father'.tr();
+    case 'Frere':
+      return 'edit_profile.relationship_options.brother'.tr();
+    case 'Soeur':
+      return 'edit_profile.relationship_options.sister'.tr();
+    case 'Epoux':
+      return 'edit_profile.relationship_options.husband'.tr();
+    case 'Epouse':
+      return 'edit_profile.relationship_options.wife'.tr();
+    case 'Enfant':
+      return 'edit_profile.relationship_options.child'.tr();
+    case 'Autre':
+      return 'edit_profile.relationship_options.other'.tr();
+    default:
+      return value;
   }
 }
 

@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/network/api_endpoints.dart';
@@ -132,8 +133,10 @@ class AuthRepository {
         },
       );
 
-      return response.data?['message'] as String? ??
-          'Compte famille cree avec succes';
+      return _localizedFamilyMessage(
+        response.data?['message'] as String?,
+        fallbackKey: 'family_signup.success',
+      );
     } on DioException catch (error) {
       throw AuthException.fromDio(error);
     }
@@ -150,7 +153,10 @@ class AuthRepository {
         },
       );
 
-      return response.data?['message'] as String? ?? 'Proche ajoute avec succes';
+      return _localizedFamilyMessage(
+        response.data?['message'] as String?,
+        fallbackKey: 'family_home.add_relative_sheet.success',
+      );
     } on DioException catch (error) {
       throw AuthException.fromDio(error);
     }
@@ -185,4 +191,16 @@ class AuthRepository {
       throw AuthException.fromDio(error);
     }
   }
+}
+
+String _localizedFamilyMessage(String? message, {required String fallbackKey}) {
+  final normalized = message?.trim();
+  switch (normalized) {
+    case 'Compte famille cree avec succes':
+    case 'Compte famille cree avec succes. Vous pouvez maintenant vous connecter.':
+      return 'family_signup.success'.tr();
+    case 'Proche ajoute avec succes':
+      return 'family_home.add_relative_sheet.success'.tr();
+  }
+  return normalized?.isNotEmpty == true ? normalized! : fallbackKey.tr();
 }

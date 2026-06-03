@@ -1564,12 +1564,20 @@ String _familyTodayEtapeText(String rawValue) {
   switch (n.toLowerCase()) {
     case 'arrivee':      return 'family_home.stages.arrival'.tr();
     case 'tawaf_arrivee': return 'family_home.stages.arrival_tawaf'.tr();
-    case 'saee':         return 'family_home.stages.saee'.tr();
+    case 'ihram':        return 'family_home.stages.ihram'.tr();
+    case 'tawaf_umrah':  return 'family_home.stages.umrah_tawaf'.tr();
+    case 'saee':
+    case 'sai':          return 'family_home.stages.saee'.tr();
+    case 'tahallul':     return 'family_home.stages.tahallul'.tr();
     case 'mina':         return 'family_home.stages.mina'.tr();
     case 'arafat':       return 'family_home.stages.arafat'.tr();
-    case 'mouzdalifa':   return 'family_home.stages.mouzdalifa'.tr();
-    case 'lapidation':   return 'family_home.stages.stoning'.tr();
-    case 'tawaf_ifada':  return 'family_home.stages.ifada_tawaf'.tr();
+    case 'mouzdalifa':
+    case 'muzdalifah':   return 'family_home.stages.muzdalifah'.tr();
+    case 'lapidation':
+    case 'rami_jamarat': return 'family_home.stages.stoning'.tr();
+    case 'tawaf_ifada':
+    case 'tawaf_al_ifada': return 'family_home.stages.ifada_tawaf'.tr();
+    case 'tawaf_al_wada': return 'family_home.stages.farewell_tawaf'.tr();
     case 'depart':       return 'family_home.stages.departure'.tr();
     default:             return 'family_home.stages.generic'.tr(namedArgs: {'name': n.replaceAll('_', ' ')});
   }
