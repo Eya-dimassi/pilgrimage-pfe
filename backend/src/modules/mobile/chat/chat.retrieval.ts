@@ -3,7 +3,10 @@ import prisma from '../../../config/prisma';
 import { embedText } from './chat.provider';
 import { RagChunk, RetrievalResult } from './chat.types';
 
-const SIMILARITY_THRESHOLD = 0.45;
+const SIMILARITY_THRESHOLD = 0.42;
+const RELAXED_SIMILARITY_THRESHOLD = 0.32;
+const MIN_USEFUL_RESULTS = 3;
+const KEYWORD_TOP_K = 4;
 
 interface RetrievalOptions {
   language?: 'ar' | 'fr' | 'en';
@@ -28,11 +31,57 @@ function buildAudienceFilter(audience?: string): Prisma.Sql {
   return Prisma.sql`AND audience && ${arrayLiteral}::text[]`;
 }
 
+function getKeywordTerms(query: string): string[] {
+  const stopWords = new Set([
+    'ما',
+    'هي',
+    'هو',
+    'في',
+    'من',
+    'عن',
+    'على',
+    'the',
+    'and',
+    'for',
+    'what',
+    'are',
+    'is',
+    'les',
+    'des',
+    'une',
+    'dans',
+    'pour',
+    'quelles',
+  ]);
+
+  return [...new Set(
+    query
+      .toLowerCase()
+      .match(/[\p{L}\p{N}]{3,}/gu)
+      ?.filter((term) => !stopWords.has(term)) ?? []
+  )].slice(0, 5);
+}
+
+function mergeChunks(primary: RagChunk[], secondary: RagChunk[], topK: number): RagChunk[] {
+  const seen = new Set<string>();
+  const merged: RagChunk[] = [];
+
+  for (const chunk of [...secondary, ...primary]) {
+    if (seen.has(chunk.id)) continue;
+    seen.add(chunk.id);
+    merged.push(chunk);
+    if (merged.length >= topK) break;
+  }
+
+  return merged;
+}
+
 async function queryChunks(
   embeddingLiteral: Prisma.Sql,
   audienceFilter: Prisma.Sql,
   languageFilter: Prisma.Sql,
-  topK: number
+  topK: number,
+  similarityThreshold: number
 ): Promise<RagChunk[]> {
   return prisma.$queryRaw<RagChunk[]>(
     Prisma.sql`
@@ -46,9 +95,40 @@ async function queryChunks(
           ${audienceFilter}
           ${languageFilter}
       ) ranked
-      WHERE similarity > ${SIMILARITY_THRESHOLD}
+      WHERE similarity > ${similarityThreshold}
       ORDER BY similarity DESC
       LIMIT ${topK}
+    `
+  );
+}
+
+async function queryKeywordChunks(
+  query: string,
+  audienceFilter: Prisma.Sql,
+  languageFilter: Prisma.Sql,
+  topK: number
+): Promise<RagChunk[]> {
+  const terms = getKeywordTerms(query);
+  if (terms.length === 0) return [];
+
+  const keywordConditions = terms.map((term) =>
+    Prisma.sql`(text ILIKE ${`%${term}%`} OR section ILIKE ${`%${term}%`})`
+  );
+
+  return prisma.$queryRaw<RagChunk[]>(
+    Prisma.sql`
+      SELECT
+        id, text, source, section, audience, language, tags,
+        1::float AS similarity
+      FROM "RagChunk"
+      WHERE 1=1
+        ${audienceFilter}
+        ${languageFilter}
+        AND (${Prisma.join(keywordConditions, ' OR ')})
+      ORDER BY
+        CASE WHEN section ILIKE ${`%${terms.join('%')}%`} THEN 0 ELSE 1 END,
+        length(text) ASC
+      LIMIT ${Math.min(topK, KEYWORD_TOP_K)}
     `
   );
 }
@@ -70,11 +150,45 @@ export async function retrieveRelevantChunks(
     embeddingLiteral,
     audienceFilter,
     languageFilter,
+    topK,
+    SIMILARITY_THRESHOLD
+  );
+  const keywordResults = await queryKeywordChunks(
+    query,
+    audienceFilter,
+    languageFilter,
     topK
   );
+  const initialResults = mergeChunks(results, keywordResults, topK);
 
-  // Fallback: drop language filter if too few results
-  if (language && results.length < 2) {
+  if (initialResults.length >= MIN_USEFUL_RESULTS) {
+    return {
+      chunks: initialResults,
+      totalFound: initialResults.length,
+    };
+  }
+
+  const relaxedResults = await queryChunks(
+    embeddingLiteral,
+    audienceFilter,
+    languageFilter,
+    topK,
+    RELAXED_SIMILARITY_THRESHOLD
+  );
+
+  const relaxedMergedResults = mergeChunks(relaxedResults, keywordResults, topK);
+
+  if (relaxedMergedResults.length >= MIN_USEFUL_RESULTS) {
+    return {
+      chunks: relaxedMergedResults,
+      totalFound: relaxedMergedResults.length,
+    };
+  }
+
+  // Fallback: drop language filter if too few results. This helps Arabic or
+  // English questions find French source chunks when translated equivalents
+  // are not available in the knowledge base.
+  if (language && initialResults.length < MIN_USEFUL_RESULTS) {
     console.warn(
       `Too few results with language='${language}' (got ${results.length}), retrying without it`
     );
@@ -83,18 +197,37 @@ export async function retrieveRelevantChunks(
       embeddingLiteral,
       audienceFilter,
       Prisma.empty,  // no language filter
+      topK,
+      RELAXED_SIMILARITY_THRESHOLD
+    );
+    const fallbackKeywordResults = await queryKeywordChunks(
+      query,
+      audienceFilter,
+      Prisma.empty,
+      topK
+    );
+    const fallbackMergedResults = mergeChunks(
+      fallbackResults,
+      fallbackKeywordResults,
       topK
     );
 
+    const bestResults =
+      fallbackMergedResults.length > relaxedMergedResults.length
+        ? fallbackMergedResults
+        : relaxedMergedResults;
+
     return {
-      chunks: fallbackResults,
-      totalFound: fallbackResults.length,
+      chunks: bestResults,
+      totalFound: bestResults.length,
     };
   }
 
   return {
-    chunks: results,
-    totalFound: results.length,
+    chunks: relaxedMergedResults.length > initialResults.length
+      ? relaxedMergedResults
+      : initialResults,
+    totalFound: Math.max(relaxedMergedResults.length, initialResults.length),
   };
 }
 
