@@ -1,4 +1,7 @@
+
+import { createHash } from 'crypto'
 import { env } from '../config/env'
+import prisma from '../config/prisma'
 
 export type SupportedLanguage = 'fr' | 'en' | 'ar'
 
@@ -8,6 +11,7 @@ export type TranslationBatchItem = {
 }
 
 const GEMINI_TRANSLATION_MODEL = 'gemini-2.5-flash'
+const TRANSLATION_PROVIDER = 'gemini'
 const MEMORY_CACHE_TTL_MS = 24 * 60 * 60 * 1000
 const MEMORY_CACHE_MAX_ITEMS = 1000
 
@@ -76,6 +80,152 @@ function saveToMemoryCache(
   })
 }
 
+function getSourceHash(text: string) {
+  return createHash('sha256').update(text).digest('hex')
+}
+
+async function getFromDbCache(
+  text: string,
+  sourceLang: SupportedLanguage,
+  targetLang: SupportedLanguage,
+) {
+  const sourceHash = getSourceHash(text)
+
+  try {
+    const cached = await prisma.translationCache.findUnique({
+      where: {
+        sourceLang_targetLang_sourceHash: {
+          sourceLang,
+          targetLang,
+          sourceHash,
+        },
+      },
+      select: {
+        translatedText: true,
+      },
+    })
+
+    if (!cached) return null
+
+    await prisma.translationCache.update({
+      where: {
+        sourceLang_targetLang_sourceHash: {
+          sourceLang,
+          targetLang,
+          sourceHash,
+        },
+      },
+      data: {
+        lastUsedAt: new Date(),
+      },
+    })
+
+    return cached.translatedText
+  } catch (error) {
+    console.warn(`[translation] db_cache_read_failed lang=${targetLang}:`, error)
+    return null
+  }
+}
+
+async function getBatchFromDbCache(
+  texts: string[],
+  sourceLang: SupportedLanguage,
+  targetLang: SupportedLanguage,
+) {
+  const uniqueTextsByHash = new Map<string, string>()
+  for (const text of texts) {
+    uniqueTextsByHash.set(getSourceHash(text), text)
+  }
+
+  const sourceHashes = [...uniqueTextsByHash.keys()]
+  if (!sourceHashes.length) return new Map<string, string>()
+
+  try {
+    const cachedRows = await prisma.translationCache.findMany({
+      where: {
+        sourceLang,
+        targetLang,
+        sourceHash: {
+          in: sourceHashes,
+        },
+      },
+      select: {
+        sourceHash: true,
+        translatedText: true,
+      },
+    })
+
+    if (cachedRows.length) {
+      await prisma.translationCache.updateMany({
+        where: {
+          sourceLang,
+          targetLang,
+          sourceHash: {
+            in: cachedRows.map((row) => row.sourceHash),
+          },
+        },
+        data: {
+          lastUsedAt: new Date(),
+        },
+      })
+    }
+
+    return new Map(cachedRows.map((row) => [row.sourceHash, row.translatedText]))
+  } catch (error) {
+    console.warn(`[translation] batch_db_cache_read_failed lang=${targetLang}:`, error)
+    return new Map<string, string>()
+  }
+}
+
+async function saveToDbCache(
+  text: string,
+  translatedText: string,
+  sourceLang: SupportedLanguage,
+  targetLang: SupportedLanguage,
+) {
+  const sourceHash = getSourceHash(text)
+
+  try {
+    await prisma.translationCache.upsert({
+      where: {
+        sourceLang_targetLang_sourceHash: {
+          sourceLang,
+          targetLang,
+          sourceHash,
+        },
+      },
+      create: {
+        sourceLang,
+        targetLang,
+        sourceHash,
+        sourceText: text,
+        translatedText,
+        provider: TRANSLATION_PROVIDER,
+      },
+      update: {
+        sourceText: text,
+        translatedText,
+        provider: TRANSLATION_PROVIDER,
+        lastUsedAt: new Date(),
+      },
+    })
+  } catch (error) {
+    console.warn(`[translation] db_cache_write_failed lang=${targetLang}:`, error)
+  }
+}
+
+async function saveBatchToDbCache(
+  items: Array<{ text: string; translatedText: string }>,
+  sourceLang: SupportedLanguage,
+  targetLang: SupportedLanguage,
+) {
+  await Promise.all(
+    items.map((item) =>
+      saveToDbCache(item.text, item.translatedText, sourceLang, targetLang),
+    ),
+  )
+}
+
 function withTimeout(ms: number) {
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), ms)
@@ -101,6 +251,14 @@ function cleanGeminiJson(value: string) {
     .replace(/^```(?:json)?/i, '')
     .replace(/```$/i, '')
     .trim()
+}
+
+function getTranslationErrorMessage(error: unknown) {
+  if (error instanceof Error) {
+    return error.message
+  }
+
+  return String(error)
 }
 
 async function callGeminiTranslation(
@@ -190,11 +348,9 @@ async function callGeminiBatchTranslation(
             {
               text: [
                 'You are a strict JSON translation engine.',
-                `Translate every "text" value from ${LANGUAGE_LABELS[sourceLang]} to ${LANGUAGE_LABELS[targetLang]}.`,
-                'Preserve every "key" exactly.',
+                `Translate every array item from ${LANGUAGE_LABELS[sourceLang]} to ${LANGUAGE_LABELS[targetLang]}.`,
                 'Return only valid JSON, no markdown, no explanation.',
-                'The output must be an array with the same length and order as the input.',
-                'Each output item must have exactly: {"key": string, "text": string}.',
+                'The output must be an array of strings with the same length and order as the input.',
                 'Preserve names, dates, times, numbers, punctuation, and line breaks.',
               ].join(' '),
             },
@@ -203,7 +359,7 @@ async function callGeminiBatchTranslation(
         contents: [
           {
             role: 'user',
-            parts: [{ text: JSON.stringify(items) }],
+            parts: [{ text: JSON.stringify(items.map((item) => item.text)) }],
           },
         ],
         generationConfig: {
@@ -226,17 +382,13 @@ async function callGeminiBatchTranslation(
     }
 
     return parsed.map((item, index) => {
-      if (
-        !item ||
-        item.key !== items[index].key ||
-        typeof item.text !== 'string'
-      ) {
+      if (typeof item !== 'string') {
         throw new Error('Gemini batch translation returned invalid item shape')
       }
 
       return {
-        key: item.key as string,
-        text: item.text as string,
+        key: items[index].key,
+        text: item,
       }
     })
   } finally {
@@ -259,17 +411,23 @@ export async function translateText(
     return cached
   }
 
+  const dbCached = await getFromDbCache(sourceText, sourceLang, targetLang)
+  if (dbCached != null) {
+    saveToMemoryCache(sourceText, sourceLang, targetLang, dbCached)
+    return dbCached
+  }
+
   const maxAttempts = Math.max(1, env.TRANSLATION_RETRY_COUNT + 1)
 
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     try {
       const translated = await callGeminiTranslation(sourceText, sourceLang, targetLang)
       saveToMemoryCache(sourceText, sourceLang, targetLang, translated)
+      await saveToDbCache(sourceText, translated, sourceLang, targetLang)
       return translated
     } catch (error) {
       console.warn(
-        `[translation] fallback_fr lang=${targetLang} attempt=${attempt}/${maxAttempts}:`,
-        error,
+        `[translation] fallback_fr lang=${targetLang} attempt=${attempt}/${maxAttempts}: ${getTranslationErrorMessage(error)}`,
       )
     }
   }
@@ -304,7 +462,7 @@ export async function translateBatch(
   }
 
   const cachedByKey = new Map<string, string>()
-  const missingItems = translatableItems.filter((item) => {
+  const memoryMissingItems = translatableItems.filter((item) => {
     const cached = getFromMemoryCache(item.text, sourceLang, targetLang)
     if (cached != null) {
       cachedByKey.set(item.key, cached)
@@ -314,38 +472,85 @@ export async function translateBatch(
     return true
   })
 
-  if (!missingItems.length) {
+  if (!memoryMissingItems.length) {
     return fallback.map((item) => ({
       key: item.key,
       text: cachedByKey.get(item.key) ?? item.text,
     }))
   }
 
+  const dbCachedByHash = await getBatchFromDbCache(
+    memoryMissingItems.map((item) => item.text),
+    sourceLang,
+    targetLang,
+  )
+  const providerMissingItems = memoryMissingItems.filter((item) => {
+    const sourceHash = getSourceHash(item.text)
+    const cached = dbCachedByHash.get(sourceHash)
+    if (cached != null) {
+      cachedByKey.set(item.key, cached)
+      saveToMemoryCache(item.text, sourceLang, targetLang, cached)
+      return false
+    }
+
+    return true
+  })
+
+  if (!providerMissingItems.length) {
+    return fallback.map((item) => ({
+      key: item.key,
+      text: cachedByKey.get(item.key) ?? item.text,
+    }))
+  }
+
+  const uniqueProviderItemsByHash = new Map<string, { key: string; text: string }>()
+  for (const item of providerMissingItems) {
+    const sourceHash = getSourceHash(item.text)
+    if (!uniqueProviderItemsByHash.has(sourceHash)) {
+      uniqueProviderItemsByHash.set(sourceHash, {
+        key: sourceHash,
+        text: item.text,
+      })
+    }
+  }
+  const uniqueProviderItems = [...uniqueProviderItemsByHash.values()]
+
   const maxAttempts = Math.max(1, env.TRANSLATION_RETRY_COUNT + 1)
 
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     try {
       const translated = await callGeminiBatchTranslation(
-        missingItems.map(({ key, text }) => ({ key, text })),
+        uniqueProviderItems,
         sourceLang,
         targetLang,
       )
-      for (const translatedItem of translated) {
-        const sourceItem = missingItems.find((item) => item.key === translatedItem.key)
-        if (sourceItem) {
-          saveToMemoryCache(sourceItem.text, sourceLang, targetLang, translatedItem.text)
+      const translatedByHash = new Map(translated.map((item) => [item.key, item.text]))
+      const dbItemsToSave: Array<{ text: string; translatedText: string }> = []
+
+      for (const [sourceHash, sourceItem] of uniqueProviderItemsByHash.entries()) {
+        const translatedText = translatedByHash.get(sourceHash)
+        if (translatedText) {
+          saveToMemoryCache(sourceItem.text, sourceLang, targetLang, translatedText)
+          dbItemsToSave.push({ text: sourceItem.text, translatedText })
         }
       }
-      const translatedByKey = new Map(translated.map((item) => [item.key, item.text]))
+
+      await saveBatchToDbCache(dbItemsToSave, sourceLang, targetLang)
+
+      for (const sourceItem of providerMissingItems) {
+        const translatedText = translatedByHash.get(getSourceHash(sourceItem.text))
+        if (sourceItem) {
+          cachedByKey.set(sourceItem.key, translatedText ?? sourceItem.text)
+        }
+      }
 
       return fallback.map((item) => ({
         key: item.key,
-        text: cachedByKey.get(item.key) ?? translatedByKey.get(item.key) ?? item.text,
+        text: cachedByKey.get(item.key) ?? item.text,
       }))
     } catch (error) {
       console.warn(
-        `[translation] batch_fallback_fr lang=${targetLang} attempt=${attempt}/${maxAttempts}:`,
-        error,
+        `[translation] batch_fallback_fr lang=${targetLang} attempt=${attempt}/${maxAttempts}: ${getTranslationErrorMessage(error)}`,
       )
     }
   }

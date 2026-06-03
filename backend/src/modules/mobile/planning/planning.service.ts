@@ -81,31 +81,37 @@ function isCompletedEventStatus(status: MobileEventStatus | null | undefined) {
 }
 
 async function translatePlanningResponse<
-  T extends { plannings: Array<{ evenements: TranslatablePlanningEvent[] }> },
+  T extends { plannings: Array<{ titre?: string | null; evenements: TranslatablePlanningEvent[] }> },
 >(payload: T, language: SupportedLanguage): Promise<T> {
   const fields = payload.plannings.flatMap((planning, planningIndex) =>
-    planning.evenements.flatMap((event, eventIndex) => [
+    [
       {
-        key: `event:${planningIndex}:${eventIndex}:typeLabel`,
-        text: getEventTypeLabel(event.type),
+        key: `planning:${planningIndex}:titre`,
+        text: planning.titre,
       },
-      {
-        key: `event:${planningIndex}:${eventIndex}:titre`,
-        text: event.titre,
-      },
-      {
-        key: `event:${planningIndex}:${eventIndex}:description`,
-        text: event.description,
-      },
-      {
-        key: `event:${planningIndex}:${eventIndex}:lieu`,
-        text: event.lieu,
-      },
-      {
-        key: `event:${planningIndex}:${eventIndex}:etape`,
-        text: event.etape,
-      },
-    ]),
+      ...planning.evenements.flatMap((event, eventIndex) => [
+        {
+          key: `event:${planningIndex}:${eventIndex}:typeLabel`,
+          text: getEventTypeLabel(event.type),
+        },
+        {
+          key: `event:${planningIndex}:${eventIndex}:titre`,
+          text: event.titre,
+        },
+        {
+          key: `event:${planningIndex}:${eventIndex}:description`,
+          text: event.description,
+        },
+        {
+          key: `event:${planningIndex}:${eventIndex}:lieu`,
+          text: event.lieu,
+        },
+        {
+          key: `event:${planningIndex}:${eventIndex}:etape`,
+          text: event.etape,
+        },
+      ]),
+    ],
   )
   const translatedByKey = new Map(
     language === 'fr'
@@ -116,6 +122,9 @@ async function translatePlanningResponse<
   const plannings = await Promise.all(
     payload.plannings.map(async (planning, planningIndex) => ({
       ...planning,
+      titre:
+        translatedByKey.get(`planning:${planningIndex}:titre`) ??
+        planning.titre,
       evenements: planning.evenements.map((event, eventIndex) => ({
         ...event,
         typeLabel:
