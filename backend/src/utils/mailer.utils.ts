@@ -20,7 +20,7 @@ export const sendActivationEmail = async (
   await transporter.sendMail({
     from: env.MAIL_FROM,
     to: email,
-    subject: 'Activez votre compte — Plateforme Hajj',
+    subject: 'Activez votre compte — Plateforme Sacred Journey Hub',
     html: `
       <h2>Bienvenue ${nom}</h2>
       <p>Votre compte a été créé. Cliquez sur le lien ci-dessous pour définir votre mot de passe:</p>
@@ -52,10 +52,10 @@ export const sendApprovalEmail = async (
   await transporter.sendMail({
     from: env.MAIL_FROM,
     to: email,
-    subject: 'Votre compte a été approuvé — Plateforme Hajj',
+    subject: 'Votre compte a été approuvé — Plateforme Sacred Journey Hub',
     html: `
       <h2>Félicitations, ${nomAgence} !</h2>
-      <p>Votre demande d'accès à la plateforme Hajj/Umrah a été <strong>approuvée</strong>.</p>
+      <p>Votre demande d'accès à la plateforme Sacred Journey Hub a été <strong>approuvée</strong>.</p>
       <p>Vous pouvez maintenant vous connecter avec votre email et mot de passe.</p>
       <a href="${env.APP_URL}/login" style="
         background: #16a34a;
@@ -81,7 +81,7 @@ export const sendPasswordResetEmail = async (
   await transporter.sendMail({
     from: env.MAIL_FROM,
     to: email,
-    subject: 'Réinitialisation de mot de passe — Plateforme Hajj',
+    subject: 'Réinitialisation de mot de passe — Plateforme Sacred Journey Hub',
     html: `
       <h2>Bonjour ${nom}</h2>
       <p>Une demande de réinitialisation de mot de passe a été faite pour votre compte.</p>
@@ -110,7 +110,7 @@ export const sendRejectionEmail = async (email: string, nomAgence: string) => {
         <p>Bonjour,</p>
         <p>Nous avons examiné la demande d'inscription de l'agence <strong>${nomAgence}</strong> et nous ne sommes malheureusement pas en mesure de l'approuver pour le moment.</p>
         <p>Si vous pensez qu'il s'agit d'une erreur ou souhaitez plus d'informations, veuillez nous contacter.</p>
-        <p style="color: #888; font-size: 13px; margin-top: 32px;">L'équipe SmartHajj</p>
+        <p style="color: #888; font-size: 13px; margin-top: 32px;">L'équipe de Sacred Journey Hub</p>
       </div>
     `,
   })
@@ -128,7 +128,7 @@ export const sendSuspensionEmail = async (email: string, nomAgence: string) => {
         <p>Le compte de l'agence <strong>${nomAgence}</strong> a été suspendu par notre équipe d'administration.</p>
         <p>Vous ne pouvez plus accéder à la plateforme SmartHajj jusqu'à nouvel ordre.</p>
         <p>Pour toute question, veuillez nous contacter directement.</p>
-        <p style="color: #888; font-size: 13px; margin-top: 32px;">L'équipe SmartHajj</p>
+        <p style="color: #888; font-size: 13px; margin-top: 32px;">L'équipe de Sacred Journey Hub</p>
       </div>
     `,
   })

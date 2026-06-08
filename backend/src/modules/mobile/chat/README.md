@@ -12,6 +12,15 @@ Structure:
 - `data/processed/`: Generated artifacts such as extracted text or chunk dumps.
 - `scripts/`: Chat-only scripts such as ingestion or reindexing.
 
+Runtime tuning:
+
+- `CHAT_PRIMARY_PROVIDER=ollama|gemini` chooses the first model provider.
+- `CHAT_FALLBACK_PROVIDER=gemini|ollama` chooses the provider used after errors or timeouts.
+- `CHAT_PROVIDER_TIMEOUT_MS=25000` caps slow provider calls before trying fallback.
+- `OLLAMA_MODEL=qwen3:4b` can be used for local generation, but `OLLAMA_THINK` defaults to off for faster Qwen3 answers.
+- `OLLAMA_NUM_PREDICT=320` limits answer length and keeps local generation from rambling.
+- `OLLAMA_EMBEDDING_MODEL=mxbai-embed-large` controls retrieval embeddings; changing it requires re-running `npm run chat:ingest`.
+
 Note:
 
 - Prisma schema and migrations stay in `backend/prisma/` because Prisma requires

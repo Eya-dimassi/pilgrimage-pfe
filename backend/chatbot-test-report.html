@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <title>Evaluation du chatbot RAG</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 24px;
+      background: #fff;
+      color: #002b25;
+      font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+    }
+    .table-wrap {
+      width: min(1180px, 100%);
+      margin: 0 auto;
+      border: 1px solid #dfe7e3;
+      overflow: hidden;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+    thead th {
+      background: #edf5f1;
+      color: #003d34;
+      padding: 13px 12px;
+      text-align: left;
+      font-size: 13px;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+    }
+    tbody tr {
+      border-bottom: 1px solid #dfe7e3;
+    }
+    td {
+      padding: 15px 12px;
+      vertical-align: top;
+      font-size: 14px;
+      line-height: 1.55;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+    th:nth-child(1), td:nth-child(1) { width: 16%; }
+    th:nth-child(2), td:nth-child(2) { width: 9.5%; }
+    th:nth-child(3), td:nth-child(3) { width: 9.5%; }
+    th:nth-child(4), td:nth-child(4) { width: 21.5%; }
+    th:nth-child(5), td:nth-child(5) { width: 43.5%; }
+    .scenario {
+      font-weight: 500;
+    }
+    .question {
+      color: #001f1a;
+    }
+    .answer {
+      color: #001f1a;
+    }
+    [dir="rtl"] {
+      text-align: right;
+      font-family: Tahoma, "Segoe UI", Arial, sans-serif;
+      font-size: 15px;
+      line-height: 1.75;
+    }
+  </style>
+</head>
+<body>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Scenario</th>
+          <th>Role</th>
+          <th>Langue</th>
+          <th>Question</th>
+          <th>Reponse generee</th>
+        </tr>
+      </thead>
+      <tbody>
+      <tr>
+        <td class="scenario">1. AR - شروط صحة الطواف</td>
+        <td>Guide</td>
+        <td>Arabe</td>
+        <td class="question" dir="rtl">ما هي شروط صحة الطواف؟</td>
+        <td class="answer" dir="rtl">* يجب أن يكون الطواف حول الكعبة المشرفة.
+* يجب أن يكون الطواف في وقت معين للجماعة.
+* يجب أن يكون الطواف بعد الوقوف في عرفة.
+* يجب أن يكون الطواف بعد الإحرام.
+* يجب أن يكون الطواف سبعة أشواط.</td>
+      </tr>
+      <tr>
+        <td class="scenario">2. AR - رمي الجمرات</td>
+        <td>Pèlerin</td>
+        <td>Arabe</td>
+        <td class="question" dir="rtl">كيف يتم رمي الجمرات؟</td>
+        <td class="answer" dir="rtl">يتم رمي الجمرات بعد النحر، ويتضمن رمي جمرة العقبة، ويمكن أن يتبعه الحلق أو التقصير، ثم يأتي الترتيب التالي:
+* الرمي
+* النحر
+* الحلق أو التقصير
+* الإفاضة
+* طواف الإفاضة 
+* السعي</td>
+      </tr>
+      <tr>
+        <td class="scenario">3. AR - استعداد الحاج</td>
+        <td>Pèlerin</td>
+        <td>Arabe</td>
+        <td class="question" dir="rtl">ما هي الأمور التي يجب على الحاج الاستعداد بها قبل القيام بالعبادة؟</td>
+        <td class="answer" dir="rtl">يجب على الحاج الاستعداد بالأمور التالية:
+* أخذ كمية كافية من الأدوية التي تعود على استعمالها بعد الاستشارة الطبية
+* اتباع نصائح المرشدين الدينيين للقيام بالطواف والسعي ورمي الجمرات
+* التأكد من مواعيد وآماكن العبادة
+* الاستعداد للرمي والنحر والحلق والافاضة في يوم النحر
+* اتباع تعليمات المرشدين الدينيين لضمان صحة وسلامة العبادة</td>
+      </tr>
+      <tr>
+        <td class="scenario">4. AR - معلومات غير متوفرة</td>
+        <td>Pèlerin</td>
+        <td>Arabe</td>
+        <td class="question" dir="rtl">كم تبلغ تكلفة رسوم تأشيرة العمرة هذا العام؟</td>
+        <td class="answer" dir="rtl">لا أستطيع تقديم معلومات حول تكلفة رسوم تأشيرة العمرة هذا العام. 
+* لا تتوفر معلومات حول رسوم التأشيرة في السياق المُقدم.
+* قد تختلف رسوم التأشيرة من عام إلى آخر.
+* يُفضل التحقق من مصادر رسمية أو مواقع السفارات للاطلاع على المعلومات الأكثر دقة.</td>
+      </tr>
+      <tr>
+        <td class="scenario">5. FR - Étapes Omra</td>
+        <td>Pèlerin</td>
+        <td>Français</td>
+        <td class="question" dir="ltr">Quelles sont les étapes de la Omra ?</td>
+        <td class="answer" dir="ltr">Les étapes de la Omra incluent :
+* Le tawaf
+* Le sa&#39;i (parcours entre Safa et Marwa)
+* Le tahallul (sortie de l&#39;état d&#39;ihram)
+Il est important de respecter les règles et les consignes publiées par les autorités compétentes pour chaque étape.</td>
+      </tr>
+      <tr>
+        <td class="scenario">6. FR - Santé chaleur</td>
+        <td>Famille</td>
+        <td>Français</td>
+        <td class="question" dir="ltr">Que faire si un pèlerin se sent épuisé par la chaleur ?</td>
+        <td class="answer" dir="ltr">En cas de malaise dû à la chaleur, il est recommandé de :
+* Rechercher un endroit frais pour se reposer
+* Boire de l&#39;eau pour se réhydrater
+* Demander une aide médicale si l&#39;état ne s&#39;améliore pas
+* Faire attention aux signes d&#39;alerte tels que les maux de tête, la soif intense, les vertiges, la faiblesse, la nausée et la transpiration importante
+* Prendre les précautions nécessaires pour éviter l&#39;épuisement avant de se lancer dans les étapes de la Omra, comme améliorer progressivement sa condition physique avant le voyage.</td>
+      </tr>
+      <tr>
+        <td class="scenario">7. FR - Hors sujet</td>
+        <td>Pèlerin</td>
+        <td>Français</td>
+        <td class="question" dir="ltr">Quel est le meilleur restaurant à Paris ?</td>
+        <td class="answer" dir="ltr">Je ne suis pas certain, car les informations fournies ne concernent pas les restaurants à Paris, mais plutôt les étapes et les conseils pour les pèlerins en route pour le Hajj ou l&#39;Umrah. 
+
+* Je ne dispose pas d&#39;informations sur les restaurants à Paris.
+* Mon rôle est de fournir des conseils pour les pèlerins.
+* Si vous avez des questions sur le Hajj ou l&#39;Umrah, je serais ravi de vous aider.
+* Il est préférable de consulter un guide ou un site web spécialisé pour trouver le meilleur restaurant à Paris.
+* Je ne peux pas vous fournir de recommandations sur les restaurants.</td>
+      </tr></tbody>
+    </table>
+  </div>
+</body>
+</html>
