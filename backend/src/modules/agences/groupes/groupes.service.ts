@@ -512,6 +512,10 @@ export const deleteGroupe = async (agenceId: string, groupeId: string) => {
   const nombreMembresActifs = groupe._count.membres;
 
   if (nombreMembresActifs > 0) {
+    if (groupe.status !== 'PLANIFIE') {
+      throw new Error("Un groupe peut etre annule uniquement lorsqu'il est encore planifie")
+    }
+
     const updated = await prisma.groupe.update({
       where: { id: groupeId },
       data: { status: 'ANNULE' },
