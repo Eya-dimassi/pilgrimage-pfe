@@ -245,7 +245,8 @@
       <div class="form-grid">
         <div class="form-field">
           <label>Date</label>
-          <input v-model="dayForm.date" type="date" />
+         <input v-model="dayForm.date" type="date" :min="toDateKey(selectedGroup.dateDepart)"
+            :max="toDateKey(selectedGroup.dateRetour)" />
         </div>
         <div class="form-field full">
           <label>Titre</label>
@@ -714,6 +715,13 @@ function upsertPlanningDayLocally(planning) {
 async function submitDay() {
   if (!dayForm.value.date) {
     modalError.value = 'La date est requise'
+    return
+  }
+  const minDate = toDateKey(selectedGroup.value?.dateDepart)
+  const maxDate = toDateKey(selectedGroup.value?.dateRetour)
+
+  if (dayForm.value.date < minDate || dayForm.value.date > maxDate) {
+    modalError.value = 'La journée doit être comprise entre la date de départ et la date de retour du groupe.'
     return
   }
 
