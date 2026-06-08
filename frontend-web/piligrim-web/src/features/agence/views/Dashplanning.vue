@@ -25,31 +25,31 @@
 
     <div v-else class="planning-page">
       <section class="planning-card planning-hero-card">
-        <p class="planning-hero-kicker" style="margin-bottom: 0">Planning du voyage</p>
-        <div class="planning-hero-top">
-          <div class="planning-select-summary">
-            <span class="group-type-badge" :class="selectedGroup.typeVoyage === 'HAJJ' ? 'hajj' : 'umrah'">
-              {{ selectedGroup.typeVoyage === 'HAJJ' ? 'Hajj' : 'Omra' }}
-            </span>
-            <span class="planning-select-text">{{ groupStatusLabel }}</span>
-          </div>
-          <div class="planning-group-picker planning-group-picker--inline">
-            <label for="planning-group">Groupe</label>
-            <select id="planning-group" v-model="selectedGroupId">
-              <option v-for="groupe in groupes" :key="groupe.id" :value="groupe.id">
-                {{ groupe.nom }} · {{ groupe.typeVoyage }} · {{ groupe.annee }}
-              </option>
-            </select>
-          </div>
-        </div>
-
-        <div class="planning-hero-copy">
-          <div class="planning-hero-heading-row">
+        <div class="planning-hero-layout">
+          <div class="planning-hero-main">
+            <p class="planning-hero-kicker">Planning du voyage</p>
+            <div class="planning-select-summary">
+              <span class="group-type-badge" :class="selectedGroup.typeVoyage === 'HAJJ' ? 'hajj' : 'umrah'">
+                {{ selectedGroup.typeVoyage === 'HAJJ' ? 'Hajj' : 'Omra' }}
+              </span>
+              <span class="group-status-badge" :class="planningGroupStatusClass">{{ groupStatusLabel }}</span>
+            </div>
             <h2 class="planning-hero-title">{{ selectedGroup.nom }}</h2>
+          </div>
+
+          <div class="planning-hero-side">
+            <div class="planning-group-picker planning-group-picker--inline">
+              <label for="planning-group">Groupe</label>
+              <select id="planning-group" v-model="selectedGroupId">
+                <option v-for="groupe in groupes" :key="groupe.id" :value="groupe.id">
+                  {{ groupe.nom }} · {{ groupe.typeVoyage }} · {{ groupe.annee }}
+                </option>
+              </select>
+            </div>
             <div class="planning-hero-subtitle planning-inline-meta">
               <span>{{ tripRangeLabel }}</span>
               <span>{{ selectedGroup.typeVoyage }}</span>
-              <span>{{ totalPelerins }} pèlerin<span v-if="totalPelerins > 1">s</span></span>
+              <span>{{ totalPelerinsLabel }}</span>
             </div>
           </div>
         </div>
@@ -282,15 +282,14 @@
         </div>
         <div class="form-field">
           <label>Lieu principal</label>
-         <input
-    v-model="eventForm.lieu"
-    list="lieux"
-    placeholder="Choisir ou écrire un lieu"
-  />
-
-  <datalist id="lieux">
-    <option v-for="location in EVENT_LOCATION_OPTIONS" :key="location" :value="location" />
-  </datalist>
+          <input
+            v-model="eventForm.lieu"
+            list="event-location-options"
+            placeholder="Choisir un lieu ou écrire un lieu personnalisé"
+          />
+          <datalist id="event-location-options">
+            <option v-for="location in EVENT_LOCATION_OPTIONS" :key="location" :value="location" />
+          </datalist>
         </div>
         <div class="form-field">
           <label>Heure de rendez-vous</label>
@@ -305,6 +304,28 @@
         <button class="btn-secondary" @click="closeEventModal">Annuler</button>
         <button class="btn-primary" :disabled="saving || !selectedPlanning" @click="submitEvent">
           {{ saving ? 'Sauvegarde...' : 'Sauvegarder' }}
+        </button>
+      </template>
+    </DashboardModalShell>
+
+    <DashboardModalShell
+      v-if="confirmDialog.show"
+      :title="confirmDialog.title"
+      :danger="confirmDialog.danger"
+      small
+      @close="closeConfirmDialog"
+    >
+      <p class="modal-desc">{{ confirmDialog.message }}</p>
+      <template #actions>
+        <button class="btn-secondary" :disabled="confirmLoading || saving" @click="closeConfirmDialog">
+          Annuler
+        </button>
+        <button
+          :class="confirmDialog.danger ? 'btn-danger' : 'btn-primary'"
+          :disabled="confirmLoading || saving"
+          @click="runConfirmDialog"
+        >
+          {{ confirmLoading || saving ? confirmDialog.loadingLabel : confirmDialog.confirmLabel }}
         </button>
       </template>
     </DashboardModalShell>
@@ -346,11 +367,16 @@ const EVENT_STATUS_LABELS = {
 }
 
 const EVENT_LOCATION_OPTIONS = [
-  'MAKKAH',
-  'MINA',
-  'ARAFAT',
-  'MUZDALIFAH',
-  'MEDINA',
+  'Makkah',
+  'Mina',
+  'Arafat',
+  'Muzdalifah',
+  'Médine',
+  'Mosquée Al-Haram',
+  'Masjid an-Nabawi',
+  'Jamarat',
+  'Hôtel',
+  'Aéroport',
 ]
 
 const RIYADH_TIME_ZONE = 'Asia/Riyadh'
@@ -502,6 +528,16 @@ const planningData = ref({ groupe: null, plannings: [], tripDays: [] })
 const selectedDateKey = ref('')
 const showDayModal = ref(false)
 const showEventModal = ref(false)
+const confirmLoading = ref(false)
+const confirmDialog = ref({
+  show: false,
+  title: '',
+  message: '',
+  confirmLabel: 'Confirmer',
+  loadingLabel: 'Traitement...',
+  danger: false,
+  onConfirm: null,
+})
 const editingDayId = ref('')
 const editingEventId = ref('')
 const dayForm = ref({ date: '', titre: '' })
@@ -576,6 +612,19 @@ const groupStatusLabel = computed(() => {
       return 'Planifié'
   }
 })
+const planningGroupStatusClass = computed(() => {
+  switch (selectedGroup.value?.status) {
+    case 'EN_COURS':
+      return 'is-running'
+    case 'TERMINE':
+      return 'is-done'
+    case 'ANNULE':
+      return 'is-canceled'
+    case 'PLANIFIE':
+    default:
+      return 'is-planned'
+  }
+})
 const tripRangeLabel = computed(() => {
   if (!selectedGroup.value?.dateDepart || !selectedGroup.value?.dateRetour) return 'Dates à définir'
   return `${formatShortDate(selectedGroup.value.dateDepart)} → ${formatShortDate(selectedGroup.value.dateRetour)}`
@@ -585,6 +634,7 @@ const suggestedDayTitle = computed(() => {
   return selectedDay.value.primaryDayLabel
 })
 const totalPelerins = computed(() => selectedGroup.value?._count?.pelerins ?? selectedGroup.value?.pelerins?.length ?? 0)
+const totalPelerinsLabel = computed(() => `${totalPelerins.value} pèlerin${totalPelerins.value > 1 ? 's' : ''}`)
 const selectedDayPrimaryLieu = computed(() => {
   const firstLieu = selectedPlanning.value?.evenements?.[0]?.lieu
   return splitLieux(firstLieu)[0] || 'Lieu à préciser'
@@ -694,6 +744,55 @@ function closeEventModal() {
   showEventModal.value = false
   editingEventId.value = ''
   modalError.value = ''
+}
+
+function openConfirmDialog({
+  title,
+  message,
+  confirmLabel = 'Confirmer',
+  loadingLabel = 'Traitement...',
+  danger = false,
+  onConfirm,
+}) {
+  confirmDialog.value = {
+    show: true,
+    title,
+    message,
+    confirmLabel,
+    loadingLabel,
+    danger,
+    onConfirm,
+  }
+}
+
+function closeConfirmDialog() {
+  if (confirmLoading.value || saving.value) return
+
+  confirmDialog.value = {
+    show: false,
+    title: '',
+    message: '',
+    confirmLabel: 'Confirmer',
+    loadingLabel: 'Traitement...',
+    danger: false,
+    onConfirm: null,
+  }
+}
+
+async function runConfirmDialog() {
+  if (!confirmDialog.value.onConfirm) return
+
+  confirmLoading.value = true
+  try {
+    await confirmDialog.value.onConfirm()
+    confirmDialog.value = {
+      ...confirmDialog.value,
+      show: false,
+      onConfirm: null,
+    }
+  } finally {
+    confirmLoading.value = false
+  }
 }
 
 function upsertPlanningDayLocally(planning) {
@@ -853,66 +952,91 @@ async function clearDay(planning) {
     return
   }
 
-  if (!window.confirm('Vider cette journée de planning ? Tous les événements seront supprimés.')) return
-
-  try {
-    await deleteAgencePlanningDay(planning.id)
-    showToast('Journée vidée')
-    await loadPlanning()
-  } catch (err) {
-    showToast(err.response?.data?.message || err.message, 'error')
-  }
+  openConfirmDialog({
+    title: 'Vider la journée',
+    message: 'Tous les événements de cette journée seront supprimés. Cette action est irréversible.',
+    confirmLabel: 'Vider la journée',
+    loadingLabel: 'Suppression...',
+    danger: true,
+    onConfirm: async () => {
+      try {
+        await deleteAgencePlanningDay(planning.id)
+        showToast('Journée vidée')
+        await loadPlanning()
+      } catch (err) {
+        showToast(err.response?.data?.message || err.message, 'error')
+      }
+    },
+  })
 }
 
 async function deleteEvent(event) {
-  if (!window.confirm('Supprimer cet événement ?')) return
-
-  try {
-    await deleteAgencePlanningEvent(event.id)
-    showToast('Événement supprimé')
-    await loadPlanning()
-  } catch (err) {
-    showToast(err.response?.data?.message || err.message, 'error')
-  }
+  openConfirmDialog({
+    title: "Supprimer l'événement",
+    message: `L'événement "${event.titre}" sera supprimé du planning.`,
+    confirmLabel: 'Supprimer',
+    loadingLabel: 'Suppression...',
+    danger: true,
+    onConfirm: async () => {
+      try {
+        await deleteAgencePlanningEvent(event.id)
+        showToast('Événement supprimé')
+        await loadPlanning()
+      } catch (err) {
+        showToast(err.response?.data?.message || err.message, 'error')
+      }
+    },
+  })
 }
 
 async function generateTemplate() {
   if (!selectedGroupId.value || !selectedGroup.value) return
 
-  const confirmed = window.confirm(
-    `Générer le modèle ${selectedGroup.value.typeVoyage === 'HAJJ' ? 'Hajj' : 'Omra'} pour ce groupe ? Les journées déjà créées seront conservées.`
-  )
+  const typeVoyage = selectedGroup.value.typeVoyage === 'HAJJ' ? 'Hajj' : 'Omra'
 
-  if (!confirmed) return
+  openConfirmDialog({
+    title: `Générer modèle ${typeVoyage}`,
+    message: 'Les journées déjà créées seront conservées. Les journées manquantes seront ajoutées automatiquement.',
+    confirmLabel: 'Générer',
+    loadingLabel: 'Génération...',
+    onConfirm: async () => {
+      saving.value = true
 
-  saving.value = true
+      try {
+        const result = await generateAgencePlanningTemplate(selectedGroupId.value)
+        await loadPlanning()
 
-  try {
-    const result = await generateAgencePlanningTemplate(selectedGroupId.value)
-    await loadPlanning()
-
-    showToast(
-      `${result.createdDays} jour(s) et ${result.createdEvents} événement(s) générés${result.skippedDays ? ` · ${result.skippedDays} jour(s) conservés` : ''}`
-    )
-  } catch (err) {
-    showToast(err.response?.data?.message || err.message, 'error')
-  } finally {
-    saving.value = false
-  }
+        showToast(
+          `${result.createdDays} jour(s) et ${result.createdEvents} événement(s) générés${result.skippedDays ? ` · ${result.skippedDays} jour(s) conservés` : ''}`
+        )
+      } catch (err) {
+        showToast(err.response?.data?.message || err.message, 'error')
+      } finally {
+        saving.value = false
+      }
+    },
+  })
 }
 async function deletePlanning() {
-  if (!window.confirm('Supprimer tout le planning de ce groupe ?')) return
-
-  saving.value = true
-  try {
-    await deleteAgencePlanning(selectedGroupId.value)
-    showToast('Planning supprimé')
-    await loadPlanning()
-  } catch (err) {
-    showToast(err.response?.data?.message || err.message, 'error')
-  } finally {
-    saving.value = false
-  }
+  openConfirmDialog({
+    title: 'Supprimer le planning',
+    message: 'Tout le planning de ce groupe sera supprimé, journées et événements inclus.',
+    confirmLabel: 'Supprimer',
+    loadingLabel: 'Suppression...',
+    danger: true,
+    onConfirm: async () => {
+      saving.value = true
+      try {
+        await deleteAgencePlanning(selectedGroupId.value)
+        showToast('Planning supprimé')
+        await loadPlanning()
+      } catch (err) {
+        showToast(err.response?.data?.message || err.message, 'error')
+      } finally {
+        saving.value = false
+      }
+    },
+  })
 }
 watch(
   () => props.groupes,
@@ -1035,20 +1159,37 @@ watch(selectedGroupId, () => {
 .planning-hero-card {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 18px;
 }
 
-.planning-hero-top {
+.planning-hero-layout {
   display: flex;
-  align-items: end;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 14px;
   flex-wrap: wrap;
 }
 
+.planning-hero-main {
+  display: flex;
+  flex: 1 1 420px;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.planning-hero-side {
+  display: flex;
+  flex: 0 1 360px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 34px;
+  padding-top: 12px;
+}
+
 .planning-group-picker--inline {
-  min-width: 260px;
-  max-width: 420px;
+  width: 100%;
+  min-width: 280px;
+  max-width: 360px;
   margin-left: auto;
 }
 
@@ -1104,6 +1245,14 @@ watch(selectedGroupId, () => {
   color: #786c5e;
   font-size: 14px;
   font-weight: 600;
+}
+
+.planning-hero-subtitle {
+  justify-content: flex-end;
+  text-align: right;
+  flex-wrap: nowrap;
+  gap: 14px;
+  white-space: nowrap;
 }
 
 .planning-inline-meta {
@@ -1600,6 +1749,43 @@ watch(selectedGroupId, () => {
   color: var(--blue);
   border: 1px solid rgba(74, 158, 255, 0.22);
 }
+
+.group-status-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--bg3);
+  color: var(--text2);
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+}
+
+.group-status-badge.is-planned {
+  border-color: rgba(124, 195, 255, 0.25);
+  color: rgba(124, 195, 255, 0.95);
+  background: rgba(124, 195, 255, 0.08);
+}
+
+.group-status-badge.is-running {
+  border-color: rgba(74, 222, 128, 0.22);
+  color: var(--green);
+  background: rgba(74, 222, 128, 0.08);
+}
+
+.group-status-badge.is-done {
+  border-color: rgba(201, 168, 76, 0.35);
+  color: var(--gold);
+  background: rgba(201, 168, 76, 0.1);
+}
+
+.group-status-badge.is-canceled {
+  border-color: rgba(255, 107, 107, 0.25);
+  color: var(--red);
+  background: rgba(255, 107, 107, 0.08);
+}
+
 .planning-action-button--danger {
   background: #fff0f0;
   border-color: #f5c0c0;
@@ -1618,9 +1804,29 @@ watch(selectedGroupId, () => {
     padding: 18px 16px;
   }
 
-  .planning-hero-heading-row,
-  .planning-hero-top {
+  .planning-hero-layout {
+    gap: 18px;
+  }
+
+  .planning-hero-side {
+    flex-basis: 100%;
     align-items: flex-start;
+    gap: 12px;
+    padding-top: 0;
+  }
+
+  .planning-group-picker--inline {
+    margin-left: 0;
+    max-width: none;
+  }
+
+  .planning-select-summary {
+    margin-top: 18px;
+  }
+
+  .planning-hero-subtitle {
+    justify-content: flex-start;
+    text-align: left;
   }
 
   .planning-hero-actions,

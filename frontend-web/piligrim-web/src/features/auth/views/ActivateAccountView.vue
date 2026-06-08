@@ -14,7 +14,7 @@
         <p class="sp-desc">Verification du lien d'activation...</p>
       </div>
 
-      <div v-else-if="success" class="sp-state">
+      <div v-else-if="success" class="sp-state sp-state-success">
         <AppIcon class="sp-state-icon sp-state-icon-success" name="check" :size="34" :stroke-width="2.8" />
         <h2 class="sp-title">Compte active !</h2>
         <p class="sp-desc">Votre mot de passe a ete defini avec succes. Vous pouvez maintenant vous connecter.</p>

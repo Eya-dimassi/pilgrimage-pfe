@@ -1,7 +1,7 @@
 <template>
   <div class="ad-modal-overlay" @click.self="$emit('close')">
     <div class="ad-modal-box ad-modal-box--profile" style="position: relative">
-      <button class="ad-modal-close-top" @click="$emit('close')">
+      <button class="ad-modal-close-top" type="button" @click="$emit('close')">
         <AppIcon name="x" :size="14" :stroke-width="2.5" />
       </button>
 

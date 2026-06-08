@@ -119,7 +119,8 @@
             <button
               @click="$emit('delete', groupe)"
               class="act-btn act-btn-danger"
-              :title="(groupe._count?.pelerins ?? groupe.pelerins?.length ?? 0) > 0 ? 'Annuler le groupe' : 'Supprimer'"
+              :disabled="!canDeleteOrCancelGroup(groupe)"
+              :title="deleteActionTitle(groupe)"
             >
               <AppIcon :name="(groupe._count?.pelerins ?? groupe.pelerins?.length ?? 0) > 0 ? 'x' : 'trash'" :size="14" />
             </button>
@@ -410,6 +411,20 @@ function statusClass(status) {
 
 function isLockedStatus(status) {
   return status === 'TERMINE' || status === 'ANNULE'
+}
+
+function activePelerinsCount(groupe) {
+  return groupe?._count?.pelerins ?? groupe?.pelerins?.length ?? 0
+}
+
+function canDeleteOrCancelGroup(groupe) {
+  return activePelerinsCount(groupe) === 0 || groupe?.status === 'PLANIFIE'
+}
+
+function deleteActionTitle(groupe) {
+  if (activePelerinsCount(groupe) === 0) return 'Supprimer'
+  if (groupe?.status !== 'PLANIFIE') return "Impossible d'annuler un groupe en cours ou termine"
+  return 'Annuler le groupe'
 }
 
 function exportGroupePdf(groupe) {

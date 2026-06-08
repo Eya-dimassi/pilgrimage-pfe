@@ -10,8 +10,7 @@ export const heroSlides = [
     caption: 'La Kaaba - Coeur du Hajj',
   },
   {
-    src: 'https://unsplash.com/fr/photos/personnes-marchant-a-lexterieur-dun-batiment-de-mosquee-en-forme-de-dome-YLdYVzHopto?w=1200&q=80',
-    alt: 'Masjid An-Nabawi - Medine',
+    src: 'https://images.unsplash.com/photo-1572358899655-f63ece97bfa5?q=80&w=1200',
     caption: 'Masjid An-Nabawi - Medine',
   },
   {

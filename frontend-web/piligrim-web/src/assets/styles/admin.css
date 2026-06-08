@@ -1268,6 +1268,7 @@ html.admin-dark {
 }
 
 .ad-modal-box {
+  position: relative;
   background: var(--ad-surface);
   border-radius: 18px;
   padding: 1.45rem;
@@ -1389,6 +1390,7 @@ html.admin-dark {
   position: absolute;
   top: 0.85rem;
   right: 0.85rem;
+  z-index: 2;
   width: 28px;
   height: 28px;
   border-radius: 50%;
@@ -1705,9 +1707,9 @@ html.admin-dark {
 }
 
 .ad-toast--success {
-  background: #1a2e1a;
-  color: #4ade80;
-  border: 1px solid rgba(74, 222, 128, 0.2);
+  background: #dcfce7;
+  color: #14532d;
+  border: 1px solid #86efac;
 }
 
 .ad-toast--error {

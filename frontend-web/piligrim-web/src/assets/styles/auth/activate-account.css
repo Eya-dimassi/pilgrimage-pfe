@@ -79,11 +79,26 @@
 }
 
 .sp-state-icon-success {
-  color: #4ade80;
+  color: #14532d;
 }
 
 .sp-state-icon-error {
   color: #fb923c;
+}
+
+.sp-state-success {
+  padding: 18px;
+  border-radius: 18px;
+  background: #dcfce7;
+  border: 1px solid #86efac;
+}
+
+.sp-state-success .sp-title {
+  color: #14532d;
+}
+
+.sp-state-success .sp-desc {
+  color: #166534;
 }
 
 .sp-welcome {

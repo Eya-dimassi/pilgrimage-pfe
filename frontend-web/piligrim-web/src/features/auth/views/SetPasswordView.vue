@@ -8,7 +8,7 @@
         </div>
       </div>
 
-      <div v-if="success" class="sp-state">
+      <div v-if="success" class="sp-state sp-state-success">
         <h1 class="sp-title">Mot de passe mis a jour</h1>
         <p class="sp-text">Vous pouvez maintenant vous reconnecter avec votre nouveau mot de passe.</p>
         <button class="sp-btn" type="button" @click="router.push('/')">Retour a la connexion</button>

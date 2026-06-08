@@ -400,7 +400,12 @@ const handleSubmit = async () => {
 }
 
 .form-feedback-success {
-  color: #2d7a4a;
+  padding: 0.7rem 0.85rem;
+  border-radius: 12px;
+  background: #dcfce7;
+  color: #14532d;
+  border: 1px solid #86efac;
+  font-weight: 600;
 }
 
 .inline-action {
