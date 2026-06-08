@@ -489,7 +489,7 @@
     },
     "sheet": {
       "confirmation_title": "Secours alertes",
-      "confirmation_message": "Votre guide et vos proches ont ete informes a {time}.",
+      "confirmation_message": "Votre guide et vos proches ont ete informes.",
       "position_sent": "Position transmise: {lat}, {lng}",
       "got_it": "Compris",
       "confirm_type_title": "Confirmer {type}",

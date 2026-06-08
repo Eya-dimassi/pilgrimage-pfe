@@ -495,7 +495,7 @@
     },
     "sheet": {
       "confirmation_title": "تم إرسال الطوارئ",
-      "confirmation_message": "تم إبلاغ مرشدك وأقاربك عند {time}.",
+      "confirmation_message": "تم إبلاغ مرشدك وأقاربك.",
       "position_sent": "تم إرسال الموقع: {lat}, {lng}",
       "got_it": "تم",
       "confirm_type_title": "تأكيد {type}",

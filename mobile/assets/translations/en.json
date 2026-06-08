@@ -489,7 +489,7 @@
     },
     "sheet": {
       "confirmation_title": "Emergency alerted",
-      "confirmation_message": "Your guide and relatives were informed at {time}.",
+      "confirmation_message": "Your guide and relatives were informed.",
       "position_sent": "Position sent: {lat}, {lng}",
       "got_it": "Got it",
       "confirm_type_title": "Confirm {type}",
