@@ -22,10 +22,6 @@ Future<void> showSosConfirmationSheet(
     backgroundColor: Colors.transparent,
     isScrollControlled: true,
     builder: (context) {
-      final createdAt = alert.createdAt;
-      final hour = createdAt.hour.toString().padLeft(2, '0');
-      final minute = createdAt.minute.toString().padLeft(2, '0');
-
       return Padding(
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
         child: Container(
@@ -63,9 +59,7 @@ Future<void> showSosConfirmationSheet(
               ),
               const SizedBox(height: 8),
               Text(
-                'sos.sheet.confirmation_message'.tr(
-                  namedArgs: {'time': '$hour:$minute'},
-                ),
+                'sos.sheet.confirmation_message'.tr(),
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontSize: 14,

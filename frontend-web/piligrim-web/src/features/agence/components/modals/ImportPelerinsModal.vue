@@ -23,7 +23,7 @@
           <code>telephone</code>,
           <code>dateNaissance</code>,
           <code>numeroPasseport</code>,
-          <code>nationalite</code>
+          <code>Pays</code>
         </p>
       </div>
 

@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <footer class="footer" id="contact">
     <div class="footer-top">
       <div>
@@ -15,15 +15,6 @@
       </div>
       <div class="footer-cols">
         <div>
-          <div class="fc-h">Produit</div>
-          <ul class="fc-ul">
-            <li><a href="#">Tarifs</a></li>
-            <li><a href="#">Entreprise</a></li>
-            <li><a href="#">Integrations</a></li>
-            <li><a href="#">Nouveautes</a></li>
-          </ul>
-        </div>
-        <div>
           <div class="fc-h">Cas d'usage</div>
           <ul class="fc-ul">
             <li><a href="#">Gestion Hajj</a></li>
@@ -32,15 +23,7 @@
             <li><a href="#">Suivi pelerins</a></li>
           </ul>
         </div>
-        <div>
-          <div class="fc-h">Ressources</div>
-          <ul class="fc-ul">
-            <li><a href="#">Blog</a></li>
-            <li><a href="#">Centre d'aide</a></li>
-            <li><a href="#">Guide de demarrage</a></li>
-            <li><a href="#">API Docs</a></li>
-          </ul>
-        </div>
+        
         <div>
           <div class="fc-h">Entreprise</div>
           <ul class="fc-ul">
