@@ -580,9 +580,9 @@ function exportGroupePdf(groupe) {
 }
 
 .group-status-badge.is-done {
-  border-color: rgba(255, 255, 255, 0.14);
-  color: rgba(255, 255, 255, 0.75);
-  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(201, 168, 76, 0.35);
+  color: var(--gold);
+  background: rgba(201, 168, 76, 0.1);
 }
 
 .group-status-badge.is-canceled {

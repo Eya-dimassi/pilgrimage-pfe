@@ -18,14 +18,14 @@
         <AppIcon class="sp-state-icon sp-state-icon-success" name="check" :size="34" :stroke-width="2.8" />
         <h2 class="sp-title">Compte active !</h2>
         <p class="sp-desc">Votre mot de passe a ete defini avec succes. Vous pouvez maintenant vous connecter.</p>
-        <button type="button" class="sp-btn" @click="router.push('/')">Se connecter</button>
+        <!-- <button type="button" class="sp-btn" @click="router.push('/')">Se connecter</button> -->
       </div>
 
       <div v-else-if="tokenError" class="sp-state">
         <AppIcon class="sp-state-icon sp-state-icon-error" name="alert" :size="34" :stroke-width="2.2" />
         <h2 class="sp-title">Lien invalide ou expire</h2>
         <p class="sp-desc">{{ tokenError }}</p>
-        <button type="button" class="sp-btn sp-btn-secondary" @click="router.push('/')">Retour a la connexion</button>
+        <!-- <button type="button" class="sp-btn sp-btn-secondary" @click="router.push('/')">Retour a la connexion</button> -->
       </div>
 
       <form v-else @submit.prevent="handleSubmit">
@@ -177,7 +177,6 @@ async function handleSubmit() {
   try {
     await setPassword(token.value, password.value)
     success.value = true
-    window.setTimeout(() => router.push('/'), 2000)
   } catch (err) {
     error.value = err.response?.data?.message || 'Une erreur est survenue lors de l\'activation du compte.'
   } finally {

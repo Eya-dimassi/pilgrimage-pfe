@@ -281,12 +281,15 @@
         </div>
         <div class="form-field">
           <label>Lieu principal</label>
-          <select v-model="eventForm.lieu">
-            <option value="">Choisir un lieu</option>
-            <option v-for="location in EVENT_LOCATION_OPTIONS" :key="location" :value="location">
-              {{ location }}
-            </option>
-          </select>
+         <input
+    v-model="eventForm.lieu"
+    list="lieux"
+    placeholder="Choisir ou écrire un lieu"
+  />
+
+  <datalist id="lieux">
+    <option v-for="location in EVENT_LOCATION_OPTIONS" :key="location" :value="location" />
+  </datalist>
         </div>
         <div class="form-field">
           <label>Heure de rendez-vous</label>

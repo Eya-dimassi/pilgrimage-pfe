@@ -102,7 +102,7 @@ const props = defineProps({
   agenceId: { type: String, required: true },
 })
 
-defineEmits(['close'])
+const emit = defineEmits(['close'])
 
 const { getAgenceById, statusLabel, statusClass, formatDate } = useAdmin()
 
