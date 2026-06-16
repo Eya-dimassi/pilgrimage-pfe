@@ -1,4 +1,4 @@
-﻿// backend/src/modules/agence/groupes/groupes.service.ts
+// backend/src/modules/agence/groupes/groupes.service.ts
 
 import { addDays, startOfDay } from 'date-fns';
 import prisma from '../../../config/prisma';
@@ -95,7 +95,7 @@ export const createGroupe = async (
     const fixedEndDate = addDays(anchorDate, 5);
 
     if (parsedDateDepart && anchorDate < startOfDay(parsedDateDepart)) {
-      throw new Error('La date du 8 Dhul Hijja doit Ãªtre comprise dans la durÃ©e du voyage');
+      throw new Error('La date du 8 Dhul Hijja doit être comprise dans la durée du voyage');
     }
 
     if (parsedDateRetour && fixedEndDate > startOfDay(parsedDateRetour)) {
@@ -294,7 +294,7 @@ export const updateGroupe = async (
     hajjStartDate?: string | Date | null;
   }
 ) => {
-  // VÃ©rifier que le groupe existe et appartient Ã  l'agence
+  // Vérifier que le groupe existe et appartient à l'agence
   const groupe = await prisma.groupe.findFirst({ 
     where: { id: groupeId, agenceId } 
   });
@@ -339,12 +339,12 @@ export const updateGroupe = async (
     });
 
     if (guides.length !== requestedGuideIds.length) {
-      throw new Error("Guide introuvable ou n'appartient pas Ã  votre agence");
+      throw new Error("Guide introuvable ou n'appartient pas à votre agence");
     }
 
     const inactiveGuide = guides.find((g) => !g.utilisateur.actif);
     if (inactiveGuide) {
-      throw new Error("Ce guide n'a pas encore activÃ© son compte");
+      throw new Error("Ce guide n'a pas encore activé son compte");
     }
 
     const unavailableGuide = guides.find(
@@ -385,7 +385,7 @@ export const updateGroupe = async (
     const fixedEndDate = addDays(anchorDate, 5);
 
     if (finalDateDepart && anchorDate < startOfDay(finalDateDepart)) {
-      throw new Error('La date du 8 Dhul Hijja doit Ãªtre comprise dans la durÃ©e du voyage');
+      throw new Error('La date du 8 Dhul Hijja doit être comprise dans la durée du voyage');
     }
 
     if (finalDateRetour && fixedEndDate > startOfDay(finalDateRetour)) {
@@ -503,7 +503,7 @@ export const deleteGroupe = async (agenceId: string, groupeId: string) => {
     });
 
     if (groupeExists) {
-      throw new Error('AccÃ¨s refusÃ© : ce groupe appartient Ã  une autre agence');
+      throw new Error('Accès refusé : ce groupe appartient à une autre agence');
     } else {
       throw new Error('Groupe introuvable');
     }
@@ -552,7 +552,7 @@ export const deleteGroupe = async (agenceId: string, groupeId: string) => {
 
     return {
       action: 'status_changed',
-      message: `Le groupe contient ${nombreMembresActifs} pÃ¨lerin(s) actif(s) : suppression interdite`,
+      message: `Le groupe contient ${nombreMembresActifs} pèlerin(s) actif(s) : suppression interdite`,
       groupe: mapGroupeForAgenceDashboard(updated),
     }
   }
@@ -564,7 +564,7 @@ export const deleteGroupe = async (agenceId: string, groupeId: string) => {
 
   return { 
     action: 'deleted',
-    message: 'Groupe supprimÃ© avec succÃ¨s',
+    message: 'Groupe supprimé avec succès',
     groupeId: groupe.id,
     groupeNom: groupe.nom,
   };
