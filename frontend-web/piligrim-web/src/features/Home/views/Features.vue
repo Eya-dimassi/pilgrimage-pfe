@@ -44,7 +44,7 @@
         Agence - Web
       </button>
       <button class="tab-btn" :class="{ active: activeTab === 'guide' }" @click="activeTab = 'guide'">
-        Guides - Mobile
+        Utilisateur - Mobile
       </button>
     </div>
 
