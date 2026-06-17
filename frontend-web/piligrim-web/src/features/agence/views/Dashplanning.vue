@@ -293,7 +293,7 @@
         </div>
         <div class="form-field">
           <label>Heure de rendez-vous</label>
-          <input v-model="eventForm.heure" type="time" />
+          <input v-model="eventForm.heure" type="time" :min="eventTimeMin" />
         </div>
         <div class="form-field full">
           <label>Description</label>
@@ -392,6 +392,12 @@ const RIYADH_SHORT_DATE_FORMATTER = new Intl.DateTimeFormat('fr-FR', {
   month: 'short',
 })
 const RIYADH_TIME_FORMATTER = new Intl.DateTimeFormat('fr-FR', {
+  timeZone: RIYADH_TIME_ZONE,
+  hour: '2-digit',
+  minute: '2-digit',
+  hour12: false,
+})
+const RIYADH_TIME_INPUT_FORMATTER = new Intl.DateTimeFormat('en-GB-u-nu-latn', {
   timeZone: RIYADH_TIME_ZONE,
   hour: '2-digit',
   minute: '2-digit',
@@ -505,6 +511,32 @@ function formatEventTimeInput(value) {
   return RIYADH_TIME_FORMATTER.format(date)
 }
 
+function formatRiyadhTimeInput(value) {
+  const date = value instanceof Date ? value : new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
+
+  const parts = RIYADH_TIME_INPUT_FORMATTER.formatToParts(date)
+  const hour = parts.find((part) => part.type === 'hour')?.value ?? ''
+  const minute = parts.find((part) => part.type === 'minute')?.value ?? ''
+  if (!hour || !minute) return ''
+
+  return `${hour}:${minute}`
+}
+
+function getSelectedEventDateTime(timeValue) {
+  if (!selectedDateKey.value || !timeValue) return new Date('')
+  return new Date(`${selectedDateKey.value}T${timeValue}:00+03:00`)
+}
+
+function isSelectedEventTimePastToday(timeValue) {
+  if (selectedDateKey.value !== todayDateKey.value) return false
+
+  const eventDate = getSelectedEventDateTime(timeValue)
+  if (Number.isNaN(eventDate.getTime())) return false
+
+  return eventDate.getTime() <= Date.now()
+}
+
 function getPreferredDateKey(plannings, availableDays, fallbackDateKey = '') {
   const availableKeys = new Set(availableDays.map((day) => day.dateKey))
   const currentStillValid = fallbackDateKey && availableKeys.has(fallbackDateKey)
@@ -589,6 +621,10 @@ const canAddEventOnSelectedDay = computed(() => {
   return selectedDateKey.value >= todayDateKey.value
 })
 const addEventBlockedReason = computed(() => "Impossible d'ajouter un evenement dans une journee deja passee.")
+const addEventPastTimeBlockedReason = "Impossible d'ajouter un evenement a une heure deja passee"
+const eventTimeMin = computed(() =>
+  selectedDateKey.value === todayDateKey.value ? formatRiyadhTimeInput(new Date()) : undefined
+)
 const clearDayBlockedReason = computed(() => {
   if (!selectedPlanning.value) return ''
   return "Vous ne pouvez vider qu'une journee future (date > aujourd'hui)."
@@ -913,6 +949,11 @@ async function submitEvent() {
 
   if (!eventForm.value.heure) {
     modalError.value = "L'heure de rendez-vous est requise"
+    return
+  }
+
+  if (!editingEventId.value && isSelectedEventTimePastToday(eventForm.value.heure)) {
+    modalError.value = addEventPastTimeBlockedReason
     return
   }
 

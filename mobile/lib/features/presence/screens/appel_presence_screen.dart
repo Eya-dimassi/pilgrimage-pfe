@@ -32,6 +32,7 @@ class AppelPresenceScreen extends ConsumerStatefulWidget {
 
 class _AppelPresenceScreenState extends ConsumerState<AppelPresenceScreen> {
   static const Duration _scanDebounceWindow = Duration(seconds: 2);
+  static const Duration _refreshInterval = Duration(seconds: 2);
   bool _isSaving = false;
   bool _isScanningQr = false;
   DateTime? _lastScanAt;
@@ -41,19 +42,27 @@ class _AppelPresenceScreenState extends ConsumerState<AppelPresenceScreen> {
   @override
   void initState() {
     super.initState();
-    _refreshTimer = Timer.periodic(const Duration(seconds: 10), (_) {
-      ref.invalidate(appelPresenceProvider(widget.appelId));
-    });
+    _startRefreshTimer();
   }
 
   @override
   void dispose() {
-    _refreshTimer?.cancel();
+    _stopRefreshTimer();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<AsyncValue<AppelPresenceData>>(
+      appelPresenceProvider(widget.appelId),
+      (_, next) {
+        final appel = next.valueOrNull?.appel;
+        if (appel != null && appel.statut != 'EN_COURS') {
+          _stopRefreshTimer();
+        }
+      },
+    );
+
     final appelAsync = ref.watch(appelPresenceProvider(widget.appelId));
     final localStatuts = ref.watch(localStatutsProvider);
     final localNotes = ref.watch(localNotesProvider);
@@ -461,6 +470,7 @@ class _AppelPresenceScreenState extends ConsumerState<AppelPresenceScreen> {
     try {
       final repository = ref.read(presenceRepositoryProvider);
       await repository.cloturerAppel(widget.appelId);
+      _stopRefreshTimer();
       ref.invalidate(appelPresenceProvider(widget.appelId));
 
       if (mounted) {
@@ -551,6 +561,19 @@ class _AppelPresenceScreenState extends ConsumerState<AppelPresenceScreen> {
   void _clearLocalChanges() {
     ref.read(localStatutsProvider.notifier).state = {};
     ref.read(localNotesProvider.notifier).state = {};
+  }
+
+  void _startRefreshTimer() {
+    _refreshTimer?.cancel();
+    _refreshTimer = Timer.periodic(_refreshInterval, (_) {
+      if (!mounted) return;
+      ref.invalidate(appelPresenceProvider(widget.appelId));
+    });
+  }
+
+  void _stopRefreshTimer() {
+    _refreshTimer?.cancel();
+    _refreshTimer = null;
   }
 
   void _retourDansApp() {

@@ -47,6 +47,7 @@ class NotificationNavigationService {
     switch (type) {
       case 'presence_call':
       case 'presence_update':
+      case 'presence_call_ending':
         if (appelId != null && appelId.isNotEmpty) {
           if (role == 'GUIDE') {
             return '/guide-presence/$appelId';

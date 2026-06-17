@@ -259,6 +259,7 @@ class _MobileAlertsScreenState extends ConsumerState<MobileAlertsScreen> {
       case _GuideAlertsCategory.presence:
         return type == 'presence_call' ||
             type == 'presence_call_reminder' ||
+            type == 'presence_call_ending' ||
             type == 'presence_update';
       case _GuideAlertsCategory.events:
         return type == 'alert' ||
@@ -1294,7 +1295,7 @@ _NotificationPresentation _presentationForNotification(
     );
   }
 
-  if (type == 'presence_call_reminder') {
+  if (type == 'presence_call_reminder' || type == 'presence_call_ending') {
     return _NotificationPresentation(
       background: AppColors.goldSoft,
       foreground: AppColors.gold,
@@ -1322,6 +1323,7 @@ String _notificationStepLabel(String rawValue) {
     case 'presence_update':
       return 'alerts.notification.labels.presence_call'.tr();
     case 'presence_call_reminder':
+    case 'presence_call_ending':
       return 'alerts.notification.labels.presence_reminder'.tr();
     default:
       return rawValue.trim().replaceAll('_', ' ');

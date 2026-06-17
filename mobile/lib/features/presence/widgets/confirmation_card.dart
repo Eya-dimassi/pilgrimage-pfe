@@ -25,6 +25,8 @@ class ConfirmationCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isQrConfirmed =
+        confirmation.statut == 'PRESENT' && confirmation.confirmeMode == 'QR';
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -54,15 +56,52 @@ class ConfirmationCard extends StatelessWidget {
               confirmation.pelerin.nomComplet,
               style: const TextStyle(fontWeight: FontWeight.w600),
             ),
-            subtitle: currentNote != null
-                ? Text(
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (currentNote != null)
+                  Text(
                     currentNote!,
                     style: TextStyle(
                       fontStyle: FontStyle.italic,
                       color: theme.textTheme.bodySmall?.color,
                     ),
-                  )
-                : null,
+                  ),
+                if (isQrConfirmed) ...[
+                  if (currentNote != null) const SizedBox(height: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.qr_code_2_rounded,
+                          size: 14,
+                          color: Colors.green,
+                        ),
+                        SizedBox(width: 4),
+                        Text(
+                          'Confirmé par QR',
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.green,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
             trailing: IconButton(
               icon: const Icon(Icons.edit_note),
               onPressed: onNotePressed,
@@ -82,7 +121,8 @@ class ConfirmationCard extends StatelessWidget {
                   icon: Icons.check_circle,
                   tooltip: 'presence.status.present'.tr(),
                   color: Colors.green,
-                  onPressed: () => onStatutChanged('PRESENT'),
+                  onPressed:
+                      isQrConfirmed ? null : () => onStatutChanged('PRESENT'),
                 ),
                 const SizedBox(width: 8),
                 _StatutIconButton(
@@ -91,7 +131,8 @@ class ConfirmationCard extends StatelessWidget {
                   icon: Icons.info,
                   tooltip: 'presence.status.excuse'.tr(),
                   color: Colors.orange,
-                  onPressed: () => onStatutChanged('EXCUSE'),
+                  onPressed:
+                      isQrConfirmed ? null : () => onStatutChanged('EXCUSE'),
                 ),
                 const SizedBox(width: 8),
                 _StatutIconButton(
@@ -100,7 +141,8 @@ class ConfirmationCard extends StatelessWidget {
                   icon: Icons.cancel,
                   tooltip: 'presence.status.absent'.tr(),
                   color: Colors.red,
-                  onPressed: () => onStatutChanged('ABSENT'),
+                  onPressed:
+                      isQrConfirmed ? null : () => onStatutChanged('ABSENT'),
                 ),
               ],
             ),
@@ -130,7 +172,7 @@ class _StatutIconButton extends StatelessWidget {
   final IconData icon;
   final String tooltip;
   final Color color;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
 
   const _StatutIconButton({
     required this.targetStatut,
@@ -144,18 +186,27 @@ class _StatutIconButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isSelected = currentStatut == targetStatut;
+    final isDisabled = onPressed == null;
 
     return Tooltip(
       message: tooltip,
       child: Ink(
         decoration: ShapeDecoration(
-          color: isSelected ? color : Colors.grey.shade200,
+          color: isDisabled
+              ? Colors.grey.shade100
+              : isSelected
+                  ? color
+                  : Colors.grey.shade200,
           shape: const CircleBorder(),
         ),
         child: IconButton(
           onPressed: onPressed,
           icon: Icon(icon),
-          color: isSelected ? Colors.white : Colors.grey.shade700,
+          color: isDisabled
+              ? Colors.grey.shade400
+              : isSelected
+                  ? Colors.white
+                  : Colors.grey.shade700,
           visualDensity: VisualDensity.compact,
         ),
       ),
