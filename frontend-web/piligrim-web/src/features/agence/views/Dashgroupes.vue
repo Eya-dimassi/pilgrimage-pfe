@@ -221,7 +221,8 @@
                   <button
                     @click="$emit('remove-pelerin', { groupeId: groupe.id, pelerinId: pelerin.id })"
                     class="act-btn act-btn-danger"
-                    title="Retirer du groupe"
+                    :disabled="!canRemovePelerinFromGroup(groupe)"
+                    :title="removePelerinTitle(groupe)"
                     style="width: 26px; height: 26px; flex-shrink: 0"
                   >
                     <AppIcon name="x" :size="12" />
@@ -411,6 +412,16 @@ function statusClass(status) {
 
 function isLockedStatus(status) {
   return status === 'TERMINE' || status === 'ANNULE'
+}
+
+function canRemovePelerinFromGroup(groupe) {
+  return groupe?.status !== 'EN_COURS'
+}
+
+function removePelerinTitle(groupe) {
+  return canRemovePelerinFromGroup(groupe)
+    ? 'Retirer du groupe'
+    : "Impossible de retirer un pelerin d'un groupe en cours"
 }
 
 function activePelerinsCount(groupe) {
