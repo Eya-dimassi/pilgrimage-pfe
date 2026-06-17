@@ -12,6 +12,13 @@ export class PresenceService {
     return Date.now() - appelDate.getTime() >= PresenceService.AUTO_CLOSE_DELAY_MS
   }
 
+  private static isQrConfirmedPresence(confirmation: {
+    statut: string
+    confirmeMode: string | null
+  }) {
+    return confirmation.statut === 'PRESENT' && confirmation.confirmeMode === 'QR'
+  }
+
   private static async closeAppelById(appelId: string) {
     const closedAt = new Date()
 
@@ -347,6 +354,10 @@ export class PresenceService {
       throw new Error('Appel cloture automatiquement apres 1 heure')
     }
 
+    if (PresenceService.isQrConfirmedPresence(confirmation)) {
+      throw new Error('Presence confirmee par QR, modification interdite')
+    }
+
     const updated = await prisma.confirmationPresence.update({
       where: { id: confirmationId },
       data: {
@@ -539,6 +550,21 @@ export class PresenceService {
     if (PresenceService.isAutoCloseDue(appel.date)) {
       await PresenceService.closeAppelById(appelId)
       throw new Error('Appel cloture automatiquement apres 1 heure')
+    }
+
+    const confirmationIds = data.confirmations.map((item) => item.confirmationId)
+    const lockedConfirmations = await prisma.confirmationPresence.findMany({
+      where: {
+        id: { in: confirmationIds },
+        appelPresenceId: appelId,
+        statut: 'PRESENT',
+        confirmeMode: 'QR',
+      },
+      select: { id: true },
+    })
+
+    if (lockedConfirmations.length > 0) {
+      throw new Error('Presence confirmee par QR, modification interdite')
     }
 
     const updates = await prisma.$transaction(

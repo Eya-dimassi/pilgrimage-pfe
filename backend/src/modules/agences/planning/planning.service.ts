@@ -454,8 +454,9 @@ export async function createPlanningEvent(agenceId: string, planningId: string, 
   }
 
   const heureDebutPrevue = normalizeDateTime(data.heureDebutPrevue, 'heureDebutPrevue')
+  const now = new Date()
   const planningDay = startOfASTDay(planning.date)
-  const todayAST = startOfASTDay(new Date())
+  const todayAST = startOfASTDay(now)
 
   if (planningDay.getTime() < todayAST.getTime()) {
     throw new Error("Impossible d'ajouter un evenement dans une journee deja passee")
@@ -465,6 +466,10 @@ export async function createPlanningEvent(agenceId: string, planningId: string, 
 
   if (!isSameASTDay(heureDebutPrevue, planning.date)) {
     throw new Error("heureDebutPrevue doit correspondre a la date de la journee")
+  }
+
+  if (planningDay.getTime() === todayAST.getTime() && heureDebutPrevue.getTime() <= now.getTime()) {
+    throw new Error("Impossible d'ajouter un evenement a une heure deja passee")
   }
 
   return prisma.evenementPlanning.create({
