@@ -688,6 +688,18 @@ export const retirerPelerin = async (
   groupeId: string,
   pelerinId: string
 ) => {
+  const groupe = await prisma.groupe.findFirst({
+    where: { id: groupeId, agenceId },
+  });
+
+  if (!groupe) {
+    throw new Error('Groupe introuvable');
+  }
+
+  if (groupe.status === 'EN_COURS') {
+    throw new Error("Impossible de retirer un pelerin d'un groupe en cours");
+  }
+
   const pelerin = await prisma.pelerin.findFirst({ 
     where: { id: pelerinId, agenceId } 
   });

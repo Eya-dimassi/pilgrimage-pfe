@@ -271,6 +271,25 @@ async function getOwnedEvent(agenceId: string, eventId: string) {
   )
 }
 
+async function ensureEventTimeAvailable(
+  planningId: string,
+  heureDebutPrevue: Date,
+  ignoredEventId?: string,
+) {
+  const conflict = await prisma.evenementPlanning.findFirst({
+    where: {
+      planningQuotidienId: planningId,
+      heureDebutPrevue,
+      ...(ignoredEventId ? { id: { not: ignoredEventId } } : {}),
+    },
+    select: { id: true },
+  })
+
+  if (conflict) {
+    throw new Error('Un evenement existe deja a cette heure pour cette journee')
+  }
+}
+
 // Ensures a planning day stays inside the configured travel window of its group.
 function validatePlanningWindow(groupe: Awaited<ReturnType<typeof getOwnedGroupe>>, targetDate: Date) {
   if (!groupe.dateDepart || !groupe.dateRetour) {
@@ -467,6 +486,8 @@ export async function createPlanningEvent(agenceId: string, planningId: string, 
     throw new Error("heureDebutPrevue doit correspondre a la date de la journee")
   }
 
+  await ensureEventTimeAvailable(planningId, heureDebutPrevue)
+
   return prisma.evenementPlanning.create({
     data: {
       planningQuotidienId: planningId,
@@ -499,6 +520,8 @@ export async function updatePlanningEvent(
   if (!isSameASTDay(nextStart, evenement.planningQuotidien.date)) {
     throw new Error("heureDebutPrevue doit correspondre a la date de la journee")
   }
+
+  await ensureEventTimeAvailable(evenement.planningQuotidienId, nextStart, eventId)
 
   return prisma.evenementPlanning.update({
     where: { id: eventId },
